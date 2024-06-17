@@ -1,6 +1,7 @@
 package com.github.a1k28.helper;
 
 import com.google.gson.Gson;
+import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.net.ProxySelector;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
+@NoArgsConstructor
 public class RestClient {
     private static final Gson gson = new Gson();
 
