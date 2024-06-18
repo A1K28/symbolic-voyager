@@ -11,15 +11,15 @@ import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class CopilotServiceImpl implements AIService {
+public class CopilotClient implements AIService {
     private volatile String token;
     private volatile String accessToken;
     private volatile LocalDateTime tokenLastUpdated;
 
     private static final Gson gson = new Gson();
-    private static final Logger log = Logger.getInstance(CopilotServiceImpl.class);
+    private static final Logger log = Logger.getInstance(CopilotClient.class);
 
-    public CopilotServiceImpl() throws URISyntaxException, IOException, InterruptedException {
+    public CopilotClient() throws URISyntaxException, IOException, InterruptedException {
         loadAccessToken();
         if (accessToken == null) setup();
 
