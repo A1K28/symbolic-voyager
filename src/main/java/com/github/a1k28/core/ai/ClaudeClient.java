@@ -34,6 +34,8 @@ public class ClaudeClient implements AIService {
     private final long timeoutInMs;
     private static final Logger log = Logger.getInstance(ClaudeClient.class);
 
+    private ClaudeRequest previousRequestState;
+
     public ClaudeClient() {
         this.httpClient = HttpClient.newBuilder().build();
         this.timeoutInMs = 60_000L;
@@ -41,29 +43,10 @@ public class ClaudeClient implements AIService {
 
     @Override
     public String generate(String prompt) {
-        String testCode = exampleTestableCode();
-        String exampleTests = exampleResponse();
-        ClaudeResponse response = sendRequest(ClaudeRequest.builder()
-                .model(ClaudeModel.SONNET)
-//                .max_tokens(1_000)
-                .temperature(0)
-                .stop_sequence("###")
-                .system("You are an AI assistant, created to help analyze code and generate test cases. Your responses only include tests written in Java 17 with JUnit 5, without any additional description or text.")
-                .input(RoleInput.builder()
-                        .role(ClaudeRole.USER)
-                        .message(new TextMessage("Analyze the code and generate java 17 test cases for the following class. Use JUnit 5 and possibly Mockito as needed. I already have some generated some mutants and the goal is to cover all these mutants with maximum code coverage. Please respond only with java 17 code."))
-                        .message(new TextMessage(testCode))
-                        .build())
-                .input(RoleInput.builder()
-                        .role(ClaudeRole.ASSISTANT)
-                        .message(new TextMessage(exampleTests))
-                        .build())
-                .input(RoleInput.builder()
-                        .role(ClaudeRole.USER)
-                        .message(new TextMessage("Analyze the code and generate java 17 test cases for the following class. Use JUnit 5 and possibly Mockito as needed. I already have some generated some mutants and the goal is to cover all these mutants with maximum code coverage. Please respond only with java 17 code."))
-                        .message(new TextMessage(prompt))
-                        .build())
-                .build());
+        ClaudeRequest request;
+        if (previousRequestState == null) request = buildRequest(prompt);
+        else request = buildRequestFromState(prompt);
+        ClaudeResponse response = sendRequest(request);
 
         if (response == null || response.getContent() == null)
             throw new RuntimeException("Null response from AI");
@@ -71,9 +54,53 @@ public class ClaudeClient implements AIService {
             throw new RuntimeException("Empty response from AI");
 
         log.info(response.toString());
+
+        previousRequestState = request;
+        previousRequestState.getInputs().add(RoleInput.builder()
+                .role(ClaudeRole.ASSISTANT)
+                .message(new TextMessage(response.getContent().get(0)))
+                .build());
         return response.getContent().get(0);
 //        TypeToken<IngredientModel[]> typeToken = TypeToken.get(IngredientModel[].class);
 //        return new Gson().fromJson(response.getContent().getFirst(), typeToken);
+    }
+
+    private ClaudeRequest buildRequestFromState(String prompt) {
+        previousRequestState.getInputs().add(RoleInput.builder()
+                .role(ClaudeRole.USER)
+                .message(new TextMessage(prompt))
+                .build());
+        return previousRequestState;
+    }
+
+    private ClaudeRequest buildRequest(String prompt) {
+        String testCode = exampleTestableCode();
+        String exampleTests = exampleResponse();
+
+        List<RoleInput> inputs = new ArrayList<>();
+        inputs.add(RoleInput.builder()
+                .role(ClaudeRole.USER)
+                .message(new TextMessage("Analyze the code and generate java 17 test cases for the following class. Use JUnit 5 and possibly Mockito as needed. I already have some generated some mutants and the goal is to cover all these mutants with maximum code coverage. Please respond only with java 17 code."))
+                .message(new TextMessage(testCode))
+                .build());
+        inputs.add(RoleInput.builder()
+                .role(ClaudeRole.ASSISTANT)
+                .message(new TextMessage(exampleTests))
+                .build());
+        inputs.add(RoleInput.builder()
+                .role(ClaudeRole.USER)
+                .message(new TextMessage("Analyze the code and generate java 17 test cases for the following class. Use JUnit 5 and possibly Mockito as needed. I already have some generated some mutants and the goal is to cover all these mutants with maximum code coverage. Please respond only with java 17 code."))
+                .message(new TextMessage(prompt))
+                .build());
+
+        return ClaudeRequest.builder()
+                .model(ClaudeModel.SONNET)
+                .max_tokens(4_096)
+                .temperature(0)
+                .stop_sequence("###")
+                .system("You are an AI assistant, created to help analyze code and generate test cases. Your responses only include tests written in Java 17 with JUnit 5, without any additional description or text.")
+                .inputs(inputs)
+                .build();
     }
 
     private ClaudeResponse sendRequest(ClaudeRequest request) {

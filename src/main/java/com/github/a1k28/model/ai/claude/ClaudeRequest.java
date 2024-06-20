@@ -12,9 +12,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClaudeRequest {
     @NonNull private final ClaudeModel model;
-    @Builder.Default private final int max_tokens = 1000;
+    @Builder.Default private final int max_tokens = 4_096;
     private String system;
     @Singular private List<String> stop_sequences;
     @Builder.Default private double temperature = 0.0;
-    @NonNull @Singular private final List<RoleInput> inputs;
+    @NonNull private final List<RoleInput> inputs;
 }
