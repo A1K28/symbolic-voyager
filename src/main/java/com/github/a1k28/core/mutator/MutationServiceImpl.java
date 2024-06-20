@@ -1,6 +1,7 @@
 package com.github.a1k28.core.mutator;
 
 import com.github.a1k28.helper.Logger;
+import com.github.a1k28.model.mutator.DetectionMatrix;
 import org.pitest.coverage.TestInfo;
 import org.pitest.mutationtest.MutationMetaData;
 import org.pitest.mutationtest.MutationResult;
@@ -41,9 +42,7 @@ public class MutationServiceImpl implements MutationService {
         reportOptions.setExcludedRunners(Collections.emptyList());
         reportOptions.setGroupConfig(testGroupConfig);
 
-        final ParseResult pr = new ParseResult(reportOptions, null);
-        final ReportOptions data = pr.getOptions();
-        final CombinedStatistics stats = runReport(data, pluginServices);
+        final CombinedStatistics stats = runReport(reportOptions, pluginServices);
 
         return map(stats.getMutationMetaData().get(0));
     }
