@@ -2,6 +2,7 @@ package com.github.a1k28.core.mutator;
 
 import com.github.a1k28.helper.Logger;
 import com.github.a1k28.model.mutator.DetectionMatrix;
+import com.github.a1k28.model.mutator.MutatorProperties;
 import org.pitest.coverage.TestInfo;
 import org.pitest.mutationtest.MutationMetaData;
 import org.pitest.mutationtest.MutationResult;
@@ -21,9 +22,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MutationServiceImpl implements MutationService {
-    private final boolean removeSucceedingTests = false;
+    private final boolean removeSucceedingTests;
     private static final Pattern pattern = Pattern.compile("\\[(.*?)\\]");
     private static final Logger log = Logger.getInstance(MutationServiceImpl.class);
+
+    public MutationServiceImpl() {
+        this(new HashMap<>());
+    }
+
+    public MutationServiceImpl(Map<MutatorProperties, Boolean> props) {
+        this.removeSucceedingTests = props.getOrDefault(MutatorProperties.REMOVE_SUCCEEDING_TESTS, false);
+    }
 
     @Override
     public DetectionMatrix generateMutants(String targetClass, String targetTestClass) {
@@ -50,13 +59,15 @@ public class MutationServiceImpl implements MutationService {
     private DetectionMatrix map(MutationMetaData mutationMetaData) {
         List<MutationResult> mutationResults = (List<MutationResult>) mutationMetaData.getMutations();
 
-        List<String> succeedingTests = Collections.emptyList();
+        List<String> succeedingTests;
         if (removeSucceedingTests) {
             succeedingTests = mutationResults.stream()
                     .map(MutationResult::getSucceedingTests)
                     .flatMap(Collection::stream)
                     .distinct()
                     .toList();
+        } else {
+            succeedingTests = Collections.emptyList();
         }
 
         List<TestInfo> testInfos = mutationResults.stream()
