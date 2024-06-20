@@ -17,7 +17,6 @@ import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -28,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ClaudeClient implements AIService {
-    private String apiKey = "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";
+    private String apiKey = "";
     private final HttpClient httpClient;
     private final static String API_URL = "https://api.anthropic.com/v1/messages";
     private static final URI URI = createURI();
@@ -41,7 +40,7 @@ public class ClaudeClient implements AIService {
     }
 
     @Override
-    public String generate(String prompt, String language) throws URISyntaxException, IOException, InterruptedException {
+    public String generate(String prompt) {
         String testCode = exampleTestableCode();
         String exampleTests = exampleResponse();
         ClaudeResponse response = sendRequest(ClaudeRequest.builder()
