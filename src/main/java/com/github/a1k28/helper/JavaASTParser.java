@@ -3,10 +3,9 @@ package com.github.a1k28.helper;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.body.BodyDeclaration;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import lombok.NoArgsConstructor;
 
@@ -26,12 +25,38 @@ public class JavaASTParser {
         ClassOrInterfaceDeclaration class2 = cu2.findFirst(ClassOrInterfaceDeclaration.class)
                 .orElseThrow(() -> new RuntimeException("No class found in file 2: " + file2));
 
-        // add imports from class2 to class1
+        // add imports from cu2 to cu1
         List<ImportDeclaration> class1Imports = cu1.getImports();
         List<ImportDeclaration> class2Imports = cu2.getImports();
         for (ImportDeclaration importDeclaration : class2Imports) {
             if (class1Imports.contains(importDeclaration)) continue;
             cu1.addImport(importDeclaration);
+        }
+
+        // add fields from class2 to class1
+        List<FieldDeclaration> class1Fields = class1.getFields();
+        List<String> class1FieldNames = class1Fields.stream()
+                .map(e -> e.getVariables().getFirst().get().getNameAsString())
+                .toList();
+        List<FieldDeclaration> class2Fields = class2.getFields();
+        for (FieldDeclaration fieldDeclaration : class2Fields) {
+            if (class1Fields.contains(fieldDeclaration)) continue;
+            VariableDeclarator variableDeclarator = fieldDeclaration.getVariables().getFirst().get();
+            if (class1FieldNames.contains(variableDeclarator.getNameAsString())) continue;
+            if (variableDeclarator.getInitializer().isPresent()) {
+                class1.addFieldWithInitializer(fieldDeclaration.getElementType(),
+                        variableDeclarator.getNameAsString(),
+                        variableDeclarator.getInitializer().get(),
+                        fieldDeclaration.getModifiers().stream()
+                                .map(Modifier::getKeyword).toList()
+                                .toArray(new Modifier.Keyword[0]));
+            } else {
+                class1.addField(fieldDeclaration.getElementType(),
+                        fieldDeclaration.getVariables().getFirst().get().getNameAsString(),
+                        fieldDeclaration.getModifiers().stream()
+                                .map(Modifier::getKeyword).toList()
+                                .toArray(new Modifier.Keyword[0]));
+            }
         }
 
         // add methods from class2 to class1
@@ -90,6 +115,7 @@ public class JavaASTParser {
                                
                 class StackTest {
                     private Stack<String> stack;
+                    private String test2;
                                
                     @BeforeEach
                     void setUp() {
@@ -128,6 +154,8 @@ public class JavaASTParser {
                                
                 class StackTest {
                     private Stack<String> stack;
+                    
+                    private String test = "asdads";
                                
                     @BeforeEach
                     void setUp() {
