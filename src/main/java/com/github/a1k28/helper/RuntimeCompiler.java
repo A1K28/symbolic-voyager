@@ -2,6 +2,7 @@ package com.github.a1k28.helper;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.NoArgsConstructor;
 
@@ -9,13 +10,17 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @NoArgsConstructor
 public class RuntimeCompiler {
     private static final Logger log = Logger.getInstance(RuntimeCompiler.class);
 
     public static String compile(String code, String targetClasspath) throws Exception {
-        String className = extractClassName(code);
+        CompilationUnit cu = StaticJavaParser.parse(code);
+        String packageName =  extractPackageName(cu);
+        String className = extractClassName(cu);
 
         // Save source in .java file.
         File root = Files.createTempDirectory("java").toFile();
@@ -23,7 +28,7 @@ public class RuntimeCompiler {
         sourceFile.getParentFile().mkdirs();
         Files.writeString(sourceFile.toPath(), code);
 
-        log.info("Created: " + className+".java file");
+        log.info("Created: " + className+".java file under: " + root.getPath());
 
         String classpath = System.getProperty("java.class.path");
         JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
@@ -37,24 +42,50 @@ public class RuntimeCompiler {
             throw new RuntimeException("Invalid javac status: " + status);
         }
 
-        String classFile = sourceFile.getParentFile() + File.separator + className + ".class";
-        log.info("Successfully compiled " + classFile);
-        return classFile;
+        String classFilePath = sourceFile.getParentFile() + File.separator + className + ".class";
+        log.info("Successfully compiled " + classFilePath);
+
+        String targetPath = targetClasspath;
+        if (packageName != null) {
+            targetPath += File.separator + packageName.replace(".", File.separator);
+            Files.createDirectories(Paths.get(targetPath));
+            log.info("Created directory: " + targetPath);
+        }
+
+        String classFileNewPath = targetPath + File.separator + className + ".class";
+        File classFile = new File(classFilePath);
+        Files.move(classFile.toPath(), Paths.get(classFileNewPath), StandardCopyOption.REPLACE_EXISTING);
+        log.info("Moved file from: " + classFilePath + " to: " + classFileNewPath);
+
+        if (sourceFile.delete()) {
+            if (root.delete()) {
+                log.info("Removed temp directory: " + root.getPath());
+            }
+        }
+
+        return classFileNewPath;
     }
 
-    private static String extractClassName(String code) {
-        CompilationUnit cu = StaticJavaParser.parse(code);
+    private static String extractPackageName(CompilationUnit cu) {
+        PackageDeclaration packageDeclaration = cu.getPackageDeclaration().orElse(null);
+        if (packageDeclaration == null) return null;
+        return packageDeclaration.getName().asString();
+    }
+
+    private static String extractClassName(CompilationUnit cu) {
         return cu.findFirst(ClassOrInterfaceDeclaration.class)
-                .orElseThrow(() -> new RuntimeException("No class found in file: " + code))
+                .orElseThrow(() -> new RuntimeException("No class found in file: " + cu))
                 .getNameAsString();
     }
 
     public static void main(String[] args) throws Exception {
         compile("""
+                package com.asdf;
+                
                 import org.junit.jupiter.api.BeforeEach;
                 import org.junit.jupiter.api.Test;
                 
-                import com.github.a1k28.Stack;
+                import java.util.Stack;
                                
                 import java.util.EmptyStackException;
                                
@@ -140,6 +171,6 @@ public class RuntimeCompiler {
                         assertTrue(stack.isEmpty());
                     }
                 }
-               """, "");
+               """, "/Users/ak/Desktop/IdeaProjects/test/target/classes");
     }
 }
