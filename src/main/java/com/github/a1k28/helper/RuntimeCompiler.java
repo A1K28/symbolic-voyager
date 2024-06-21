@@ -63,7 +63,9 @@ public class RuntimeCompiler {
             }
         }
 
-        return classFileNewPath;
+        if (packageName != null && !packageName.isEmpty()) className = packageName + "." + className;
+
+        return className;
     }
 
     private static String extractPackageName(CompilationUnit cu) {
