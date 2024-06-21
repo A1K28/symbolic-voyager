@@ -34,7 +34,7 @@ public class MutationServiceImpl implements MutationService {
         this.removeSucceedingTests = (boolean) props.getOrDefault(
                 EvolutionProperties.REMOVE_SUCCEEDING_TESTS, false);
         this.mutationLevel = (MutationLevel) props.getOrDefault(
-                EvolutionProperties.MUTATOR_LEVEL, MutationLevel.MIN_MUTATIONS);
+                EvolutionProperties.MUTATOR_LEVEL, MutationLevel.DEFAULTS);
     }
 
     @Override
@@ -58,6 +58,7 @@ public class MutationServiceImpl implements MutationService {
         reportOptions.setTargetTests(predicateFor(targetTestClass));
         reportOptions.setExcludedRunners(Collections.emptyList());
         reportOptions.setGroupConfig(testGroupConfig);
+        reportOptions.setMutators(List.of(mutationLevel.name()));
 
         final CombinedStatistics stats = runReport(reportOptions, pluginServices);
 
