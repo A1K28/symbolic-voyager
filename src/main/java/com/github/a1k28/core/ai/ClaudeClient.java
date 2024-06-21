@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ClaudeClient implements AIService {
-    private String apiKey = "";
+    private final String apiKey;
     private final HttpClient httpClient;
     private final static String API_URL = "https://api.anthropic.com/v1/messages";
     private static final URI URI = createURI();
@@ -37,12 +37,13 @@ public class ClaudeClient implements AIService {
     private ClaudeRequest previousRequestState;
 
     public ClaudeClient() {
+        this.apiKey = System.getenv("CLAUDE_API_KEY");
         this.httpClient = HttpClient.newBuilder().build();
-        this.timeoutInMs = 60_000L;
+        this.timeoutInMs = 30_000L;
     }
 
     @Override
-    public String generate(String prompt) {
+    public String generateTestClass(String prompt) {
         ClaudeRequest request;
         if (previousRequestState == null) request = buildRequest(prompt);
         else request = buildRequestFromState(prompt);
@@ -61,8 +62,6 @@ public class ClaudeClient implements AIService {
                 .message(new TextMessage(response.getContent().get(0)))
                 .build());
         return response.getContent().get(0);
-//        TypeToken<IngredientModel[]> typeToken = TypeToken.get(IngredientModel[].class);
-//        return new Gson().fromJson(response.getContent().getFirst(), typeToken);
     }
 
     private ClaudeRequest buildRequestFromState(String prompt) {
@@ -206,6 +205,8 @@ public class ClaudeClient implements AIService {
 
     private String exampleTestableCode() {
         return """
+                package com.github.a1k28.core.service;
+                
                 import java.util.EmptyStackException;
                                
                 public class Stack<T> {
@@ -234,6 +235,8 @@ public class ClaudeClient implements AIService {
 
     private String exampleResponse() {
         return """
+                import com.github.a1k28.core.service.Stack;
+                
                 import org.junit.jupiter.api.BeforeEach;
                 import org.junit.jupiter.api.Test;
                 import org.junit.jupiter.api.extension.ExtendWith;
