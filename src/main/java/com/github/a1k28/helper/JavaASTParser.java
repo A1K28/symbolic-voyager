@@ -2,17 +2,21 @@ package com.github.a1k28.helper;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
-public class JavaFileMerger {
+public class JavaASTParser {
+    private static final Logger log = Logger.getInstance(JavaASTParser.class);
+
     public static String mergeJavaFiles(String file1, String file2) {
         CompilationUnit cu1 = StaticJavaParser.parse(file1);
         CompilationUnit cu2 = StaticJavaParser.parse(file2);
@@ -22,13 +26,21 @@ public class JavaFileMerger {
         ClassOrInterfaceDeclaration class2 = cu2.findFirst(ClassOrInterfaceDeclaration.class)
                 .orElseThrow(() -> new RuntimeException("No class found in file 2: " + file2));
 
-        // Add methods from class2 to class1
-        List<MethodDeclaration> methodsFromClass2 = class2.getMethods();
+        // add imports from class2 to class1
+        List<ImportDeclaration> class1Imports = cu1.getImports();
+        List<ImportDeclaration> class2Imports = cu2.getImports();
+        for (ImportDeclaration importDeclaration : class2Imports) {
+            if (class1Imports.contains(importDeclaration)) continue;
+            cu1.addImport(importDeclaration);
+        }
+
+        // add methods from class2 to class1
+        List<MethodDeclaration> class2Methods = class2.getMethods();
         List<String> signatures = class1.getMembers().stream()
                 .filter(BodyDeclaration::isMethodDeclaration)
                 .map(e -> e.asMethodDeclaration().getSignature().asString())
                 .collect(Collectors.toList());
-        for (MethodDeclaration method : methodsFromClass2) {
+        for (MethodDeclaration method : class2Methods) {
             if (class1.getMembers().contains(method)) continue;
 
             String sig = method.getSignature().asString();
@@ -47,11 +59,29 @@ public class JavaFileMerger {
         return cu1.toString();
     }
 
+    public static String keepWhitelistedTestsOnly(String code, List<String> whitelist) {
+        CompilationUnit cu = StaticJavaParser.parse(code);
+        ClassOrInterfaceDeclaration cl = cu.findFirst(ClassOrInterfaceDeclaration.class)
+                .orElseThrow(() -> new RuntimeException("No class found in code: " + code));
+        for (MethodDeclaration method : cl.getMethods()) {
+            List<String> annotations = method.getAnnotations().stream()
+                    .map(NodeWithName::getNameAsString).toList();
+            if (!annotations.contains("Test")) continue;
+            if (whitelist.contains(method.getNameAsString())) continue;
+            if (!cl.remove(method)) {
+                log.warn("Could not remove method: " + method.getNameAsString());
+            } else {
+                log.info("Successfully removed method: " + method.getNameAsString());
+            }
+        }
+        return cu.toString();
+    }
+
     public static void main(String[] args) {
         String file1 = """
                 import org.junit.jupiter.api.BeforeEach;
                 import org.junit.jupiter.api.Test;
-                
+                                
                 import com.github.a1k28.Stack;
                                
                 import java.util.EmptyStackException;
@@ -87,6 +117,8 @@ public class JavaFileMerger {
         String file2 = """
                 import org.junit.jupiter.api.BeforeEach;
                 import org.junit.jupiter.api.Test;
+                
+                import org.pitest.coverage.TestInfo;
                 
                 import com.github.a1k28.Stack;
                                
