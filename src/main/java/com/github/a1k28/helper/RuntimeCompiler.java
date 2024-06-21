@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -37,9 +39,13 @@ public class RuntimeCompiler {
                 classpath + File.pathSeparator + targetClasspath,
                 sourceFile.getPath()};
 
-        int status = javac.run(null, null, null,  javacOpts);
-        if (status != 0) {
-            throw new RuntimeException("Invalid javac status: " + status);
+        try(OutputStream err = new ByteArrayOutputStream()) {
+            int status = javac.run(null, null, err,  javacOpts);
+            if (status != 0) {
+                String error = err.toString().replace(sourceFile.getPath(), "");
+                log.error("Invalid javac status: " + status + ". " + error);
+                throw new RuntimeException(error);
+            }
         }
 
         String classFilePath = sourceFile.getParentFile() + File.separator + className + ".class";
