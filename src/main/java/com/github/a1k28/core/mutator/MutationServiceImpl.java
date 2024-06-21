@@ -1,8 +1,9 @@
 package com.github.a1k28.core.mutator;
 
 import com.github.a1k28.helper.Logger;
+import com.github.a1k28.model.evolution.EvolutionProperties;
 import com.github.a1k28.model.mutator.DetectionMatrix;
-import com.github.a1k28.model.mutator.MutatorProperties;
+import com.github.a1k28.model.mutator.MutationLevel;
 import org.pitest.coverage.TestInfo;
 import org.pitest.mutationtest.MutationMetaData;
 import org.pitest.mutationtest.MutationResult;
@@ -14,6 +15,7 @@ import org.pitest.mutationtest.tooling.EntryPoint;
 import org.pitest.testapi.TestGroupConfig;
 import org.pitest.util.Glob;
 import org.pitest.util.Unchecked;
+import org.pitest.util.Verbosity;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -23,19 +25,22 @@ import java.util.regex.Pattern;
 
 public class MutationServiceImpl implements MutationService {
     private final boolean removeSucceedingTests;
+    private final MutationLevel mutationLevel;
+
     private static final Pattern pattern = Pattern.compile("\\[(.*?)\\]");
     private static final Logger log = Logger.getInstance(MutationServiceImpl.class);
 
-    public MutationServiceImpl() {
-        this(new HashMap<>());
-    }
-
-    public MutationServiceImpl(Map<MutatorProperties, Boolean> props) {
-        this.removeSucceedingTests = props.getOrDefault(MutatorProperties.REMOVE_SUCCEEDING_TESTS, false);
+    public MutationServiceImpl(Map<EvolutionProperties, Object> props) {
+        this.removeSucceedingTests = (boolean) props.getOrDefault(
+                EvolutionProperties.REMOVE_SUCCEEDING_TESTS, false);
+        this.mutationLevel = (MutationLevel) props.getOrDefault(
+                EvolutionProperties.MUTATOR_LEVEL, MutationLevel.MIN_MUTATIONS);
     }
 
     @Override
     public DetectionMatrix generateMutants(String targetClass, String targetTestClass) {
+        log.info("Generating mutants for target class: " + targetClass + " & test class: " + targetTestClass);
+
         final PluginServices pluginServices = PluginServices.makeForContextLoader();
         final ReportOptions reportOptions = new ReportOptions();
         final TestGroupConfig testGroupConfig = new TestGroupConfig();
@@ -45,6 +50,9 @@ public class MutationServiceImpl implements MutationService {
         log.info("temp directory: " + tempDir);
 
         reportOptions.setReportDir(tempDir);
+        reportOptions.setVerbosity(Verbosity.VERBOSE);
+        reportOptions.setFailWhenNoMutations(true);
+        reportOptions.setSkipFailingTests(true);
         reportOptions.setSourceDirs(List.of(Path.of(tempDir)));
         reportOptions.setTargetClasses(List.of(targetClass));
         reportOptions.setTargetTests(predicateFor(targetTestClass));
@@ -129,5 +137,12 @@ public class MutationServiceImpl implements MutationService {
             throw Unchecked.translateCheckedException(result.getError().get());
         }
         return result.getStatistics().get();
+    }
+
+    public static void main(String[] args) {
+        new MutationServiceImpl(new HashMap<>()).generateMutants(
+                "com.github.a1k28.test.Stack",
+                "StackTest"
+        );
     }
 }
