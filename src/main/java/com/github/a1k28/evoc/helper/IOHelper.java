@@ -1,4 +1,4 @@
-package com.github.a1k28.helper;
+package com.github.a1k28.evoc.helper;
 
 import lombok.NoArgsConstructor;
 

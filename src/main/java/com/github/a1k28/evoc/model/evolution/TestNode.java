@@ -1,4 +1,4 @@
-package com.github.a1k28.model.evolution;
+package com.github.a1k28.evoc.model.evolution;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.github.a1k28.model.evolution;
+package com.github.a1k28.evoc.model.evolution;
 
 public enum EvolutionProperties {
     REMOVE_SUCCEEDING_TESTS,

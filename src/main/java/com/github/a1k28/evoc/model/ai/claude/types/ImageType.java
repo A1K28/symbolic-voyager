@@ -1,4 +1,4 @@
-package com.github.a1k28.model.ai.claude.types;
+package com.github.a1k28.evoc.model.ai.claude.types;
 
 import lombok.RequiredArgsConstructor;
 

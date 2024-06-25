@@ -1,4 +1,4 @@
-package com.github.a1k28.model.mutator;
+package com.github.a1k28.evoc.model.mutator;
 
 import lombok.Getter;
 import lombok.Setter;

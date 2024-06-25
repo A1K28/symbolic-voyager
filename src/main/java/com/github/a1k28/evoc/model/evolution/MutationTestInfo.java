@@ -1,4 +1,4 @@
-package com.github.a1k28.model.evolution;
+package com.github.a1k28.evoc.model.evolution;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,4 +11,5 @@ public class MutationTestInfo {
     private float score;
     private List<String> testsToKeep;
     private List<String> parentTests;
+    private List<String> survivingMutants;
 }

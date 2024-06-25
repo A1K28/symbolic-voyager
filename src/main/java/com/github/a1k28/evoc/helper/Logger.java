@@ -1,4 +1,4 @@
-package com.github.a1k28.helper;
+package com.github.a1k28.evoc.helper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -73,6 +73,10 @@ public class Logger {
 
     public void focus(String message) {
         System.out.println(getDate() + focus() + this.getClassName() + message);
+    }
+
+    public void error(String message) {
+        System.out.println(getDate() + error() + this.getClassName() + message);
     }
 
     public void error(String message, Throwable e) {

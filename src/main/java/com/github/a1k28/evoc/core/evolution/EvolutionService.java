@@ -1,4 +1,4 @@
-package com.github.a1k28.core.evolution;
+package com.github.a1k28.evoc.core.evolution;
 
 public interface EvolutionService {
     void evolve(

@@ -1,9 +1,9 @@
-package com.github.a1k28.core.mutator;
+package com.github.a1k28.evoc.core.mutator;
 
-import com.github.a1k28.helper.Logger;
-import com.github.a1k28.model.evolution.EvolutionProperties;
-import com.github.a1k28.model.mutator.DetectionMatrix;
-import com.github.a1k28.model.mutator.MutationLevel;
+import com.github.a1k28.evoc.helper.Logger;
+import com.github.a1k28.evoc.model.evolution.EvolutionProperties;
+import com.github.a1k28.evoc.model.mutator.DetectionMatrix;
+import com.github.a1k28.evoc.model.mutator.MutationLevel;
 import org.pitest.coverage.TestInfo;
 import org.pitest.mutationtest.MutationMetaData;
 import org.pitest.mutationtest.MutationResult;
@@ -27,14 +27,15 @@ public class MutationServiceImpl implements MutationService {
     private final boolean removeSucceedingTests;
     private final MutationLevel mutationLevel;
 
-    private static final Pattern pattern = Pattern.compile("\\[(.*?)\\]");
+    private static final Pattern methodExtractionPattern1 = Pattern.compile("\\[(.*?)\\]");
+    private static final Pattern methodExtractionPattern2 = Pattern.compile("\\[test-template:[a-zA-Z]*\\(");
     private static final Logger log = Logger.getInstance(MutationServiceImpl.class);
 
     public MutationServiceImpl(Map<EvolutionProperties, Object> props) {
         this.removeSucceedingTests = (boolean) props.getOrDefault(
                 EvolutionProperties.REMOVE_SUCCEEDING_TESTS, false);
         this.mutationLevel = (MutationLevel) props.getOrDefault(
-                EvolutionProperties.MUTATOR_LEVEL, MutationLevel.DEFAULTS);
+                EvolutionProperties.MUTATOR_LEVEL, MutationLevel.ALL);
     }
 
     @Override
@@ -113,7 +114,7 @@ public class MutationServiceImpl implements MutationService {
     }
 
     private String extractMethodName(String fullName) {
-        Matcher m = pattern.matcher(fullName);
+        Matcher m = methodExtractionPattern1.matcher(fullName);
         String lastMatch = null;
         while(m.find()) {
             lastMatch = m.group(1);
@@ -122,6 +123,12 @@ public class MutationServiceImpl implements MutationService {
             lastMatch = lastMatch.split(":")[1];
             return lastMatch.substring(0, lastMatch.length()-2);
         }
+
+        m = methodExtractionPattern2.matcher(fullName);
+        if (m.find()) {
+            return m.group().replace("[test-template:", "").replace("(","");
+        }
+
         return fullName;
     }
 
@@ -143,7 +150,7 @@ public class MutationServiceImpl implements MutationService {
     public static void main(String[] args) {
         new MutationServiceImpl(new HashMap<>()).generateMutants(
                 "com.github.a1k28.test.Stack",
-                "StackTest"
+                "com.github.a1k28.test.StackTest"
         );
     }
 }

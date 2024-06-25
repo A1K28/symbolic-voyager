@@ -1,4 +1,4 @@
-package com.github.a1k28.helper;
+package com.github.a1k28.evoc.helper;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
-public class JavaASTParser {
-    private static final Logger log = Logger.getInstance(JavaASTParser.class);
+public class JavaASTHelper {
+    private static final Logger log = Logger.getInstance(JavaASTHelper.class);
 
     public static String mergeJavaFiles(String file1, String file2) {
         CompilationUnit cu1 = StaticJavaParser.parse(file1);
@@ -230,6 +230,6 @@ public class JavaASTParser {
                 """;
 
         String mergedFile = mergeJavaFiles(file1, file2);
-        System.out.println(mergedFile);
+        log.info(mergedFile);
     }
 }
