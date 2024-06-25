@@ -7,7 +7,6 @@ public class ASMConditionalWrapper {
     }
 
     public static boolean IF_ICMPNE(int a, int b) {
-        System.out.println("HEREEEEEE");
         return a == b;
     }
 
