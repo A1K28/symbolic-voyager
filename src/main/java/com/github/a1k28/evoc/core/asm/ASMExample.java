@@ -1,5 +1,7 @@
 package com.github.a1k28.evoc.core.asm;
 
+import com.github.a1k28.dclagent.ClassReloaderAPI;
+import com.github.a1k28.evoc.core.branch.TestExecutorServiceImpl;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -8,6 +10,7 @@ import org.objectweb.asm.tree.analysis.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -27,19 +30,35 @@ public class ASMExample {
 
     private final Map<String, byte[]> classCache = new HashMap<>();
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException, AnalyzerException {
+    public static void main(String[] args) throws Exception {
 //        ClassReader classReader = new ClassReader("com.github.a1k28.test.Stack");
 //        ClassWriter classWriter = new ClassWriter(classReader, 0);
 //        ClassVisitor classVisitor = new ASMConditionalReplacer(classWriter);
 //
 //        classReader.accept(classVisitor, 0);
 
+        Class<?> reloaderClass = Class.forName("com.github.a1k28.dclagent.DynamicClassAgent");
+
+        // Get the instance of DynamicClassReloader
+        Method getInstanceMethod = reloaderClass.getMethod("getInstance");
+        ClassReloaderAPI reloader = (ClassReloaderAPI) getInstanceMethod.invoke(null);
+
+        // Use the reloader
+
         ASMExample asmExample = new ASMExample();
         String classname = "com.github.a1k28.test.Stack";
+
         try {
             asmExample.snapClass(classname);
             asmExample.injectConditionalWrapper(classname);
+
+            // reload classes
+            reloader.addClassToReload(classname, getTargetPath(classname));
+            reloader.reloadClasses();
+
             // run tests
+            TestExecutorServiceImpl service = new TestExecutorServiceImpl();
+            service.executeTests("adw", "com.github.a1k28.test.StackTest");
         } finally {
             asmExample.restoreClass(classname);
         }
@@ -94,6 +113,7 @@ public class ASMExample {
                 // int comparison
                 if (intComparisonOpCodes.contains(opcode)) {
                     offset++;
+                    offset++;
                     handleIntComparisonCodes(node, it);
                     continue;
                 }
@@ -135,7 +155,7 @@ public class ASMExample {
         return classWriter.toByteArray();
     }
 
-    private static String getTargetPath(String classname) throws ClassNotFoundException {
+    public static String getTargetPath(String classname) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(classname);
         String[] spl = classname.split("\\.");
         String simpleClassname = spl[spl.length-1];
@@ -169,7 +189,8 @@ public class ASMExample {
         it.remove();
         String name = getIntNameByCode(node.getOpcode());
         LabelNode label = ((JumpInsnNode) node).label;
-        it.add(new MethodInsnNode(INVOKESTATIC, internalWrapperName, name, "(II)Z", false));
+        it.add(new LdcInsnNode(1000L));
+        it.add(new MethodInsnNode(INVOKESTATIC, internalWrapperName, name, "(IIJ)Z", false));
         it.add(new JumpInsnNode(IFEQ, label));
     }
 
@@ -197,6 +218,19 @@ public class ASMExample {
         throw new RuntimeException("Invalid type: " + type);
     }
 
+    /*
+     * B: byte
+     * C: char
+     * D: double
+     * F: float
+     * I: int
+     * J: long
+     * L: object (e.g., Ljava/lang/String;)
+     * S: short
+     * V: void
+     * Z: boolean
+     * [: array (e.g., [I for an int array)
+     */
     private static String getDescriptor(PrimType type) {
         if (type == PrimType.LONG) return "(JJ)Z";
         if (type == PrimType.FLOAT) return "(FF)Z";
