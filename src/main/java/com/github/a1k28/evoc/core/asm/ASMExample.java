@@ -56,6 +56,7 @@ public class ASMExample {
     private void restoreClass(String classname) throws IOException, ClassNotFoundException {
         byte[] bytes = classCache.get(classname);
         saveClass(classname, bytes);
+        classCache.remove(classname);
     }
 
     private void injectConditionalWrapper(String classname) throws ClassNotFoundException, IOException, AnalyzerException {
