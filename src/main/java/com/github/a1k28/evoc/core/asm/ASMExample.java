@@ -8,10 +8,7 @@ import org.objectweb.asm.tree.analysis.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.stream.Stream;
+import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -27,19 +24,41 @@ public class ASMExample {
     private final static List<Integer> refComparisonOpCodes = List.of(
             IF_ACMPEQ, IF_ACMPNE
     );
-    private final static List<Integer> comparisonOpCodes = Stream.concat(
-            refComparisonOpCodes.stream(), Stream.concat(
-            genericComparisonOpCodes.stream(), intComparisonOpCodes.stream())).toList();
 
-    public static void main(String[] args) throws IOException, AnalyzerException, ClassNotFoundException {
+    private final Map<String, byte[]> classCache = new HashMap<>();
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException, AnalyzerException {
 //        ClassReader classReader = new ClassReader("com.github.a1k28.test.Stack");
 //        ClassWriter classWriter = new ClassWriter(classReader, 0);
 //        ClassVisitor classVisitor = new ASMConditionalReplacer(classWriter);
 //
 //        classReader.accept(classVisitor, 0);
 
+        ASMExample asmExample = new ASMExample();
         String classname = "com.github.a1k28.test.Stack";
+        try {
+            asmExample.snapClass(classname);
+            asmExample.injectConditionalWrapper(classname);
+            // run tests
+        } finally {
+            asmExample.restoreClass(classname);
+        }
+    }
 
+    private void snapClass(String classname) throws IOException {
+        ClassReader classReader = new ClassReader(classname);
+        ClassNode cn = new ClassNode(ASM9);
+        classReader.accept(cn, 0);
+        byte[] bytes = getClassBytes(cn);
+        classCache.put(classname, bytes);
+    }
+
+    private void restoreClass(String classname) throws IOException, ClassNotFoundException {
+        byte[] bytes = classCache.get(classname);
+        saveClass(classname, bytes);
+    }
+
+    private void injectConditionalWrapper(String classname) throws ClassNotFoundException, IOException, AnalyzerException {
         ClassReader classReader = new ClassReader(classname);
         ClassNode cn = new ClassNode(ASM9);
         classReader.accept(cn, 0);
@@ -98,16 +117,28 @@ public class ASMExample {
             }
         }
 
+        byte[] modifiedClass = getClassBytes(cn);
+        saveClass(classname, modifiedClass);
+    }
+
+    private void saveClass(String classname, byte[] bytes) throws ClassNotFoundException, IOException {
+        String targetPath = getTargetPath(classname);
+        try (FileOutputStream fos = new FileOutputStream(targetPath)) {
+            fos.write(bytes);
+        }
+    }
+
+    private byte[] getClassBytes(ClassNode cn) {
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         cn.accept(classWriter);
+        return classWriter.toByteArray();
+    }
 
+    private static String getTargetPath(String classname) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(classname);
-        String targetPath = clazz.getProtectionDomain().getCodeSource().getLocation().getPath()+clazz.getPackageName().replace(".",File.separator)+File.separator+"Stack.class";
-
-        byte[] modifiedClass = classWriter.toByteArray();
-        try (FileOutputStream fos = new FileOutputStream(targetPath)) {
-            fos.write(modifiedClass);
-        }
+        String[] spl = classname.split("\\.");
+        String simpleClassname = spl[spl.length-1];
+        return clazz.getProtectionDomain().getCodeSource().getLocation().getPath()+clazz.getPackageName().replace(".",File.separator)+File.separator+simpleClassname+".class";
     }
 
     private static boolean isEqualsComparison(AbstractInsnNode node) {
