@@ -102,36 +102,37 @@ public class ASMExample {
 
                 int opcode = node.getOpcode();
 
-                System.out.println(opcode);
-
                 // string comparison
                 if (isEqualsComparison(node)) {
+                    offset++;
                     handleStringComparison(node, it);
                     continue;
                 }
 
                 // int comparison
                 if (intComparisonOpCodes.contains(opcode)) {
-                    offset++;
-                    offset++;
+                    offset+=2;
                     handleIntComparisonCodes(node, it);
                     continue;
                 }
 
                 // long comparison
                 if (opcode == LCMP) {
+                    offset++;
                     handleComparisonCodes(node, it, PrimType.LONG);
                     continue;
                 }
 
                 // float comparison
                 if (opcode == FCMPG || opcode == FCMPL) {
+                    offset++;
                     handleComparisonCodes(node, it, PrimType.FLOAT);
                     continue;
                 }
 
                 // float comparison
                 if (opcode == DCMPL || opcode == DCMPG) {
+                    offset++;
                     handleComparisonCodes(node, it, PrimType.DOUBLE);
                     continue;
                 }
@@ -180,8 +181,9 @@ public class ASMExample {
         if (IFEQ != nextOpcode && IFNE != nextOpcode) return;
 
         it.remove();
+        it.add(new LdcInsnNode(1000L));
         String name = nextOpcode == IFEQ ? "IFEQ_STRING" : "IFNE_STRING";
-        it.add(new MethodInsnNode(INVOKESTATIC, internalWrapperName, name, "(Ljava/lang/String;Ljava/lang/String;)Z", false));
+        it.add(new MethodInsnNode(INVOKESTATIC, internalWrapperName, name, "(Ljava/lang/String;Ljava/lang/String;J)Z", false));
     }
 
     private static void handleIntComparisonCodes(
@@ -207,6 +209,7 @@ public class ASMExample {
         String name = getGenericNameByCode(nextOpCode) + getMethodSuffix(type);
         String description = getDescriptor(type);
         LabelNode label = ((JumpInsnNode) next).label;
+        it.add(new LdcInsnNode(1000L));
         it.add(new MethodInsnNode(INVOKESTATIC, internalWrapperName, name, description, false));
         it.add(new JumpInsnNode(IFEQ, label));
     }
@@ -232,9 +235,9 @@ public class ASMExample {
      * [: array (e.g., [I for an int array)
      */
     private static String getDescriptor(PrimType type) {
-        if (type == PrimType.LONG) return "(JJ)Z";
-        if (type == PrimType.FLOAT) return "(FF)Z";
-        if (type == PrimType.DOUBLE) return "(DD)Z";
+        if (type == PrimType.LONG) return "(JJJ)Z";
+        if (type == PrimType.FLOAT) return "(FFJ)Z";
+        if (type == PrimType.DOUBLE) return "(DDJ)Z";
         throw new RuntimeException("Invalid type: " + type);
     }
 
