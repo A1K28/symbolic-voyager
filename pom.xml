@@ -62,13 +62,13 @@
       <scope>system</scope>
       <systemPath>${project.basedir}/libs/org/pitest/pitest-entry-dev-SNAPSHOT.jar</systemPath>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>com.github.a1k28</groupId>-->
-<!--      <artifactId>branch-distance-agent</artifactId>-->
-<!--      <version>1.0-SNAPSHOT</version>-->
-<!--      <scope>system</scope>-->
-<!--      <systemPath>${project.basedir}/libs/com/github/a1k28/branchdistance/branch-distance-agent-1.0-SNAPSHOT.jar</systemPath>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>com.github.a1k28</groupId>
+      <artifactId>dynamic-classloader-agent</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/libs/com/github/a1k28/dclagent/dynamic-classloader-agent-1.0-SNAPSHOT.jar</systemPath>
+    </dependency>
 <!--    <dependency>-->
 <!--      <groupId>net.bytebuddy</groupId>-->
 <!--      <artifactId>byte-buddy</artifactId>-->
@@ -101,7 +101,13 @@
       <artifactId>asm-util</artifactId>
       <version>9.7</version>
     </dependency>
-<!--    &lt;!&ndash; https://mvnrepository.com/artifact/io.jenetics/jenetics &ndash;&gt;-->
+    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.12.0</version>
+    </dependency>
+    <!--    &lt;!&ndash; https://mvnrepository.com/artifact/io.jenetics/jenetics &ndash;&gt;-->
 <!--    <dependency>-->
 <!--      <groupId>io.jenetics</groupId>-->
 <!--      <artifactId>jenetics</artifactId>-->
