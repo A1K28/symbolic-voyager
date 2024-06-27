@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -38,12 +37,6 @@ public class ASMExample {
     private final Map<String, byte[]> classCache = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
-//        ClassReader classReader = new ClassReader("com.github.a1k28.test.Stack");
-//        ClassWriter classWriter = new ClassWriter(classReader, 0);
-//        ClassVisitor classVisitor = new ASMConditionalReplacer(classWriter);
-//
-//        classReader.accept(classVisitor, 0);
-
         Class<?> reloaderClass = Class.forName("com.github.a1k28.dclagent.DynamicClassAgent");
 
         // Get the instance of DynamicClassReloader
