@@ -20,8 +20,8 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * <p>Oracle JVM instruction set: https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html</p>
  */
-public class ASMExample {
-    private static final Logger log = Logger.getInstance(ASMExample.class);
+public class BranchDistanceService {
+    private static final Logger log = Logger.getInstance(BranchDistanceService.class);
     private static final String internalWrapperName = "com/github/a1k28/evoc/core/asm/ASMConditionalWrapper";
 
     private final static List<Integer> genericComparisonOpCodes = List.of(
@@ -37,21 +37,18 @@ public class ASMExample {
     private final Map<String, byte[]> classCache = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
-        Class<?> reloaderClass = Class.forName("com.github.a1k28.dclagent.DynamicClassAgent");
-
         // Get the instance of DynamicClassReloader
+        Class<?> reloaderClass = Class.forName("com.github.a1k28.dclagent.DynamicClassAgent");
         Method getInstanceMethod = reloaderClass.getMethod("getInstance");
         ClassReloaderAPI reloader = (ClassReloaderAPI) getInstanceMethod.invoke(null);
 
-        // Use the reloader
-
-        ASMExample asmExample = new ASMExample();
+        BranchDistanceService branchCoverageService = new BranchDistanceService();
         String classname = "com.github.a1k28.test.Stack";
         String testClassname = "com.github.a1k28.test.StackTest";
 
         try {
-            asmExample.snapClass(classname);
-            asmExample.injectConditionalWrapper(classname);
+            branchCoverageService.snapClass(classname);
+            branchCoverageService.injectConditionalWrapper(classname);
 
             // reload classes
             reloader.addClassToReload(classname, getTargetPath(classname));
@@ -64,7 +61,8 @@ public class ASMExample {
                 TestExecutionSummary summary = DynamicTestRunner.runTestClass(testClass, method);
             }
         } finally {
-            asmExample.restoreClass(classname);
+            ASMConditionalWrapper.clear();
+            branchCoverageService.restoreClass(classname);
         }
     }
 

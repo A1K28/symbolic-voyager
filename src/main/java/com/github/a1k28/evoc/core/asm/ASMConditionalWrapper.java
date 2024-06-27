@@ -283,6 +283,11 @@ public class ASMConditionalWrapper {
         return a.equals(b);
     }
 
+    public static void clear() {
+        ASMConditionalWrapper.testId = null;
+        ASMConditionalWrapper.distanceData.clear();
+    }
+
     private static void put(String bId, Long score) {
         if (!distanceData.containsKey(testId)) {
             BranchDistanceData data = new BranchDistanceData(testId);

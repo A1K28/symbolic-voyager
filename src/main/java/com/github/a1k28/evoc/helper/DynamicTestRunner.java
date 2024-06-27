@@ -17,7 +17,6 @@ public class DynamicTestRunner {
 
     public static TestExecutionSummary runTestClass(Class<?> testClass, Method method) {
         log.info("Running test class: " + testClass.getName() + " method: " + method.getName());
-        long start = System.currentTimeMillis();
 
         LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
                 .selectors(DiscoverySelectors.selectMethod(testClass, method))
@@ -29,10 +28,10 @@ public class DynamicTestRunner {
         launcher.registerTestExecutionListeners(listener);
         launcher.execute(request);
 
-        long end = System.currentTimeMillis();
-        log.info("Finished running test class: " + testClass.getName() + " method: " + method.getName() + " in: " + (end-start) + " ms");
-
-        return listener.getSummary();
+        TestExecutionSummary summary = listener.getSummary();
+        log.info("Finished running test class: " + testClass.getName() + " method: "
+                + method.getName() + " in: " + (summary.getTimeFinished()-summary.getTimeStarted()) + " ms");
+        return summary;
     }
 
 //    public static void printSummary(TestExecutionSummary summary) {
