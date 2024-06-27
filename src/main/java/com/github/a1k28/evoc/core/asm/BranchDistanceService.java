@@ -47,6 +47,7 @@ public class BranchDistanceService {
         String testClassname = "com.github.a1k28.test.StackTest";
 
         try {
+            // snap & manipulate
             branchCoverageService.snapClass(classname);
             branchCoverageService.injectConditionalWrapper(classname);
 
@@ -54,7 +55,7 @@ public class BranchDistanceService {
             reloader.addClassToReload(classname, getTargetPath(classname));
             reloader.reloadClasses();
 
-//             run tests
+            // run tests
             Class<?> testClass = Class.forName(testClassname);
             for (Method method : testClass.getDeclaredMethods()) {
                 ASMConditionalWrapper.testId = getMethodSignature(testClass, method);
