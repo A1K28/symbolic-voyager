@@ -16,6 +16,24 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>maven-central</id>
+      <name>Maven central</name>
+      <url>https://repo.maven.apache.org/maven2/</url>
+    </repository>
+<!--    <repository>-->
+<!--      <id>sosy-lab</id>-->
+<!--      <name>SoSy-Lab Repository</name>-->
+<!--      <url>https://packages.sosy-lab.org/repository/maven-releases/</url>-->
+<!--    </repository>-->
+    <repository>
+      <id>itemis-maven-mps</id>
+      <name>itemis Maven MPS Repository</name>
+      <url>https://artifacts.itemis.cloud/repository/maven-mps/</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
     <dependency>
@@ -69,10 +87,26 @@
       <scope>system</scope>
       <systemPath>${project.basedir}/libs/com/github/a1k28/dclagent/dynamic-classloader-agent-1.0-SNAPSHOT.jar</systemPath>
     </dependency>
+    <dependency>
+      <groupId>gov.nasa.jpf</groupId>
+      <artifactId>jpf</artifactId>
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/libs/gov/nasa/jpf/jpf.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>gov.nasa.jpf</groupId>
+      <artifactId>jpf-symbc</artifactId>
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/libs/gov/nasa/jpf/jpf-symbc.jar</systemPath>
+    </dependency>
 <!--    <dependency>-->
-<!--      <groupId>net.bytebuddy</groupId>-->
-<!--      <artifactId>byte-buddy</artifactId>-->
-<!--      <version>1.14.17</version>-->
+<!--      <groupId>com.microsoft.z3</groupId>-->
+<!--      <artifactId>z3</artifactId>-->
+<!--      <version>1.0</version>-->
+<!--      <scope>system</scope>-->
+<!--      <systemPath>${project.basedir}/libs/com/microsoft/z3/com.microsoft.z3.jar</systemPath>-->
 <!--    </dependency>-->
     <!-- https://mvnrepository.com/artifact/org.pitest/pitest-junit5-plugin -->
     <dependency>
@@ -107,6 +141,35 @@
       <artifactId>commons-text</artifactId>
       <version>1.12.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.soot-oss</groupId>
+      <artifactId>soot</artifactId>
+      <version>4.5.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.microsoft.z3/javaAPI -->
+    <!-- https://mvnrepository.com/artifact/com.microsoft.z3/java-jar -->
+    <dependency>
+      <groupId>com.microsoft.z3</groupId>
+      <artifactId>java-jar</artifactId>
+      <version>4.11.2</version>
+    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.sosy-lab</groupId>-->
+<!--      <artifactId>java-smt</artifactId>-->
+<!--      <version>3.14.3</version>-->
+<!--    </dependency>-->
+<!--    <dependency>-->
+<!--      <groupId>org.sosy-lab</groupId>-->
+<!--      <artifactId>javasmt-solver-z3</artifactId>-->
+<!--      <version>4.8.17</version>-->
+<!--    </dependency>-->
+    <!-- https://mvnrepository.com/artifact/org.sosy-lab/javasmt-solver-z3 -->
+    <!-- https://mvnrepository.com/artifact/org.sosy-lab/javasmt-solver-z3 -->
+<!--    <dependency>-->
+<!--      <groupId>org.sosy-lab</groupId>-->
+<!--      <artifactId>javasmt-solver-z3</artifactId>-->
+<!--      <version>4.8.9-sosy1</version>-->
+<!--    </dependency>-->
     <!--    &lt;!&ndash; https://mvnrepository.com/artifact/io.jenetics/jenetics &ndash;&gt;-->
 <!--    <dependency>-->
 <!--      <groupId>io.jenetics</groupId>-->
