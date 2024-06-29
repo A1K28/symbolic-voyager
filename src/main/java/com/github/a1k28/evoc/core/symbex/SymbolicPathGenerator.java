@@ -11,11 +11,13 @@ import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.constant.IntConstant;
+import sootup.core.jimple.common.constant.StringConstant;
 import sootup.core.jimple.common.expr.*;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
@@ -140,10 +142,6 @@ public class SymbolicPathGenerator {
         }
 
         System.out.println("Path is satisfiable");
-
-//        for (SNode node : path)
-//            System.out.println(node);
-
         Model model = solver.getModel();
         for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
             JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
@@ -155,21 +153,33 @@ public class SymbolicPathGenerator {
     }
 
     private static Expr translateCondition(Value condition) {
-        if (condition instanceof JEqExpr eq) {
-            return ctx.mkEq(translateValue(eq.getOp1()), translateValue(eq.getOp2()));
-        } else if (condition instanceof JNeExpr ne) {
-            return ctx.mkNot(ctx.mkEq(translateValue(ne.getOp1()), translateValue(ne.getOp2())));
-        } else if (condition instanceof JGtExpr gt) {
-            return ctx.mkGt(translateValue(gt.getOp1()), translateValue(gt.getOp2()));
-        } else if (condition instanceof JGeExpr ge) {
-            return ctx.mkGe(translateValue(ge.getOp1()), translateValue(ge.getOp2()));
-        } else if (condition instanceof JLtExpr lt) {
-            return ctx.mkLt(translateValue(lt.getOp1()), translateValue(lt.getOp2()));
-        } else if (condition instanceof JLeExpr le) {
-            return ctx.mkLe(translateValue(le.getOp1()), translateValue(le.getOp2()));
+        if (condition instanceof AbstractConditionExpr exp) {
+            Expr e1 = translateValue(exp.getOp1());
+            Expr e2 = translateValue(exp.getOp2());
+            if (e1.isBool() && e2.isInt()) {
+                int val = ((IntNum) e2).getInt();
+                e2 = ctx.mkBool(val == 1);
+            } else if (e1.isInt() && e2.isBool()) {
+                int val = ((IntNum) e1).getInt();
+                e1 = ctx.mkBool(val == 1);
+            }
+            if (condition instanceof JEqExpr) {
+                return ctx.mkEq(e1, e2);
+            } else if (condition instanceof JNeExpr) {
+                return ctx.mkNot(ctx.mkEq(e1, e2));
+            } else if (condition instanceof JGtExpr) {
+                return ctx.mkGt(e1, e2);
+            } else if (condition instanceof JGeExpr) {
+                return ctx.mkGe(e1, e2);
+            } else if (condition instanceof JLtExpr) {
+                return ctx.mkLt(e1, e2);
+            } else if (condition instanceof JLeExpr) {
+                return ctx.mkLe(e1, e2);
+            }
         }
+        throw new RuntimeException("Condition could not be translated: " + condition);
         // Handle other types of conditions
-        return ctx.mkBool(true);
+//        return ctx.mkBool(true);
     }
 
     private static Expr translateValue(Value value) {
@@ -177,6 +187,19 @@ public class SymbolicPathGenerator {
             return ctx.mkInt(((IntConstant) value).getValue());
         } else if (value instanceof Local) {
             return getSymbolicValue(value);
+        } else if (value instanceof AbstractInvokeExpr abstractInvoke) {
+            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
+                if (invoke.getMethodSignature().getSubSignature().getName().equals("equals")) {
+                    Expr arg0 = translateValue(invoke.getArg(0));
+                    Expr base = translateValue(invoke.getBase());
+                    return ctx.mkEq(base, arg0);
+                }
+            }
+            // handle
+        } else if (value instanceof AbstractUnopExpr unop) {
+            // handle
+        } else if (value instanceof AbstractExprVisitor visitor) {
+            // handle
         } else if (value instanceof AbstractBinopExpr) {
             AbstractBinopExpr binop = (AbstractBinopExpr) value;
             Expr left = translateValue(binop.getOp1());
@@ -192,10 +215,11 @@ public class SymbolicPathGenerator {
             } else if (binop instanceof JRemExpr) {
                 return ctx.mkMod(left, right);
             }
-            // Handle other binary operations
+            // handle other binary operations
         }
-        // Handle other types of values
-        return ctx.mkIntConst(value.toString());
+        throw new RuntimeException("Could not resolve type for: " + value);
+//        return ctx.mkConst(value.toString(), ctx.getStringSort());
+//        return ctx.mkIntConst(value.toString());
     }
 
     private static void updateSymbolicVariable(Value variable, Expr expression) {
@@ -204,10 +228,12 @@ public class SymbolicPathGenerator {
 
     private static Expr getSymbolicValue(Value value) {
         if (!symbolicVariables.containsKey(value)) {
-            if (value instanceof IntConstant) {
-                symbolicVariables.put(value, ctx.mkInt(((IntConstant) value).getValue()));
+            if (value instanceof IntConstant v) {
+                symbolicVariables.put(value, ctx.mkInt(v.getValue()));
             } else if (value instanceof Local) {
                 symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
+            } else if (value instanceof StringConstant v) {
+                return ctx.mkString(v.getValue());
             } else {
                 // Handle other types as needed
                 symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
@@ -219,6 +245,6 @@ public class SymbolicPathGenerator {
     public static void main(String[] args) {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        analyzeSymbolicPaths("com.github.a1k28.Stack", "test");
+        analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
     }
 }
