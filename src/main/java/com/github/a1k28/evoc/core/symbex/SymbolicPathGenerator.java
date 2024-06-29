@@ -91,12 +91,6 @@ public class SymbolicPathGenerator {
         solver = ctx.mkSolver();
         symbolicVariables = new HashMap<>();
 
-        // prune
-        if (path.isEmpty()) {
-            System.out.println("Path is unsatisfiable");
-            return;
-        }
-
         for (SNode node : path) {
             Unit unit = node.getUnit();
             if (node.getType() == SType.BRANCH_TRUE
