@@ -43,18 +43,18 @@ public class SymbolicPathGenerator {
         ctx = new Context();
 
         // Find all paths
-        SPath sPath = findAllPaths(cfg);
+        SPath sPath = createFlowDiagram(cfg);
 
 //        sPath.print();
 
         // Analyze each path
         List<SNode> path;
         while (!(path = sPath.getNextPath()).isEmpty()) {
-            analyzePathWithExampleValues(sPath, path);
+            analyzePath(sPath, path);
         }
     }
 
-    private static SPath findAllPaths(UnitGraph cfg) {
+    private static SPath createFlowDiagram(UnitGraph cfg) {
         SPath sPath = new SPath();
         Unit start = cfg.getHeads().get(0);
         dfs(cfg, start, sPath, sPath.getRoot());
@@ -87,7 +87,7 @@ public class SymbolicPathGenerator {
         }
     }
 
-    private static void analyzePathWithExampleValues(SPath sPath, List<SNode> path) {
+    private static void analyzePath(SPath sPath, List<SNode> path) {
         solver = ctx.mkSolver();
         symbolicVariables = new HashMap<>();
 
@@ -118,21 +118,19 @@ public class SymbolicPathGenerator {
 
             if (solver.check() != Status.SATISFIABLE) {
                 node.setSatisfiable(false);
+                System.out.println("Path is unsatisfiable");
+                return;
             }
         }
 
         // Check satisfiability
-        if (solver.check() == Status.SATISFIABLE) {
-            System.out.println("Path is satisfiable");
-            Model model = solver.getModel();
-            for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
-                ParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
-                if (parameterRef != null) {
-                    System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
-                }
+        System.out.println("Path is satisfiable");
+        Model model = solver.getModel();
+        for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
+            ParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
+            if (parameterRef != null) {
+                System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
             }
-        } else {
-            System.out.println("Path is unsatisfiable");
         }
         System.out.println();
     }
@@ -153,20 +151,6 @@ public class SymbolicPathGenerator {
         }
         // Handle other types of conditions
         return ctx.mkBool(true);
-    }
-
-    private static Expr getSymbolicValue(Value value) {
-        if (!symbolicVariables.containsKey(value)) {
-            if (value instanceof IntConstant) {
-                symbolicVariables.put(value, ctx.mkInt(((IntConstant) value).value));
-            } else if (value instanceof Local) {
-                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
-            } else {
-                // Handle other types as needed
-                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
-            }
-        }
-        return symbolicVariables.get(value);
     }
 
     private static Expr translateValue(Value value) {
@@ -193,6 +177,20 @@ public class SymbolicPathGenerator {
         }
         // Handle other types of values
         return ctx.mkIntConst(value.toString());
+    }
+
+    private static Expr getSymbolicValue(Value value) {
+        if (!symbolicVariables.containsKey(value)) {
+            if (value instanceof IntConstant) {
+                symbolicVariables.put(value, ctx.mkInt(((IntConstant) value).value));
+            } else if (value instanceof Local) {
+                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
+            } else {
+                // Handle other types as needed
+                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
+            }
+        }
+        return symbolicVariables.get(value);
     }
 
     public static void main(String[] args) {
