@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.github.a1k28</groupId>
-  <artifactId>evolutionary-copilot-tests</artifactId>
+  <artifactId>evoc</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>evolutionary-copilot-tests</name>
+  <name>evoc</name>
   <url>http://maven.apache.org</url>
 
   <properties>
@@ -86,20 +86,6 @@
       <version>1.0-SNAPSHOT</version>
       <scope>system</scope>
       <systemPath>${project.basedir}/libs/com/github/a1k28/dclagent/dynamic-classloader-agent-1.0-SNAPSHOT.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>gov.nasa.jpf</groupId>
-      <artifactId>jpf</artifactId>
-      <version>1.0</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/gov/nasa/jpf/jpf.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>gov.nasa.jpf</groupId>
-      <artifactId>jpf-symbc</artifactId>
-      <version>1.0</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/gov/nasa/jpf/jpf-symbc.jar</systemPath>
     </dependency>
 <!--    <dependency>-->
 <!--      <groupId>com.microsoft.z3</groupId>-->
