@@ -1,4 +1,4 @@
-package com.github.a1k28.model.ai.claude;
+package com.github.a1k28.evoc.model.ai.claude;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

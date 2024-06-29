@@ -1,15 +1,15 @@
-package com.github.a1k28.core.ai;
+package com.github.a1k28.evoc.core.ai;
 
-import com.github.a1k28.helper.Logger;
-import com.github.a1k28.model.ai.claude.ClaudeRequest;
-import com.github.a1k28.model.ai.claude.ClaudeResponse;
-import com.github.a1k28.model.ai.claude.ClaudeUsage;
-import com.github.a1k28.model.ai.claude.input.ClaudeMessage;
-import com.github.a1k28.model.ai.claude.input.RoleInput;
-import com.github.a1k28.model.ai.claude.input.TextMessage;
-import com.github.a1k28.model.ai.claude.types.ClaudeModel;
-import com.github.a1k28.model.ai.claude.types.ClaudeRole;
-import com.github.a1k28.model.ai.claude.types.ClaudeStopReason;
+import com.github.a1k28.evoc.helper.Logger;
+import com.github.a1k28.evoc.model.ai.claude.ClaudeRequest;
+import com.github.a1k28.evoc.model.ai.claude.ClaudeResponse;
+import com.github.a1k28.evoc.model.ai.claude.ClaudeUsage;
+import com.github.a1k28.evoc.model.ai.claude.input.ClaudeMessage;
+import com.github.a1k28.evoc.model.ai.claude.input.RoleInput;
+import com.github.a1k28.evoc.model.ai.claude.input.TextMessage;
+import com.github.a1k28.evoc.model.ai.claude.types.ClaudeModel;
+import com.github.a1k28.evoc.model.ai.claude.types.ClaudeRole;
+import com.github.a1k28.evoc.model.ai.claude.types.ClaudeStopReason;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -43,10 +43,10 @@ public class ClaudeClient implements AIService {
     }
 
     @Override
-    public String generateTestClass(String prompt) {
+    public String generateTestClass(String prompt, boolean retry) {
         ClaudeRequest request;
         if (previousRequestState == null) request = buildRequest(prompt);
-        else request = buildRequestFromState(prompt);
+        else request = buildRequestFromState(prompt, retry);
         ClaudeResponse response = sendRequest(request);
 
         if (response == null || response.getContent() == null)
@@ -64,10 +64,22 @@ public class ClaudeClient implements AIService {
         return response.getContent().get(0);
     }
 
-    private ClaudeRequest buildRequestFromState(String prompt) {
+    private ClaudeRequest buildRequestFromState(String prompt, boolean retry) {
+        String p;
+        if (retry) {
+            p = "An exception has occurred: " + prompt + ". Fix this issue and regenerate tests.";
+        } else {
+            p = "According the the Java Pitest library, the tests you have generated could not kill the following mutator types: " + prompt + ". Please generate more tests that will kill these mutants.";
+//            p = "The following tests were very useful: " + prompt + ". Generate more test cases that are similar to these ones. Possibly with different parameter permutations.";
+//            if (Math.random() > 0.5) {
+//                p += " Prioritize quality over quantity";
+//            } else {
+//                p += " Prioritize quantity over quality";
+//            }
+        }
         previousRequestState.getInputs().add(RoleInput.builder()
                 .role(ClaudeRole.USER)
-                .message(new TextMessage(prompt))
+                .message(new TextMessage(p))
                 .build());
         return previousRequestState;
     }
@@ -95,7 +107,7 @@ public class ClaudeClient implements AIService {
         return ClaudeRequest.builder()
                 .model(ClaudeModel.SONNET)
                 .max_tokens(4_096)
-                .temperature(0)
+                .temperature(1)
                 .stop_sequence("###")
                 .system("You are an AI assistant, created to help analyze code and generate test cases. Your responses only include tests written in Java 17 with JUnit 5, without any additional description or text.")
                 .inputs(inputs)

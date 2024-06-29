@@ -1,7 +1,7 @@
-package com.github.a1k28.model.ai.claude;
+package com.github.a1k28.evoc.model.ai.claude;
 
-import com.github.a1k28.model.ai.claude.types.ClaudeRole;
-import com.github.a1k28.model.ai.claude.types.ClaudeStopReason;
+import com.github.a1k28.evoc.model.ai.claude.types.ClaudeRole;
+import com.github.a1k28.evoc.model.ai.claude.types.ClaudeStopReason;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
