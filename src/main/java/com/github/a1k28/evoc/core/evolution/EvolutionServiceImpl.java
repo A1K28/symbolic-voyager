@@ -1,7 +1,5 @@
 package com.github.a1k28.evoc.core.evolution;
 
-import com.github.a1k28.evoc.core.ai.AIService;
-import com.github.a1k28.evoc.core.ai.ClaudeClient;
 import com.github.a1k28.evoc.core.mutator.MutationService;
 import com.github.a1k28.evoc.core.mutator.MutationServiceImpl;
 import com.github.a1k28.evoc.helper.JavaASTHelper;
@@ -39,7 +37,6 @@ public class EvolutionServiceImpl implements EvolutionService {
             String sourceCodePath,
             String sourceClass,
             String targetDirectory) throws Exception {
-        AIService aiService = new ClaudeClient();
         String prompt = Files.readString(Path.of(sourceCodePath), StandardCharsets.UTF_8);;
         String previousTests = null;
         String targetTestClass = null;
@@ -48,13 +45,12 @@ public class EvolutionServiceImpl implements EvolutionService {
         boolean retry = false;
         do {
             c++;
-            String tests = aiService.generateTestClass(prompt, retry);
             retry = false;
             if (previousTests != null) {
-                tests = JavaASTHelper.mergeJavaFiles(previousTests, tests);
+//                tests = JavaASTHelper.mergeJavaFiles(previousTests, tests);
             }
             try {
-                targetTestClass = RuntimeCompiler.compile(tests, classpath);
+//                targetTestClass = RuntimeCompiler.compile(tests, classpath);
             } catch (Exception e) {
                 prompt = e.getMessage();
                 log.error("An exception has occurred when compiling: ", e);
@@ -64,8 +60,8 @@ public class EvolutionServiceImpl implements EvolutionService {
             DetectionMatrix detectionMatrix = mutationService
                     .generateMutants(sourceClass, targetTestClass);
             MutationTestInfo mutationTestInfo = calculateTestInfo(detectionMatrix);
-            tests = JavaASTHelper.keepWhitelistedTestsOnly(tests, mutationTestInfo.getTestsToKeep());
-            previousTests = tests;
+//            tests = JavaASTHelper.keepWhitelistedTestsOnly(tests, mutationTestInfo.getTestsToKeep());
+//            previousTests = tests;
             score = mutationTestInfo.getScore();
             prompt = getPrompt(mutationTestInfo.getSurvivingMutants());
             log.info("Next generation will be created based on the following mutators: " + prompt);
