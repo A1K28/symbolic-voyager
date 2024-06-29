@@ -66,7 +66,7 @@ public class SymbolicPathGenerator {
         // Find all paths
         SPath sPath = createFlowDiagram(cfg);
 
-//        sPath.print();
+        sPath.print();
 
         // Analyze each path
         List<SNode> path;
