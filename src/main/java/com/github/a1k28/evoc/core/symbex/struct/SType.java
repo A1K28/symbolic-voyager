@@ -7,5 +7,13 @@ public enum SType {
     BRANCH_FALSE,
     ASSIGNMENT,
     PARAMETER,
+    INVOKE,
+    SWITCH,
+    THROW,
+    GOTO,
+    RETURN,
+    RETURN_VOID,
+    NOP,
+    BREAKPOINT,
     OTHER
 }

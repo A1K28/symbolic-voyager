@@ -3,7 +3,7 @@ package com.github.a1k28.evoc.core.symbex.struct;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import soot.Unit;
+import sootup.core.jimple.common.stmt.Stmt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @ToString
 public class SNode {
-    private final Unit unit;
+    private final Stmt unit;
     private SType type;
     private boolean isSatisfiable = true;
 
@@ -27,7 +27,7 @@ public class SNode {
         this.type = SType.ROOT;
     }
 
-    public SNode(Unit unit, SType sType) {
+    public SNode(Stmt unit, SType sType) {
         this.unit = unit;
         this.type = sType;
         this.children = new ArrayList<>();
@@ -38,7 +38,7 @@ public class SNode {
         child.setParent(this);
     }
 
-    public boolean containsParent(Unit unit) {
+    public boolean containsParent(Stmt unit) {
         if (this.unit == null) return false;
         if (this.parent == null) return this.unit.equals(unit);
         return this.parent.containsParent(unit);

@@ -143,8 +143,13 @@
     </dependency>
     <dependency>
       <groupId>org.soot-oss</groupId>
-      <artifactId>soot</artifactId>
-      <version>4.5.0</version>
+      <artifactId>sootup.core</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.soot-oss</groupId>
+      <artifactId>sootup.java.bytecode</artifactId>
+      <version>1.1.2</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.microsoft.z3/javaAPI -->
     <!-- https://mvnrepository.com/artifact/com.microsoft.z3/java-jar -->
