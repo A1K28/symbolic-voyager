@@ -47,7 +47,7 @@ public class MutationServiceImpl implements MutationService {
         final TestGroupConfig testGroupConfig = new TestGroupConfig();
 
         final String tempDir = System.getProperty("java.io.tmpdir")
-                + "evolutionary-copilot-tests-cache";
+                + "evolutionary-tests-cache";
         log.info("temp directory: " + tempDir);
 
         reportOptions.setReportDir(tempDir);
