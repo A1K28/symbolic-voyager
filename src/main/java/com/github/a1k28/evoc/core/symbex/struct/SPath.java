@@ -4,9 +4,7 @@ import lombok.Getter;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
-import sootup.core.jimple.javabytecode.stmt.JBreakpointStmt;
-import sootup.core.jimple.javabytecode.stmt.JRetStmt;
-import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
+import sootup.core.jimple.javabytecode.stmt.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,6 +75,8 @@ public class SPath {
         if (clazz == JInvokeStmt.class) return SType.INVOKE;
         if (clazz == JSwitchStmt.class) return SType.SWITCH;
         if (clazz == JThrowStmt.class) return SType.THROW;
+        if (clazz == JEnterMonitorStmt.class) return SType.ENTER_MONITOR;
+        if (clazz == JExitMonitorStmt.class) return SType.EXIT_MONITOR;
         if (clazz == JReturnVoidStmt.class) return SType.RETURN_VOID;
         if (clazz == JNopStmt.class) return SType.NOP;
         if (clazz == JBreakpointStmt.class) return SType.BREAKPOINT;
@@ -86,7 +86,9 @@ public class SPath {
                 this.nameToParamIdx.put(u.getLeftOp().toString(), v);
                 return SType.PARAMETER;
             }
+            return SType.IDENTITY;
         }
+        System.out.println("Could not identify: " + unit);
         return SType.OTHER;
     }
 }
