@@ -333,8 +333,6 @@ public class SymbolicPathGenerator {
             // Getter methods typically return a non-null value
             if (returnSort instanceof SeqSort || returnSort.toString().equals("Object")) {
                 solver.add(ctx.mkNot(ctx.mkEq(result, mkNull(returnSort))));
-                solver.push();
-                throw new RuntimeException("ASD");
             }
         }
 
