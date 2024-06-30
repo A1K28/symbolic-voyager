@@ -29,6 +29,9 @@ import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.language.JavaLanguage;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +40,13 @@ public class SymbolicPathGenerator {
     private static Context ctx;
     private static Map<Value, Expr> symbolicVariables;
 
-    public static void analyzeSymbolicPaths(String className, String methodName) {
+    public static void analyzeSymbolicPaths(String className, String methodName) throws ClassNotFoundException {
+        int javaVersion = getJavaVersion(Class.forName(className));
+
         AnalysisInputLocation<JavaSootClass> inputLocation =
                 new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
 
-        JavaLanguage language = new JavaLanguage(17);
+        JavaLanguage language = new JavaLanguage(javaVersion);
 
         Project project = JavaProject.builder(language)
                 .addInputLocation(inputLocation).build();
@@ -242,7 +247,46 @@ public class SymbolicPathGenerator {
         return symbolicVariables.get(value);
     }
 
-    public static void main(String[] args) {
+    public static int getJavaVersion(Class<?> clazz) {
+        try (InputStream is = clazz.getClassLoader().getResourceAsStream(
+                clazz.getName().replace('.', '/') + ".class");
+             DataInputStream dis = new DataInputStream(is)) {
+
+            if (is == null) {
+                throw new RuntimeException("Class file not found");
+            }
+
+            dis.readInt(); // Skip magic number
+            int minorVersion = dis.readUnsignedShort();
+            int majorVersion = dis.readUnsignedShort();
+
+            return mapVersionToJava(majorVersion, minorVersion);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading class file", e);
+        }
+    }
+
+    private static int mapVersionToJava(int major, int minor) {
+        return switch (major) {
+            case 52 -> 8;
+            case 53 -> 9;
+            case 54 -> 10;
+            case 55 -> 11;
+            case 56 -> 12;
+            case 57 -> 13;
+            case 58 -> 14;
+            case 59 -> 15;
+            case 60 -> 16;
+            case 61 -> 17;
+            case 62 -> 18;
+            case 63 -> 19;
+            case 64 -> 20;
+            case 65 -> 21;
+            default -> throw new RuntimeException("Unknown (major version: " + major + ", minor version: " + minor + ")");
+        };
+    }
+
+    public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
         analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
