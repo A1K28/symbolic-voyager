@@ -29,42 +29,6 @@ public class SPath {
         this.root.print(1);
     }
 
-    // returns an empty path if unsatisfiable (pruning)
-    public List<SNode> getNextPath() {
-        if (root.isVisited()) return null;
-        List<SNode> path = new ArrayList<>();
-        getNextPathHelper(root, path);
-        return path;
-    }
-
-    private void getNextPathHelper(SNode current, List<SNode> list) {
-        if (!current.isSatisfiable()) {
-            list.clear();
-            current.setVisited(true);
-            return;
-        }
-
-        if (current.isVisited()) return;
-
-        if (current.getType() != SType.ROOT)
-            list.add(current);
-
-        if (current.getChildren().isEmpty())
-            current.setVisited(true);
-
-        for (SNode ch : current.getChildren()) {
-            if (ch.isVisited()) continue;
-            getNextPathHelper(ch, list);
-            break;
-        }
-
-        boolean allChildrenVisited = true;
-        for (SNode ch : current.getChildren())
-            allChildrenVisited = allChildrenVisited && ch.isVisited();
-        if (allChildrenVisited)
-            current.setVisited(true);
-    }
-
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;

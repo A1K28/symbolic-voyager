@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbex;
 
+import com.github.a1k28.Stack;
 import com.github.a1k28.evoc.core.symbex.struct.SNode;
 import com.github.a1k28.evoc.core.symbex.struct.SPath;
 import com.github.a1k28.evoc.core.symbex.struct.SType;
@@ -21,7 +22,7 @@ import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
-import sootup.core.types.ClassType;
+import sootup.core.types.*;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.core.JavaProject;
@@ -32,15 +33,28 @@ import sootup.java.core.language.JavaLanguage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 public class SymbolicPathGenerator {
-    private static Context ctx;
-    private static Map<Value, Expr> symbolicVariables;
+    private Solver solver;
+    private Context ctx;
+    private Map<Value, Expr> symbolicVariables;
+    private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
 
-    public static void analyzeSymbolicPaths(String className, String methodName) throws ClassNotFoundException {
+    public SymbolicPathGenerator() {
+        methodModels = new HashMap<>();
+        // Register known method models
+        methodModels.put("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
+                ctx.mkEq(args.get(0), args.get(1)));
+        methodModels.put("<java.lang.String: int length()>", (invoke, args) ->
+                ctx.mkLength(args.get(0)));
+    }
+
+    public void analyzeSymbolicPaths(String className, String methodName) throws ClassNotFoundException {
         int javaVersion = getJavaVersion(Class.forName(className));
 
         AnalysisInputLocation<JavaSootClass> inputLocation =
@@ -75,12 +89,16 @@ public class SymbolicPathGenerator {
 
         sPath.print();
 
-        // Analyze each path
-        List<SNode> path;
-        while ((path = sPath.getNextPath()) != null) {
-            if (path.isEmpty()) continue;
-            analyzePath(sPath, path);
-        }
+        solver = ctx.mkSolver();
+        symbolicVariables = new HashMap<>();
+        analyzePaths(sPath, sPath.getRoot(), 1);
+
+//        // Analyze each path
+//        List<SNode> path;
+//        while ((path = sPath.getNextPath()) != null) {
+//            if (path.isEmpty()) continue;
+//            analyzePath(sPath, path);
+//        }
     }
 
     private static SPath createFlowDiagram(StmtGraph<?> cfg) {
@@ -116,11 +134,13 @@ public class SymbolicPathGenerator {
         }
     }
 
-    private static void analyzePath(SPath sPath, List<SNode> path) {
-        Solver solver = ctx.mkSolver();
-        symbolicVariables = new HashMap<>();
+    private java.util.Stack<Integer> stack = new java.util.Stack<>();
 
-        for (SNode node : path) {
+    private void analyzePaths(SPath sPath, SNode node, int level) {
+        solver.push();
+        stack.push(level);
+
+        if (node.getType() != SType.ROOT) {
             Stmt unit = node.getUnit();
             if (node.getType() == SType.BRANCH_TRUE
                     || node.getType() == SType.BRANCH_FALSE) {
@@ -136,28 +156,81 @@ public class SymbolicPathGenerator {
                 Expr rightExpr = translateValue(rightOp);
                 updateSymbolicVariable(leftOp, rightExpr);
             }
-            // Handle other types of statements as needed
+        }
 
-            // Check satisfiability
-            if (solver.check() != Status.SATISFIABLE) {
-                node.setSatisfiable(false);
-                System.out.println("Path is unsatisfiable");
-                return;
+        // check satisfiability
+        if (solver.check() != Status.SATISFIABLE) {
+            System.out.println("Path is unsatisfiable");
+        } else {
+            if (!node.getChildren().isEmpty()) {
+                for (SNode child : node.getChildren())
+                    analyzePaths(sPath, child, level + 1);
+            } else {
+                System.out.println("Path is satisfiable");
+                Model model = solver.getModel();
+                for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
+                    JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
+                    if (parameterRef != null) {
+                        System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
+                    }
+                }
+                System.out.println();
             }
         }
 
-        System.out.println("Path is satisfiable");
-        Model model = solver.getModel();
-        for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
-            JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
-            if (parameterRef != null) {
-                System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
-            }
-        }
-        System.out.println();
+        stack.pop();
+        solver.pop();
     }
 
-    private static Expr translateCondition(Value condition) {
+    private void clearSolver(int level) {
+        while(!stack.isEmpty() && stack.peek() >= level) {
+            stack.pop();
+            solver.pop();
+        }
+    }
+
+//    private void analyzePath(SPath sPath, List<SNode> path) {
+//        solver = ctx.mkSolver();
+//        symbolicVariables = new HashMap<>();
+//
+//        for (SNode node : path) {
+//            Stmt unit = node.getUnit();
+//            if (node.getType() == SType.BRANCH_TRUE
+//                    || node.getType() == SType.BRANCH_FALSE) {
+//                JIfStmt ifStmt = (JIfStmt) unit;
+//                Value condition = ifStmt.getCondition();
+//                Expr z3Condition = translateCondition(condition);
+//                solver.add(ctx.mkEq(z3Condition, ctx.mkBool(
+//                        node.getType() == SType.BRANCH_TRUE)));
+//            } else if (node.getType() == SType.ASSIGNMENT) {
+//                JAssignStmt assignStmt = (JAssignStmt) unit;
+//                Value leftOp = assignStmt.getLeftOp();
+//                Value rightOp = assignStmt.getRightOp();
+//                Expr rightExpr = translateValue(rightOp);
+//                updateSymbolicVariable(leftOp, rightExpr);
+//            }
+//            // Handle other types of statements as needed
+//
+//            // Check satisfiability
+//            if (solver.check() != Status.SATISFIABLE) {
+//                node.setSatisfiable(false);
+//                System.out.println("Path is unsatisfiable");
+//                return;
+//            }
+//        }
+//
+//        System.out.println("Path is satisfiable");
+//        Model model = solver.getModel();
+//        for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
+//            JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
+//            if (parameterRef != null) {
+//                System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
+//            }
+//        }
+//        System.out.println();
+//    }
+
+    private Expr translateCondition(Value condition) {
         if (condition instanceof AbstractConditionExpr exp) {
             Expr e1 = translateValue(exp.getOp1());
             Expr e2 = translateValue(exp.getOp2());
@@ -187,19 +260,20 @@ public class SymbolicPathGenerator {
 //        return ctx.mkBool(true);
     }
 
-    private static Expr translateValue(Value value) {
+    private Expr translateValue(Value value) {
         if (value instanceof IntConstant) {
             return ctx.mkInt(((IntConstant) value).getValue());
         } else if (value instanceof Local) {
             return getSymbolicValue(value);
         } else if (value instanceof AbstractInvokeExpr abstractInvoke) {
-            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
-                if (invoke.getMethodSignature().getSubSignature().getName().equals("equals")) {
-                    Expr arg0 = translateValue(invoke.getArg(0));
-                    Expr base = translateValue(invoke.getBase());
-                    return ctx.mkEq(base, arg0);
-                }
-            }
+            return handleMethodCall(abstractInvoke);
+//            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
+//                if (invoke.getMethodSignature().getSubSignature().getName().equals("equals")) {
+//                    Expr arg0 = translateValue(invoke.getArg(0));
+//                    Expr base = translateValue(invoke.getBase());
+//                    return ctx.mkEq(base, arg0);
+//                }
+//            }
             // handle
         } else if (value instanceof AbstractUnopExpr unop) {
             // handle
@@ -227,11 +301,70 @@ public class SymbolicPathGenerator {
 //        return ctx.mkIntConst(value.toString());
     }
 
-    private static void updateSymbolicVariable(Value variable, Expr expression) {
-        symbolicVariables.put(variable, expression);
+    private Expr handleMethodCall(AbstractInvokeExpr invoke) {
+//        SootMethod method = invoke.getMethod();
+        String methodSignature = invoke.getMethodSignature().toString();
+
+        List<Expr> args = new ArrayList<>();
+        if (invoke instanceof AbstractInstanceInvokeExpr i) {
+            args.add(translateValue(i.getBase()));
+        }
+        for (Value arg : invoke.getArgs()) {
+            args.add(translateValue(arg));
+        }
+
+        BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
+        if (methodModel != null && false) {
+            return methodModel.apply(invoke, args);
+        } else {
+            // Default behavior for unknown methods
+            return handleUnknownMethod(invoke, args);
+        }
     }
 
-    private static Expr getSymbolicValue(Value value) {
+    private Expr handleUnknownMethod(AbstractInvokeExpr invoke, List<Expr> args) {
+        // strategy 1: create a fresh symbolic variable
+        Sort returnSort = translateType(invoke.getType());
+        String freshVarName = "result_" + invoke.getMethodSignature().getSubSignature().getName() + "_" + System.identityHashCode(invoke);
+        Expr result = ctx.mkConst(freshVarName, returnSort);
+
+        // strategy 2: add constraints based on method properties
+        if (invoke.getMethodSignature().getSubSignature().getName().startsWith("get")) {
+            // Getter methods typically return a non-null value
+            if (returnSort instanceof SeqSort || returnSort.toString().equals("Object")) {
+                solver.add(ctx.mkNot(ctx.mkEq(result, mkNull(returnSort))));
+                solver.push();
+                throw new RuntimeException("ASD");
+            }
+        }
+
+        return result;
+    }
+
+    private Sort translateType(Type type) {
+        if (type instanceof PrimitiveType.BooleanType) {
+            return ctx.getBoolSort();
+        } else if (type instanceof PrimitiveType.IntType) {
+            return ctx.getIntSort();
+        } else if (type instanceof ReferenceType t) {
+            if (t.getClass().getName().equals("java.lang.String")) {
+                return ctx.getStringSort();
+            }
+            // For other reference types, use an uninterpreted sort
+            return ctx.mkUninterpretedSort("Object");
+        } else if (type instanceof ArrayType) {
+            // Represent arrays as Z3 arrays
+            Sort elementSort = translateType(((ArrayType) type).getElementType());
+            return ctx.mkArraySort(ctx.getIntSort(), elementSort);
+        } else if (type instanceof VoidType) {
+            // For void types, you might want to use a special sort or handle differently
+            return ctx.mkUninterpretedSort("Void");
+        }
+        // For any other types, use an uninterpreted sort
+        return ctx.mkUninterpretedSort(type.toString());
+    }
+
+    private Expr getSymbolicValue(Value value) {
         if (!symbolicVariables.containsKey(value)) {
             if (value instanceof IntConstant v) {
                 symbolicVariables.put(value, ctx.mkInt(v.getValue()));
@@ -245,6 +378,14 @@ public class SymbolicPathGenerator {
             }
         }
         return symbolicVariables.get(value);
+    }
+
+    private Expr mkNull(Sort sort) {
+        return ctx.mkConst("null_" + sort.toString(), sort);
+    }
+
+    private void updateSymbolicVariable(Value variable, Expr expression) {
+        symbolicVariables.put(variable, expression);
     }
 
     public static int getJavaVersion(Class<?> clazz) {
@@ -289,6 +430,6 @@ public class SymbolicPathGenerator {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
+        new SymbolicPathGenerator().analyzeSymbolicPaths("com.github.a1k28.Stack", "test");
     }
 }

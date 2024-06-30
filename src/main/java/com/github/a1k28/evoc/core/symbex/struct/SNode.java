@@ -14,12 +14,8 @@ import java.util.List;
 public class SNode {
     private final Stmt unit;
     private SType type;
-    private boolean isSatisfiable = true;
-
     private SNode parent;
     private final List<SNode> children;
-
-    private boolean visited;
 
     public SNode() {
         this.unit = null;
@@ -40,18 +36,15 @@ public class SNode {
 
     public boolean containsParent(Stmt unit) {
         if (this.unit == null) return false;
-        if (this.parent == null) return this.unit.equals(unit);
-        return this.parent.containsParent(unit);
+        if (this.unit.equals(unit)) return true;
+        if (this.parent != null) return this.parent.containsParent(unit);
+        return false;
     }
 
     public void print(int level) {
-        for (int i = 1; i < level; i++) {
-            System.out.print("\t");
-        }
+        for (int i = 1; i < level; i++) System.out.print("\t");
         System.out.println(this);
-        for (SNode child : getChildren()) {
-            child.print(level + 1);
-        }
+        for (SNode child : getChildren()) child.print(level + 1);
     }
 
     @Override
