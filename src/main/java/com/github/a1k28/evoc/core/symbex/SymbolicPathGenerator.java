@@ -92,13 +92,6 @@ public class SymbolicPathGenerator {
         solver = ctx.mkSolver();
         symbolicVariables = new HashMap<>();
         analyzePaths(sPath, sPath.getRoot(), 1);
-
-//        // Analyze each path
-//        List<SNode> path;
-//        while ((path = sPath.getNextPath()) != null) {
-//            if (path.isEmpty()) continue;
-//            analyzePath(sPath, path);
-//        }
     }
 
     private static SPath createFlowDiagram(StmtGraph<?> cfg) {
@@ -134,12 +127,10 @@ public class SymbolicPathGenerator {
         }
     }
 
-    private java.util.Stack<Integer> stack = new java.util.Stack<>();
-
     private void analyzePaths(SPath sPath, SNode node, int level) {
         solver.push();
-        stack.push(level);
 
+        // handle node types
         if (node.getType() != SType.ROOT) {
             Stmt unit = node.getUnit();
             if (node.getType() == SType.BRANCH_TRUE
@@ -162,10 +153,12 @@ public class SymbolicPathGenerator {
         if (solver.check() != Status.SATISFIABLE) {
             System.out.println("Path is unsatisfiable");
         } else {
+            // recurse for children
             if (!node.getChildren().isEmpty()) {
                 for (SNode child : node.getChildren())
                     analyzePaths(sPath, child, level + 1);
             } else {
+                // if tail
                 System.out.println("Path is satisfiable");
                 Model model = solver.getModel();
                 for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
@@ -178,57 +171,8 @@ public class SymbolicPathGenerator {
             }
         }
 
-        stack.pop();
         solver.pop();
     }
-
-    private void clearSolver(int level) {
-        while(!stack.isEmpty() && stack.peek() >= level) {
-            stack.pop();
-            solver.pop();
-        }
-    }
-
-//    private void analyzePath(SPath sPath, List<SNode> path) {
-//        solver = ctx.mkSolver();
-//        symbolicVariables = new HashMap<>();
-//
-//        for (SNode node : path) {
-//            Stmt unit = node.getUnit();
-//            if (node.getType() == SType.BRANCH_TRUE
-//                    || node.getType() == SType.BRANCH_FALSE) {
-//                JIfStmt ifStmt = (JIfStmt) unit;
-//                Value condition = ifStmt.getCondition();
-//                Expr z3Condition = translateCondition(condition);
-//                solver.add(ctx.mkEq(z3Condition, ctx.mkBool(
-//                        node.getType() == SType.BRANCH_TRUE)));
-//            } else if (node.getType() == SType.ASSIGNMENT) {
-//                JAssignStmt assignStmt = (JAssignStmt) unit;
-//                Value leftOp = assignStmt.getLeftOp();
-//                Value rightOp = assignStmt.getRightOp();
-//                Expr rightExpr = translateValue(rightOp);
-//                updateSymbolicVariable(leftOp, rightExpr);
-//            }
-//            // Handle other types of statements as needed
-//
-//            // Check satisfiability
-//            if (solver.check() != Status.SATISFIABLE) {
-//                node.setSatisfiable(false);
-//                System.out.println("Path is unsatisfiable");
-//                return;
-//            }
-//        }
-//
-//        System.out.println("Path is satisfiable");
-//        Model model = solver.getModel();
-//        for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
-//            JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
-//            if (parameterRef != null) {
-//                System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
-//            }
-//        }
-//        System.out.println();
-//    }
 
     private Expr translateCondition(Value condition) {
         if (condition instanceof AbstractConditionExpr exp) {
