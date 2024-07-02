@@ -237,42 +237,86 @@ public class SymbolicPathGenerator {
             return ctx.mkString(v.getValue());
         } else if (value instanceof AbstractInvokeExpr abstractInvoke) {
             return handleMethodCall(abstractInvoke);
-//            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
-//                if (invoke.getMethodSignature().getSubSignature().getName().equals("equals")) {
-//                    Expr arg0 = translateValue(invoke.getArg(0));
-//                    Expr base = translateValue(invoke.getBase());
-//                    return ctx.mkEq(base, arg0);
-//                }
-//            }
-            // handle
         } else if (value instanceof AbstractUnopExpr unop) {
-            // handle
+            if (value instanceof JLengthExpr)
+                return ctx.mkLength(translateValue(value));
+            if (unop instanceof JNegExpr)
+                return ctx.mkNot(translateValue(value));
         } else if (value instanceof AbstractExprVisitor visitor) {
             // handle
         } else if (value instanceof AbstractBinopExpr binop) {
             AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2());
             Expr left = holder.getLeft();
             Expr right = holder.getRight();
-            if (binop instanceof JAddExpr) {
+            if (binop instanceof JAddExpr)
                 return ctx.mkAdd(left, right);
-            } else if (binop instanceof JSubExpr) {
+            if (binop instanceof JSubExpr)
                 return ctx.mkSub(left, right);
-            } else if (binop instanceof JMulExpr) {
+            if (binop instanceof JMulExpr)
                 return ctx.mkMul(left, right);
-            } else if (binop instanceof JDivExpr) {
+            if (binop instanceof JDivExpr)
                 return ctx.mkDiv(left, right);
-            } else if (binop instanceof JRemExpr) {
+            if (binop instanceof JRemExpr)
                 return ctx.mkMod(left, right);
-            }
+            if (binop instanceof JAndExpr)
+                return ctx.mkAnd(left, right);
+            if (binop instanceof JOrExpr)
+                return ctx.mkOr(left, right);
+            if (binop instanceof JShlExpr)
+                throw new RuntimeException("Invalid binop encountered: JShlExpr (shift left)");
+            if (binop instanceof JShrExpr)
+                throw new RuntimeException("Invalid binop encountered: JShrExpr (shift right)");
+            if (binop instanceof JUshrExpr)
+                throw new RuntimeException("Invalid binop encountered: JUshrExpr (unsigned shift right)");
+//            if (binop instanceof JVirtualInvokeExpr)
+//                return ctx.mkMod(left, right);
+            if (binop instanceof JXorExpr)
+                return ctx.mkXor(left, right);
+            if (binop instanceof JCmpExpr
+                    || binop instanceof JCmpgExpr
+                    || binop instanceof JCmplExpr
+                    || binop instanceof JEqExpr
+                    || binop instanceof JGeExpr
+                    || binop instanceof JGtExpr
+                    || binop instanceof JLeExpr
+                    || binop instanceof JLtExpr
+                    || binop instanceof JNeExpr)
+                return translateConditionValue(binop, left, right);
             // handle other binary operations
         }
+//        else if (value instanceof JCastExpr)
+//            return ctx.mkMod(left, right);
+//        else if (value instanceof JInstanceOfExpr)
+//            return ctx.mkMod(left, right);
+//        else if (value instanceof JNewArrayExpr)
+//            return ctx.mkMod(left, right);
+//        else if (value instanceof JNewExpr)
+//            return ctx.mkMod(left, right);
+//        else if (value instanceof JNewMultiArrayExpr)
+//            return ctx.mkMod(left, right);
+//        else if (value instanceof JPhiExpr)
+//            return ctx.mkMod(left, right);
+
         throw new RuntimeException("Could not resolve type for: " + value);
-//        return ctx.mkConst(value.toString(), ctx.getStringSort());
-//        return ctx.mkIntConst(value.toString());
+    }
+
+    private Expr translateConditionValue(AbstractBinopExpr binop, Expr e1, Expr e2) {
+        if (binop instanceof JEqExpr)
+            return ctx.mkEq(e1, e2);
+        if (binop instanceof JNeExpr)
+            return ctx.mkNot(ctx.mkEq(e1, e2));
+        if (binop instanceof JGtExpr)
+            return ctx.mkGt(e1, e2);
+        if (binop instanceof JCmpgExpr || binop instanceof JGeExpr)
+            return ctx.mkGe(e1, e2);
+        if (binop instanceof JLtExpr)
+            return ctx.mkLt(e1, e2);
+        if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
+            return ctx.mkLe(e1, e2);
+        throw new RuntimeException("Condition could not be translated: " + binop);
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke) {
-//        SootMethod method = invoke.getMethod();
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Expr> args = new ArrayList<>();
@@ -287,7 +331,6 @@ public class SymbolicPathGenerator {
         if (methodModel != null) {
             return methodModel.apply(invoke, args);
         } else {
-            // Default behavior for unknown methods
             return handleUnknownMethod(invoke, args);
         }
     }
