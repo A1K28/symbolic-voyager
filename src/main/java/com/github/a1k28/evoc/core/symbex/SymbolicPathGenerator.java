@@ -1,9 +1,9 @@
 package com.github.a1k28.evoc.core.symbex;
 
-import com.github.a1k28.Stack;
 import com.github.a1k28.evoc.core.symbex.struct.SNode;
 import com.github.a1k28.evoc.core.symbex.struct.SPath;
 import com.github.a1k28.evoc.core.symbex.struct.SType;
+import com.github.a1k28.evoc.model.symbex.AssignmentExprHolder;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.Project;
@@ -11,8 +11,7 @@ import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
-import sootup.core.jimple.common.constant.IntConstant;
-import sootup.core.jimple.common.constant.StringConstant;
+import sootup.core.jimple.common.constant.*;
 import sootup.core.jimple.common.expr.*;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.JAssignStmt;
@@ -144,14 +143,18 @@ public class SymbolicPathGenerator {
                 JAssignStmt assignStmt = (JAssignStmt) unit;
                 Value leftOp = assignStmt.getLeftOp();
                 Value rightOp = assignStmt.getRightOp();
-                Expr rightExpr = translateValue(rightOp);
-                updateSymbolicVariable(leftOp, rightExpr);
+                AssignmentExprHolder holder = translateValues(leftOp, rightOp);
+//                Expr leftExpr = translateValue(leftOp);
+//                Expr rightExpr = translateValue(rightOp);
+//                solver.add(ctx.mkEq(holder.getLeft(), holder.getRight()));
+                updateSymbolicVariable(leftOp, holder.getRight());
             }
         }
 
         // check satisfiability
         if (solver.check() != Status.SATISFIABLE) {
             System.out.println("Path is unsatisfiable");
+            System.out.println();
         } else {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
@@ -161,8 +164,9 @@ public class SymbolicPathGenerator {
                 // if tail
                 System.out.println("Path is satisfiable");
                 Model model = solver.getModel();
+
                 for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
-                    JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getValue().toString(), null);
+                    JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getKey().toString(), null);
                     if (parameterRef != null) {
                         System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
                     }
@@ -176,8 +180,9 @@ public class SymbolicPathGenerator {
 
     private Expr translateCondition(Value condition) {
         if (condition instanceof AbstractConditionExpr exp) {
-            Expr e1 = translateValue(exp.getOp1());
-            Expr e2 = translateValue(exp.getOp2());
+            AssignmentExprHolder holder = translateValues(exp.getOp1(), exp.getOp2());
+            Expr e1 = holder.getLeft();
+            Expr e2 = holder.getRight();
             if (e1.isBool() && e2.isInt()) {
                 int val = ((IntNum) e2).getInt();
                 e2 = ctx.mkBool(val == 1);
@@ -204,11 +209,32 @@ public class SymbolicPathGenerator {
 //        return ctx.mkBool(true);
     }
 
+    private AssignmentExprHolder translateValues(Value value1, Value value2) {
+        Expr left;
+        if (value1 instanceof Local) {
+            left = getSymbolicValue(value1, value2.getType());
+        } else {
+            left = translateValue(value1);
+        }
+        Expr right = translateValue(value2);
+        return new AssignmentExprHolder(left, right);
+    }
+
     private Expr translateValue(Value value) {
-        if (value instanceof IntConstant) {
-            return ctx.mkInt(((IntConstant) value).getValue());
-        } else if (value instanceof Local) {
+        if (value instanceof Local) {
             return getSymbolicValue(value);
+        } else if (value instanceof IntConstant v) {
+            return ctx.mkInt(v.getValue());
+        } else if (value instanceof BooleanConstant v) {
+            return ctx.mkBool(v.toString().equals("1"));
+        } else if (value instanceof DoubleConstant v) {
+            return ctx.mkFP(v.getValue(), ctx.mkFPSort64());
+        } else if (value instanceof FloatConstant v) {
+            return ctx.mkFP(v.getValue(), ctx.mkFPSort64());
+        } else if (value instanceof LongConstant v) {
+            return ctx.mkInt(v.getValue());
+        } else if (value instanceof StringConstant v) {
+            return ctx.mkString(v.getValue());
         } else if (value instanceof AbstractInvokeExpr abstractInvoke) {
             return handleMethodCall(abstractInvoke);
 //            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
@@ -223,10 +249,10 @@ public class SymbolicPathGenerator {
             // handle
         } else if (value instanceof AbstractExprVisitor visitor) {
             // handle
-        } else if (value instanceof AbstractBinopExpr) {
-            AbstractBinopExpr binop = (AbstractBinopExpr) value;
-            Expr left = translateValue(binop.getOp1());
-            Expr right = translateValue(binop.getOp2());
+        } else if (value instanceof AbstractBinopExpr binop) {
+            AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2());
+            Expr left = holder.getLeft();
+            Expr right = holder.getRight();
             if (binop instanceof JAddExpr) {
                 return ctx.mkAdd(left, right);
             } else if (binop instanceof JSubExpr) {
@@ -258,7 +284,7 @@ public class SymbolicPathGenerator {
         }
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
-        if (methodModel != null && false) {
+        if (methodModel != null) {
             return methodModel.apply(invoke, args);
         } else {
             // Default behavior for unknown methods
@@ -283,43 +309,56 @@ public class SymbolicPathGenerator {
         return result;
     }
 
+    private Expr getSymbolicValue(Value value) {
+        return getSymbolicValue(value, null);
+    }
+
+    private Expr getSymbolicValue(Value value, Type type) {
+        if (!symbolicVariables.containsKey(value)) {
+            symbolicVariables.put(value, mkExpr(value, type));
+        }
+        return symbolicVariables.get(value);
+    }
+
+    private Expr mkExpr(Value value, Type type) {
+        if (type == null) type = value.getType();
+        Sort sort = translateType(type);
+        return ctx.mkConst(value.toString(), sort);
+    }
+
     private Sort translateType(Type type) {
-        if (type instanceof PrimitiveType.BooleanType) {
+        if (type instanceof PrimitiveType.BooleanType)
             return ctx.getBoolSort();
-        } else if (type instanceof PrimitiveType.IntType) {
+        if (type instanceof PrimitiveType.ByteType)
             return ctx.getIntSort();
-        } else if (type instanceof ReferenceType t) {
-            if (t.getClass().getName().equals("java.lang.String")) {
+        if (type instanceof PrimitiveType.ShortType)
+            return ctx.getIntSort();
+        if (type instanceof PrimitiveType.CharType)
+            return ctx.mkCharSort();
+        if (type instanceof PrimitiveType.IntType)
+            return ctx.getIntSort();
+        if (type instanceof PrimitiveType.LongType)
+            return ctx.mkIntSort();
+        if (type instanceof PrimitiveType.FloatType)
+            return ctx.mkFPSort32();
+        if (type instanceof PrimitiveType.DoubleType)
+            return ctx.mkFPSort64();
+        if (type instanceof ArrayType) {
+            Sort elementSort = translateType(((ArrayType) type).getElementType());
+            return ctx.mkArraySort(ctx.getIntSort(), elementSort);
+        }
+        if (type instanceof ReferenceType) {
+            if (type.toString().equals(String.class.getName())) {
                 return ctx.getStringSort();
             }
             // For other reference types, use an uninterpreted sort
             return ctx.mkUninterpretedSort("Object");
-        } else if (type instanceof ArrayType) {
-            // Represent arrays as Z3 arrays
-            Sort elementSort = translateType(((ArrayType) type).getElementType());
-            return ctx.mkArraySort(ctx.getIntSort(), elementSort);
-        } else if (type instanceof VoidType) {
-            // For void types, you might want to use a special sort or handle differently
-            return ctx.mkUninterpretedSort("Void");
         }
+        if (type instanceof VoidType)
+            return ctx.mkUninterpretedSort("Void");
+
         // For any other types, use an uninterpreted sort
         return ctx.mkUninterpretedSort(type.toString());
-    }
-
-    private Expr getSymbolicValue(Value value) {
-        if (!symbolicVariables.containsKey(value)) {
-            if (value instanceof IntConstant v) {
-                symbolicVariables.put(value, ctx.mkInt(v.getValue()));
-            } else if (value instanceof Local) {
-                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
-            } else if (value instanceof StringConstant v) {
-                return ctx.mkString(v.getValue());
-            } else {
-                // Handle other types as needed
-                symbolicVariables.put(value, ctx.mkIntConst(value.toString()));
-            }
-        }
-        return symbolicVariables.get(value);
     }
 
     private Expr mkNull(Sort sort) {
@@ -334,10 +373,6 @@ public class SymbolicPathGenerator {
         try (InputStream is = clazz.getClassLoader().getResourceAsStream(
                 clazz.getName().replace('.', '/') + ".class");
              DataInputStream dis = new DataInputStream(is)) {
-
-            if (is == null) {
-                throw new RuntimeException("Class file not found");
-            }
 
             dis.readInt(); // Skip magic number
             int minorVersion = dis.readUnsignedShort();
@@ -372,6 +407,6 @@ public class SymbolicPathGenerator {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathGenerator().analyzeSymbolicPaths("com.github.a1k28.Stack", "test");
+        new SymbolicPathGenerator().analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
     }
 }

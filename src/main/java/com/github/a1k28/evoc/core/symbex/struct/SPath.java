@@ -27,6 +27,7 @@ public class SPath {
 
     public void print() {
         this.root.print(1);
+        System.out.println();
     }
 
     private SType getType(Stmt unit) {
