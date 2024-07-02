@@ -144,9 +144,6 @@ public class SymbolicPathGenerator {
                 Value leftOp = assignStmt.getLeftOp();
                 Value rightOp = assignStmt.getRightOp();
                 AssignmentExprHolder holder = translateValues(leftOp, rightOp);
-//                Expr leftExpr = translateValue(leftOp);
-//                Expr rightExpr = translateValue(rightOp);
-//                solver.add(ctx.mkEq(holder.getLeft(), holder.getRight()));
                 updateSymbolicVariable(leftOp, holder.getRight());
             }
         }
