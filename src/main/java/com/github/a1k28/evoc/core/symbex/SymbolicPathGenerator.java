@@ -3,7 +3,7 @@ package com.github.a1k28.evoc.core.symbex;
 import com.github.a1k28.evoc.core.symbex.struct.SNode;
 import com.github.a1k28.evoc.core.symbex.struct.SPath;
 import com.github.a1k28.evoc.core.symbex.struct.SType;
-import com.github.a1k28.evoc.model.symbex.AssignmentExprHolder;
+import com.github.a1k28.evoc.core.symbex.struct.AssignmentExprHolder;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.Project;

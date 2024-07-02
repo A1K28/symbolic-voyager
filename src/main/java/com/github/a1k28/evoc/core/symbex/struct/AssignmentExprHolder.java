@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.model.symbex;
+package com.github.a1k28.evoc.core.symbex.struct;
 
 import com.microsoft.z3.Expr;
 import lombok.AllArgsConstructor;
