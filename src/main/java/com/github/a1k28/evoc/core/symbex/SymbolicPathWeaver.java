@@ -38,13 +38,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class SymbolicPathGenerator {
+public class SymbolicPathWeaver {
     private Solver solver;
     private Context ctx;
     private Map<Value, Expr> symbolicVariables;
     private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
 
-    public SymbolicPathGenerator() {
+    public SymbolicPathWeaver() {
         methodModels = new HashMap<>();
         // Register known method models
         methodModels.put("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
@@ -443,6 +443,6 @@ public class SymbolicPathGenerator {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathGenerator().analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
+        new SymbolicPathWeaver().analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
     }
 }
