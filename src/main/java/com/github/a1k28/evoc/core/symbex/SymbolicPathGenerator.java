@@ -268,8 +268,6 @@ public class SymbolicPathGenerator {
                 throw new RuntimeException("Invalid binop encountered: JShrExpr (shift right)");
             if (binop instanceof JUshrExpr)
                 throw new RuntimeException("Invalid binop encountered: JUshrExpr (unsigned shift right)");
-//            if (binop instanceof JVirtualInvokeExpr)
-//                return ctx.mkMod(left, right);
             if (binop instanceof JXorExpr)
                 return ctx.mkXor(left, right);
             if (binop instanceof JCmpExpr
