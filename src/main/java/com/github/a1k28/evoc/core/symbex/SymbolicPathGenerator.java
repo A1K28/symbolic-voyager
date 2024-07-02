@@ -202,8 +202,6 @@ public class SymbolicPathGenerator {
             }
         }
         throw new RuntimeException("Condition could not be translated: " + condition);
-        // Handle other types of conditions
-//        return ctx.mkBool(true);
     }
 
     private AssignmentExprHolder translateValues(Value value1, Value value2) {
