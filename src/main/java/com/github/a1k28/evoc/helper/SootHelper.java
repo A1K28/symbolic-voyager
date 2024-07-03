@@ -8,7 +8,6 @@ import sootup.core.Project;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.common.stmt.Stmt;
-import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.ClassType;
@@ -26,17 +25,38 @@ import java.util.List;
 
 @NoArgsConstructor
 public class SootHelper {
-    public static SPath createFlowDiagram(String className, String methodName)
-            throws ClassNotFoundException {
-        SootMethod method = getSootMethod(className, methodName);
-        Body body = method.getBody();
+    public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
+        int javaVersion = getJavaVersion(Class.forName(className));
 
-        // Generate CFG
-        StmtGraph<?> cfg = body.getStmtGraph();
-        return createFlowDiagram(cfg);
+        AnalysisInputLocation<JavaSootClass> inputLocation =
+                new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
+
+        JavaLanguage language = new JavaLanguage(javaVersion);
+
+        Project project = JavaProject.builder(language)
+                .addInputLocation(inputLocation).build();
+
+        ClassType classType =
+                project.getIdentifierFactory().getClassType(className);
+
+        View<?> view = project.createView();
+
+        return (SootClass<JavaSootClassSource>) view.getClass(classType).get();
     }
 
-    private static SPath createFlowDiagram(StmtGraph<?> cfg) {
+    public static SootMethod getSootMethod(String className, String methodName) throws ClassNotFoundException {
+        SootClass<JavaSootClassSource> sootClass = getSootClass(className);
+        return sootClass.getMethods().stream()
+                .filter(e -> e.getName().equals(methodName)).findFirst().get();
+    }
+
+    public static SootMethod getSootMethod(SootClass<JavaSootClassSource> sootClass, String methodName) {
+        // Get the method
+        return sootClass.getMethods().stream()
+                .filter(e -> e.getName().equals(methodName)).findFirst().get();
+    }
+
+    public static SPath createFlowDiagram(StmtGraph<?> cfg) {
         SPath sPath = new SPath();
         Stmt start = cfg.getStartingStmt();
         dfs(cfg, start, sPath, sPath.getRoot());
@@ -67,30 +87,6 @@ public class SootHelper {
                 }
             }
         }
-    }
-
-    private static SootMethod getSootMethod(String className, String methodName) throws ClassNotFoundException {
-        int javaVersion = getJavaVersion(Class.forName(className));
-
-        AnalysisInputLocation<JavaSootClass> inputLocation =
-                new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
-
-        JavaLanguage language = new JavaLanguage(javaVersion);
-
-        Project project = JavaProject.builder(language)
-                .addInputLocation(inputLocation).build();
-
-        ClassType classType =
-                project.getIdentifierFactory().getClassType(className);
-
-        View<?> view = project.createView();
-
-        SootClass<JavaSootClassSource> sootClass =
-                (SootClass<JavaSootClassSource>) view.getClass(classType).get();
-
-        // Get the method
-        return sootClass.getMethods().stream()
-                .filter(e -> e.getName().equals(methodName)).findFirst().get();
     }
 
     public static int getJavaVersion(Class<?> clazz) {

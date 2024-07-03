@@ -6,6 +6,7 @@ import com.github.a1k28.evoc.core.symbex.struct.SPath;
 import com.github.a1k28.evoc.core.symbex.struct.SType;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
+import sootup.core.graph.StmtGraph;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.constant.*;
@@ -15,7 +16,11 @@ import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
+import sootup.core.model.Body;
+import sootup.core.model.SootClass;
+import sootup.core.model.SootMethod;
 import sootup.core.types.*;
+import sootup.java.core.JavaSootClassSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import static com.github.a1k28.evoc.helper.SootHelper.createFlowDiagram;
+import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathWeaver {
     private Solver solver;
@@ -45,7 +50,14 @@ public class SymbolicPathWeaver {
         ctx = new Context();
 
         // Find all paths
-        SPath sPath = createFlowDiagram(className, methodName);
+        SootClass<JavaSootClassSource> sootClass = getSootClass(className);
+
+        SootMethod method = getSootMethod(sootClass, methodName);
+        Body body = method.getBody();
+
+        // Generate CFG
+        StmtGraph<?> cfg = body.getStmtGraph();
+        SPath sPath = createFlowDiagram(cfg);
 
         sPath.print();
 

@@ -5,16 +5,14 @@ import com.github.a1k28.evoc.helper.DynamicTestRunner;
 import com.github.a1k28.evoc.helper.Logger;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static com.github.a1k28.evoc.helper.ASMHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
@@ -23,16 +21,6 @@ import static org.objectweb.asm.Opcodes.*;
 public class BranchDistanceService {
     private static final Logger log = Logger.getInstance(BranchDistanceService.class);
     private static final String internalWrapperName = "com/github/a1k28/evoc/core/asm/ASMConditionalWrapper";
-
-    private final static List<Integer> genericComparisonOpCodes = List.of(
-            IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE
-    );
-    private final static List<Integer> intComparisonOpCodes = List.of(
-            IF_ICMPEQ, IF_ICMPNE, IF_ICMPLT, IF_ICMPGE, IF_ICMPGT, IF_ICMPLE
-    );
-    private final static List<Integer> refComparisonOpCodes = List.of(
-            IF_ACMPEQ, IF_ACMPNE
-    );
 
     private final Map<String, byte[]> classCache = new HashMap<>();
 
@@ -148,26 +136,6 @@ public class BranchDistanceService {
 
         byte[] modifiedClass = getClassBytes(cn);
         saveClass(classname, modifiedClass);
-    }
-
-    private void saveClass(String classname, byte[] bytes) throws ClassNotFoundException, IOException {
-        String targetPath = getTargetPath(classname);
-        try (FileOutputStream fos = new FileOutputStream(targetPath)) {
-            fos.write(bytes);
-        }
-    }
-
-    private byte[] getClassBytes(ClassNode cn) {
-        ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-        cn.accept(classWriter);
-        return classWriter.toByteArray();
-    }
-
-    public static String getTargetPath(String classname) throws ClassNotFoundException {
-        Class<?> clazz = Class.forName(classname);
-        String[] spl = classname.split("\\.");
-        String simpleClassname = spl[spl.length-1];
-        return clazz.getProtectionDomain().getCodeSource().getLocation().getPath()+clazz.getPackageName().replace(".",File.separator)+File.separator+simpleClassname+".class";
     }
 
     private static boolean isEqualsComparison(AbstractInsnNode node) {

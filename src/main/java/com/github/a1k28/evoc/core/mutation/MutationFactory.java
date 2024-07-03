@@ -1,19 +1,82 @@
 package com.github.a1k28.evoc.core.mutation;
 
+import com.github.a1k28.evoc.core.mutation.mutator.ConditionalsBoundaryMutator;
+import com.github.a1k28.evoc.core.mutation.mutator.Mutator;
 import com.github.a1k28.evoc.core.mutation.struct.MType;
-import com.github.a1k28.evoc.core.symbex.struct.SPath;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.*;
 
-import static com.github.a1k28.evoc.helper.SootHelper.createFlowDiagram;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.ListIterator;
+
+import static com.github.a1k28.evoc.helper.ASMHelper.getClassBytes;
+import static com.github.a1k28.evoc.helper.ASMHelper.saveClass;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MutationFactory {
-    public Class<?> mutate(Class<?> clazz, MType... types) {
+    public static String mutate(String className, String methodName, MType type)
+            throws IOException, ClassNotFoundException, AnalyzerException {
+        ClassReader classReader = new ClassReader(className);
+        ClassNode cn = new ClassNode(ASM9);
+        classReader.accept(cn, 0);
+
+        Mutator mutator = getMutator(type);
+
+        Iterator<MethodNode> methods = cn.methods.iterator();
+        while (methods.hasNext()) {
+            MethodNode mn = methods.next();
+            if (!mn.name.equals(methodName)) continue;
+
+            Analyzer<BasicValue> analyzer = new Analyzer<>(new BasicInterpreter());
+            Frame<BasicValue>[] frames = analyzer.analyze(cn.name, mn);
+
+            ListIterator<AbstractInsnNode> it = mn.instructions.iterator();
+
+            int offset = 0;
+            while(it.hasNext()) {
+                AbstractInsnNode node = it.next();
+                int index = mn.instructions.indexOf(node);
+                Frame<BasicValue> frame = frames[index-offset];
+                if (frame == null) continue;
+
+                int opcode = node.getOpcode();
+
+//                System.out.println(opcode);
+
+//                String bId = mn.name + ":" + index;
+
+                offset += mutator.mutate(opcode, node, it);
+//                for (Mutator mutator : mutators) {
+//                }
+            }
+        }
+
+        String[] split = className.split(".");
+        String filename = getName(split[split.length-1], type);
+
+        byte[] modifiedClass = getClassBytes(cn);
+        saveClass(className, modifiedClass, filename);
+
+        return filename;
     }
 
-    private Class<?> mutateSingle(String className, String methodName, MType type)
-            throws ClassNotFoundException {
-        SPath sPath = createFlowDiagram(className, methodName);
+    public static String getName(String filename, MType type) {
+        return filename + "_" + type;
     }
 
-    private void handleConditionalsBoundary() {
+    private static Mutator getMutator(MType type) {
+        if (type == MType.CONDITIONALS_BOUNDARY) return new ConditionalsBoundaryMutator();
+        throw new RuntimeException("Could not create mutator type: " + type);
+    }
+
+    public static void main(String[] args) throws ClassNotFoundException, AnalyzerException, IOException {
+        MutationFactory.mutate(
+                "com.github.a1k28.Stack",
+                "test",
+                MType.CONDITIONALS_BOUNDARY);
     }
 }
