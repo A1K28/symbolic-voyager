@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.core.mutation.mutator;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ListIterator;
 
@@ -10,7 +11,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 public class ConditionalsBoundaryMutator implements Mutator {
     @Override
-    public int mutate(int opcode, AbstractInsnNode node, ListIterator<AbstractInsnNode> it) {
+    public int mutate(int opcode, AbstractInsnNode node, ListIterator<AbstractInsnNode> it, MethodNode methodNode) {
         int opposite = getOpposite(opcode);
         if (opposite != -1) {
             it.remove();
