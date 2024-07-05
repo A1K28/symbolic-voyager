@@ -1,7 +1,6 @@
 package com.github.a1k28.evoc.core.mutation;
 
-import com.github.a1k28.evoc.core.mutation.mutator.ConditionalsBoundaryMutator;
-import com.github.a1k28.evoc.core.mutation.mutator.Mutator;
+import com.github.a1k28.evoc.core.mutation.mutator.*;
 import com.github.a1k28.evoc.core.mutation.struct.MType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -44,18 +43,13 @@ public class MutationFactory {
                 if (frame == null) continue;
 
                 int opcode = node.getOpcode();
+                System.out.println(opcode);
 
-//                System.out.println(opcode);
-
-//                String bId = mn.name + ":" + index;
-
-                offset += mutator.mutate(opcode, node, it);
-//                for (Mutator mutator : mutators) {
-//                }
+                offset += mutator.mutate(opcode, node, it, mn);
             }
         }
 
-        String[] split = className.split(".");
+        String[] split = className.split("\\.");
         String filename = getName(split[split.length-1], type);
 
         byte[] modifiedClass = getClassBytes(cn);
@@ -70,13 +64,23 @@ public class MutationFactory {
 
     private static Mutator getMutator(MType type) {
         if (type == MType.CONDITIONALS_BOUNDARY) return new ConditionalsBoundaryMutator();
+        if (type == MType.INCREMENTS) return new IncrementMutator();
+        if (type == MType.INVERT_NEGATIVES) return new InvertNegationMutator();
+        if (type == MType.MATH) return new MathMutator();
+        if (type == MType.NEGATE_CONDITIONALS) return new NegateConditionalsMutator();
+        if (type == MType.VOID_METHOD_CALLS) return new VoidMethodMutator();
+        if (type == MType.EMPTY_RETURNS) return new EmptyReturnsMutator();
+        if (type == MType.FALSE_RETURNS) return new FalseReturnsMutator();
+        if (type == MType.TRUE_RETURNS) return new TrueReturnsMutator();
+        if (type == MType.NULL_RETURNS) return new NullReturnsMutator();
+        if (type == MType.PRIMITIVE_RETURNS) return new PrimitiveReturnsMutator();
         throw new RuntimeException("Could not create mutator type: " + type);
     }
 
     public static void main(String[] args) throws ClassNotFoundException, AnalyzerException, IOException {
         MutationFactory.mutate(
                 "com.github.a1k28.Stack",
-                "test",
-                MType.CONDITIONALS_BOUNDARY);
+                "test_nr",
+                MType.PRIMITIVE_RETURNS);
     }
 }
