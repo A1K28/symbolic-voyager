@@ -57,7 +57,7 @@ public class SPath {
         String key = field.toString();
         if (key.contains(": "))
             key = key.substring(key.indexOf(": "), key.length()-1);
-        this.nameToParamIdx.put(key, new SParam(null));
+        this.nameToParamIdx.put(key, new SParam());
     }
 
     private SType getType(Stmt unit) {
