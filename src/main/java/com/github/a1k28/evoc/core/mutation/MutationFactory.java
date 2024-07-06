@@ -2,6 +2,7 @@ package com.github.a1k28.evoc.core.mutation;
 
 import com.github.a1k28.evoc.core.mutation.mutator.*;
 import com.github.a1k28.evoc.core.mutation.struct.MType;
+import com.github.a1k28.evoc.core.mutation.struct.MutationData;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -9,53 +10,61 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 
-import static com.github.a1k28.evoc.helper.ASMHelper.getClassBytes;
-import static com.github.a1k28.evoc.helper.ASMHelper.saveClass;
+import static com.github.a1k28.evoc.helper.ASMHelper.convertClassNodeToClass;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MutationFactory {
-    public static String mutate(String className, String methodName, MType type)
+    public static List<MutationData<?>> mutate(String className, String methodName, MType... types)
             throws IOException, ClassNotFoundException, AnalyzerException {
-        ClassReader classReader = new ClassReader(className);
-        ClassNode cn = new ClassNode(ASM9);
-        classReader.accept(cn, 0);
+        List<MutationData<?>> mutants = new ArrayList<>();
 
-        Mutator mutator = getMutator(type);
+        for (MType type : types) {
+            ClassReader classReader = new ClassReader(className);
+            ClassNode cn = new ClassNode(ASM9);
+            classReader.accept(cn, 0);
 
-        Iterator<MethodNode> methods = cn.methods.iterator();
-        while (methods.hasNext()) {
-            MethodNode mn = methods.next();
-            if (!mn.name.equals(methodName)) continue;
+            Mutator mutator = getMutator(type);
 
-            Analyzer<BasicValue> analyzer = new Analyzer<>(new BasicInterpreter());
-            Frame<BasicValue>[] frames = analyzer.analyze(cn.name, mn);
+            Iterator<MethodNode> methods = cn.methods.iterator();
+            while (methods.hasNext()) {
+                MethodNode mn = methods.next();
+                if (!mn.name.equals(methodName)) continue;
 
-            ListIterator<AbstractInsnNode> it = mn.instructions.iterator();
+                Analyzer<BasicValue> analyzer = new Analyzer<>(new BasicInterpreter());
+                Frame<BasicValue>[] frames = analyzer.analyze(cn.name, mn);
 
-            int offset = 0;
-            while(it.hasNext()) {
-                AbstractInsnNode node = it.next();
-                int index = mn.instructions.indexOf(node);
-                Frame<BasicValue> frame = frames[index-offset];
-                if (frame == null) continue;
+                ListIterator<AbstractInsnNode> it = mn.instructions.iterator();
 
-                int opcode = node.getOpcode();
-                System.out.println(opcode);
+                int offset = 0;
+                while(it.hasNext()) {
+                    AbstractInsnNode node = it.next();
+                    int index = mn.instructions.indexOf(node);
+                    Frame<BasicValue> frame = frames[index-offset];
+                    if (frame == null) continue;
 
-                offset += mutator.mutate(opcode, node, it, mn);
+                    int opcode = node.getOpcode();
+                    System.out.println(opcode);
+
+                    offset += mutator.mutate(opcode, node, it, mn);
+                }
             }
+
+            mutants.add(new MutationData<>(type, convertClassNodeToClass(cn)));
+
+//            String[] split = className.split("\\.");
+//            String filename = getName(split[split.length-1], type);
+
+//            byte[] modifiedClass = getClassBytes(cn);
+//            saveClass(className, modifiedClass, filename);
+//
+//            return filename;
         }
-
-        String[] split = className.split("\\.");
-        String filename = getName(split[split.length-1], type);
-
-        byte[] modifiedClass = getClassBytes(cn);
-        saveClass(className, modifiedClass, filename);
-
-        return filename;
+        return mutants;
     }
 
     public static String getName(String filename, MType type) {
@@ -78,9 +87,14 @@ public class MutationFactory {
     }
 
     public static void main(String[] args) throws ClassNotFoundException, AnalyzerException, IOException {
-        MutationFactory.mutate(
+        List<MutationData<?>> mutants = MutationFactory.mutate(
                 "com.github.a1k28.Stack",
                 "test_nr",
                 MType.PRIMITIVE_RETURNS);
+
+//        Class<?> testClass = Class.forName("com.github.a1k28.test.StackTest");
+//        for (Method method : testClass.getDeclaredMethods()) {
+//            TestExecutionSummary summary = DynamicTestRunner.runTestClass(testClass, method);
+//        }
     }
 }
