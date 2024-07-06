@@ -53,33 +53,37 @@ public class Logger {
         Logger.level = level;
     }
 
-    public void info(String message) {
+    public void empty() {
+        System.out.println();
+    }
+
+    public void info(Object message) {
         System.out.println(getDate() + info() + this.getClassName() + message);
     }
 
-    public void warn(String message) {
+    public void warn(Object message) {
         System.out.println(getDate() + warn() + this.getClassName() + message);
     }
 
-    public void debug(String message) {
+    public void debug(Object message) {
         if (level.ordinal() < Level.DEBUG.ordinal()) return;
         System.out.println(getDate() + debug() + this.getClassName() + message);
     }
 
-    public void trace(String message) {
+    public void trace(Object message) {
         if (level.ordinal() < Level.TRACE.ordinal()) return;
         System.out.println(getDate() + trace() + this.getClassName() + message);
     }
 
-    public void focus(String message) {
+    public void focus(Object message) {
         System.out.println(getDate() + focus() + this.getClassName() + message);
     }
 
-    public void error(String message) {
+    public void error(Object message) {
         System.out.println(getDate() + error() + this.getClassName() + message);
     }
 
-    public void error(String message, Throwable e) {
+    public void error(Object message, Throwable e) {
         System.out.println(getDate() + error() + this.getClassName() + message);
         e.printStackTrace();
     }
