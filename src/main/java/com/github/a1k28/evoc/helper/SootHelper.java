@@ -1,8 +1,8 @@
 package com.github.a1k28.evoc.helper;
 
-import com.github.a1k28.evoc.core.symbex.struct.SNode;
-import com.github.a1k28.evoc.core.symbex.struct.SPath;
-import com.github.a1k28.evoc.core.symbex.struct.SType;
+import com.github.a1k28.evoc.core.executor.struct.SNode;
+import com.github.a1k28.evoc.core.executor.struct.SPath;
+import com.github.a1k28.evoc.core.executor.struct.SType;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
 import sootup.core.graph.StmtGraph;
@@ -56,11 +56,9 @@ public class SootHelper {
                 .filter(e -> e.getName().equals(methodName)).findFirst().get();
     }
 
-    public static SPath createFlowDiagram(StmtGraph<?> cfg) {
-        SPath sPath = new SPath();
+    public static void createFlowDiagram(SPath sPath, StmtGraph<?> cfg) {
         Stmt start = cfg.getStartingStmt();
         dfs(cfg, start, sPath, sPath.getRoot());
-        return sPath;
     }
 
     private static void dfs(StmtGraph<?> cfg, Stmt current, SPath sPath, SNode parent) {

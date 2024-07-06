@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.core.mutation;
 import com.github.a1k28.evoc.core.mutation.mutator.*;
 import com.github.a1k28.evoc.core.mutation.struct.MType;
 import com.github.a1k28.evoc.core.mutation.struct.MutationData;
+import com.github.a1k28.evoc.helper.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -19,6 +20,8 @@ import static com.github.a1k28.evoc.helper.ASMHelper.convertClassNodeToClass;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 public class MutationFactory {
+    private static final Logger log = Logger.getInstance(MutationFactory.class);
+
     public static List<MutationData<?>> mutate(String className, String methodName, MType... types)
             throws IOException, ClassNotFoundException, AnalyzerException {
         List<MutationData<?>> mutants = new ArrayList<>();
@@ -48,7 +51,7 @@ public class MutationFactory {
                     if (frame == null) continue;
 
                     int opcode = node.getOpcode();
-                    System.out.println(opcode);
+                    log.info(opcode);
 
                     offset += mutator.mutate(opcode, node, it, mn);
                 }
