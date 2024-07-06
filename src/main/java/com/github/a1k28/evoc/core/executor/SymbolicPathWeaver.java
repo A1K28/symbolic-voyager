@@ -58,7 +58,7 @@ public class SymbolicPathWeaver {
         Body body = method.getBody();
 
         SPath sPath = new SPath();
-//        sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) sPath.addField(j);});
+        sPath.addFields(sootClass);
 
         // Generate CFG
         StmtGraph<?> cfg = body.getStmtGraph();
@@ -66,10 +66,10 @@ public class SymbolicPathWeaver {
 
         sPath.print();
 
-        analyzePaths(sPath.getRoot(), 1);
+        analyzePaths(sPath, sPath.getRoot(), 1);
     }
 
-    private void analyzePaths(SNode node, int level) {
+    private void analyzePaths(SPath sPath, SNode node, int level) {
         solver.push();
 
         // handle node types
@@ -98,14 +98,15 @@ public class SymbolicPathWeaver {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
                 for (SNode child : node.getChildren())
-                    analyzePaths(child, level + 1);
+                    analyzePaths(sPath, child, level + 1);
             } else {
                 // if tail
                 log.focus("Path is satisfiable");
                 Model model = solver.getModel();
 
                 for (Map.Entry<String, SVar> entry : symbolicVariables.entrySet()) {
-                    if (entry.getValue().isOriginal()) {
+                    SParam sParam = sPath.getParam(entry.getValue().getName());
+                    if (sParam != null && entry.getValue().isOriginal()) {
                         Object evaluated = model.eval(entry.getValue().getExrp(), true);
                         log.info(entry.getValue().getValue() + " = " + evaluated);
                     }
