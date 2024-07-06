@@ -1,24 +1,26 @@
-package com.github.a1k28.evoc.core.symbex.struct;
+package com.github.a1k28.evoc.core.executor.struct;
 
+import com.github.a1k28.evoc.helper.Logger;
 import lombok.Getter;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
+import sootup.java.core.JavaSootField;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Getter
 public class SPath {
+    private static final Logger log = Logger.getInstance(SPath.class);
+
     private final SNode root;
-    private final Map<String, JParameterRef> nameToParamIdx;
+//    private final Map<String, SParam> nameToParamIdx;
 
     public SPath() {
         this.root = new SNode();
-        this.nameToParamIdx = new HashMap<>();
+//        this.nameToParamIdx = new HashMap<>();
     }
 
     public SNode createNode(Stmt unit) {
@@ -27,15 +29,27 @@ public class SPath {
 
     public void print() {
         this.root.print(1);
-        System.out.println();
+        log.empty();
     }
+
+//    public void addField(JavaSootField field) {
+//        this.nameToParamIdx.put(field.toString(), new SParam());
+//    }
+//
+//    public SParam getParam(String key) {
+//        if (nameToParamIdx.containsKey(key))
+//            return nameToParamIdx.get(key);
+//        if (key.startsWith("this.") && nameToParamIdx.containsKey(key.substring(5)))
+//            return nameToParamIdx.get(key.substring(5));
+//        return null;
+//    }
 
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;
-        if (clazz == JAssignStmt.class) return SType.ASSIGNMENT;
         if (clazz == JGotoStmt.class) return SType.GOTO;
         if (clazz == JRetStmt.class) return SType.RETURN;
+        if (clazz == JAssignStmt.class) return SType.ASSIGNMENT;
         if (clazz == JReturnStmt.class) return SType.RETURN;
         if (clazz == JInvokeStmt.class) return SType.INVOKE;
         if (clazz == JSwitchStmt.class) return SType.SWITCH;
@@ -48,12 +62,12 @@ public class SPath {
         if (unit instanceof JIdentityStmt u) {
             Value val = u.getRightOp();
             if (val instanceof JParameterRef v) {
-                this.nameToParamIdx.put(u.getLeftOp().toString(), v);
+//                this.nameToParamIdx.put(u.getLeftOp().toString(), new SParam(v));
                 return SType.PARAMETER;
             }
             return SType.IDENTITY;
         }
-        System.out.println("Could not identify: " + unit);
+        log.warn("Could not identify: " + unit);
         return SType.OTHER;
     }
 }

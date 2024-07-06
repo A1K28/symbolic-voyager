@@ -1,9 +1,7 @@
-package com.github.a1k28.evoc.core.symbex;
+package com.github.a1k28.evoc.core.executor;
 
-import com.github.a1k28.evoc.core.symbex.struct.AssignmentExprHolder;
-import com.github.a1k28.evoc.core.symbex.struct.SNode;
-import com.github.a1k28.evoc.core.symbex.struct.SPath;
-import com.github.a1k28.evoc.core.symbex.struct.SType;
+import com.github.a1k28.evoc.core.executor.struct.*;
+import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.graph.StmtGraph;
@@ -11,7 +9,8 @@ import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.constant.*;
 import sootup.core.jimple.common.expr.*;
-import sootup.core.jimple.common.ref.JParameterRef;
+import sootup.core.jimple.common.ref.JArrayRef;
+import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
@@ -31,9 +30,10 @@ import java.util.function.BiFunction;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathWeaver {
+    private static final Logger log = Logger.getInstance(SymbolicPathWeaver.class);
     private Solver solver;
     private Context ctx;
-    private Map<Value, Expr> symbolicVariables;
+    private Map<String, SVar> symbolicVariables;
     private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
 
     public SymbolicPathWeaver() {
@@ -48,6 +48,8 @@ public class SymbolicPathWeaver {
     public void analyzeSymbolicPaths(String className, String methodName) throws ClassNotFoundException {
         // Initialize Z3
         ctx = new Context();
+        solver = ctx.mkSolver();
+        symbolicVariables = new HashMap<>();
 
         // Find all paths
         SootClass<JavaSootClassSource> sootClass = getSootClass(className);
@@ -55,14 +57,15 @@ public class SymbolicPathWeaver {
         SootMethod method = getSootMethod(sootClass, methodName);
         Body body = method.getBody();
 
+        SPath sPath = new SPath();
+//        sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) sPath.addField(j);});
+
         // Generate CFG
         StmtGraph<?> cfg = body.getStmtGraph();
-        SPath sPath = createFlowDiagram(cfg);
+        createFlowDiagram(sPath, cfg);
 
         sPath.print();
 
-        solver = ctx.mkSolver();
-        symbolicVariables = new HashMap<>();
         analyzePaths(sPath, sPath.getRoot(), 1);
     }
 
@@ -90,8 +93,7 @@ public class SymbolicPathWeaver {
 
         // check satisfiability
         if (solver.check() != Status.SATISFIABLE) {
-            System.out.println("Path is unsatisfiable");
-            System.out.println();
+            log.warn("Path is unsatisfiable\n");
         } else {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
@@ -99,16 +101,19 @@ public class SymbolicPathWeaver {
                     analyzePaths(sPath, child, level + 1);
             } else {
                 // if tail
-                System.out.println("Path is satisfiable");
+                log.focus("Path is satisfiable");
                 Model model = solver.getModel();
 
-                for (Map.Entry<Value, Expr> entry : symbolicVariables.entrySet()) {
-                    JParameterRef parameterRef = sPath.getNameToParamIdx().getOrDefault(entry.getKey().toString(), null);
-                    if (parameterRef != null) {
-                        System.out.println(entry.getKey() + " = " + model.eval(entry.getValue(), false) + " " + parameterRef);
+                for (Map.Entry<String, SVar> entry : symbolicVariables.entrySet()) {
+//                    SParam sParam = sPath.getParam(entry.getValue().getName());
+                    if (entry.getValue().isOriginal()) {
+                        Object evaluated = model.eval(entry.getValue().getExrp(), true);
+                        log.info(entry.getValue().getValue() + " = " + evaluated);
                     }
+//                    if (sParam != null && entry.getValue().isOriginal()) {
+//                    }
                 }
-                System.out.println();
+                log.empty();
             }
         }
 
@@ -158,28 +163,53 @@ public class SymbolicPathWeaver {
     private Expr translateValue(Value value) {
         if (value instanceof Local) {
             return getSymbolicValue(value);
-        } else if (value instanceof IntConstant v) {
+        }
+        if (value instanceof JFieldRef) {
+            return getSymbolicValue(value, value.getType());
+        }
+        if (value instanceof IntConstant v) {
             return ctx.mkInt(v.getValue());
-        } else if (value instanceof BooleanConstant v) {
+        }
+        if (value instanceof BooleanConstant v) {
             return ctx.mkBool(v.toString().equals("1"));
-        } else if (value instanceof DoubleConstant v) {
+        }
+        if (value instanceof DoubleConstant v) {
             return ctx.mkFP(v.getValue(), ctx.mkFPSort64());
-        } else if (value instanceof FloatConstant v) {
+        }
+        if (value instanceof FloatConstant v) {
             return ctx.mkFP(v.getValue(), ctx.mkFPSort64());
-        } else if (value instanceof LongConstant v) {
+        }
+        if (value instanceof LongConstant v) {
             return ctx.mkInt(v.getValue());
-        } else if (value instanceof StringConstant v) {
+        }
+        if (value instanceof StringConstant v) {
             return ctx.mkString(v.getValue());
-        } else if (value instanceof AbstractInvokeExpr abstractInvoke) {
+        }
+        if (value instanceof AbstractInvokeExpr abstractInvoke) {
             return handleMethodCall(abstractInvoke);
-        } else if (value instanceof AbstractUnopExpr unop) {
+        }
+        if (value instanceof JNewExpr) {
+            return ctx.mkConst(value.toString(), ctx.mkUninterpretedSort(value.getType().toString()));
+        }
+        if (value instanceof JArrayRef) {
+            // Create an integer sort for array indices
+            IntSort intSort = ctx.getIntSort();
+
+            // Create an uninterpreted sort for array elements
+            Sort elementSort = ctx.mkUninterpretedSort(value.getType().toString());
+
+            return ctx.mkArrayConst(value.toString(), intSort, elementSort);
+        }
+        if (value instanceof AbstractUnopExpr unop) {
             if (value instanceof JLengthExpr)
                 return ctx.mkLength(translateValue(value));
             if (unop instanceof JNegExpr)
                 return ctx.mkNot(translateValue(value));
-        } else if (value instanceof AbstractExprVisitor visitor) {
+        }
+        if (value instanceof AbstractExprVisitor visitor) {
             // handle
-        } else if (value instanceof AbstractBinopExpr binop) {
+        }
+        if (value instanceof AbstractBinopExpr binop) {
             AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2());
             Expr left = holder.getLeft();
             Expr right = holder.getRight();
@@ -230,6 +260,7 @@ public class SymbolicPathWeaver {
 //        else if (value instanceof JPhiExpr)
 //            return ctx.mkMod(left, right);
 
+//        return null;
         throw new RuntimeException("Could not resolve type for: " + value);
     }
 
@@ -290,10 +321,11 @@ public class SymbolicPathWeaver {
     }
 
     private Expr getSymbolicValue(Value value, Type type) {
-        if (!symbolicVariables.containsKey(value)) {
-            symbolicVariables.put(value, mkExpr(value, type));
+        String key = getValueKey(value);
+        if (!symbolicVariables.containsKey(key)) {
+            symbolicVariables.put(key, new SVar(key, value, mkExpr(value, type), true));
         }
-        return symbolicVariables.get(value);
+        return symbolicVariables.get(key).getExrp();
     }
 
     private Expr mkExpr(Value value, Type type) {
@@ -342,12 +374,21 @@ public class SymbolicPathWeaver {
     }
 
     private void updateSymbolicVariable(Value variable, Expr expression) {
-        symbolicVariables.put(variable, expression);
+        if (variable != null && expression != null) {
+            String key = getValueKey(variable);
+            if (symbolicVariables.containsKey(key) && symbolicVariables.get(key).isOriginal())
+                symbolicVariables.put(key+"_ORIGINAL", symbolicVariables.get(key));
+            symbolicVariables.put(key, new SVar(key, variable, expression, false));
+        }
+    }
+
+    private String getValueKey(Value value) {
+        return value.toString();
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathWeaver().analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
+        new SymbolicPathWeaver().analyzeSymbolicPaths("com.github.a1k28.Stack", "push");
     }
 }

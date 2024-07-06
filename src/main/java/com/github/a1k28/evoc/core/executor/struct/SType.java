@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.symbex.struct;
+package com.github.a1k28.evoc.core.executor.struct;
 
 public enum SType {
     ROOT,
