@@ -43,6 +43,8 @@ public class SymbolicPathWeaver {
                 ctx.mkEq(args.get(0), args.get(1)));
         methodModels.put("<java.lang.String: int length()>", (invoke, args) ->
                 ctx.mkLength(args.get(0)));
+        methodModels.put("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
+                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
     }
 
     public void analyzeSymbolicPaths(String className, String methodName) throws ClassNotFoundException {
@@ -67,6 +69,8 @@ public class SymbolicPathWeaver {
         sPath.print();
 
         analyzePaths(sPath, sPath.getRoot());
+
+        ctx.close();
     }
 
     private void analyzePaths(SPath sPath, SNode node) {
@@ -108,7 +112,7 @@ public class SymbolicPathWeaver {
                     SParam sParam = sPath.getParam(entry.getValue().getName());
                     if (sParam != null && entry.getValue().isOriginal()) {
                         Object evaluated = model.eval(entry.getValue().getExrp(), true);
-                        log.info(entry.getValue().getValue() + " = " + evaluated);
+                        log.info(entry.getValue().getValue() + " = " + evaluated + " " + sParam + " " + entry.getValue().isOriginal());
                     }
                 }
                 log.empty();
@@ -181,7 +185,7 @@ public class SymbolicPathWeaver {
             return ctx.mkInt(v.getValue());
         }
         if (value instanceof StringConstant v) {
-            return ctx.mkString(v.getValue());
+            return ctx.mkString(v.getValue().replaceFirst("\u0001", ""));
         }
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
             return handleMethodCall(abstractInvoke);
@@ -282,12 +286,13 @@ public class SymbolicPathWeaver {
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Expr> args = new ArrayList<>();
-        if (invoke instanceof AbstractInstanceInvokeExpr i) {
+        if (invoke instanceof AbstractInstanceInvokeExpr i)
             args.add(translateValue(i.getBase()));
-        }
-        for (Value arg : invoke.getArgs()) {
+        for (Value arg : invoke.getArgs())
             args.add(translateValue(arg));
-        }
+        if (invoke instanceof JDynamicInvokeExpr i)
+            for (Value arg : i.getBootstrapArgs())
+                args.add(translateValue(arg));
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
         if (methodModel != null) {
@@ -374,9 +379,12 @@ public class SymbolicPathWeaver {
     private void updateSymbolicVariable(Value variable, Expr expression) {
         if (variable != null && expression != null) {
             String key = getValueKey(variable);
-            if (symbolicVariables.containsKey(key) && symbolicVariables.get(key).isOriginal())
+            boolean isOriginal = true;
+            if (symbolicVariables.containsKey(key) && symbolicVariables.get(key).isOriginal()){
                 symbolicVariables.put(key+"_ORIGINAL", symbolicVariables.get(key));
-            symbolicVariables.put(key, new SVar(key, variable, expression, false));
+                isOriginal = false;
+            }
+            symbolicVariables.put(key, new SVar(key, variable, expression, isOriginal));
         }
     }
 
@@ -387,6 +395,6 @@ public class SymbolicPathWeaver {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathWeaver().analyzeSymbolicPaths("com.github.a1k28.Stack", "push");
+        new SymbolicPathWeaver().analyzeSymbolicPaths("com.github.a1k28.Stack", "test_string");
     }
 }
