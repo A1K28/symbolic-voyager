@@ -16,11 +16,9 @@ public class SPath {
     private static final Logger log = Logger.getInstance(SPath.class);
 
     private final SNode root;
-//    private final Map<String, SParam> nameToParamIdx;
 
     public SPath() {
         this.root = new SNode();
-//        this.nameToParamIdx = new HashMap<>();
     }
 
     public SNode createNode(Stmt unit) {
@@ -31,18 +29,6 @@ public class SPath {
         this.root.print(1);
         log.empty();
     }
-
-//    public void addField(JavaSootField field) {
-//        this.nameToParamIdx.put(field.toString(), new SParam());
-//    }
-//
-//    public SParam getParam(String key) {
-//        if (nameToParamIdx.containsKey(key))
-//            return nameToParamIdx.get(key);
-//        if (key.startsWith("this.") && nameToParamIdx.containsKey(key.substring(5)))
-//            return nameToParamIdx.get(key.substring(5));
-//        return null;
-//    }
 
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
