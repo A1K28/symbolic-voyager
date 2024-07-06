@@ -66,10 +66,10 @@ public class SymbolicPathWeaver {
 
         sPath.print();
 
-        analyzePaths(sPath, sPath.getRoot(), 1);
+        analyzePaths(sPath, sPath.getRoot());
     }
 
-    private void analyzePaths(SPath sPath, SNode node, int level) {
+    private void analyzePaths(SPath sPath, SNode node) {
         solver.push();
 
         // handle node types
@@ -98,7 +98,7 @@ public class SymbolicPathWeaver {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
                 for (SNode child : node.getChildren())
-                    analyzePaths(sPath, child, level + 1);
+                    analyzePaths(sPath, child);
             } else {
                 // if tail
                 log.focus("Path is satisfiable");
