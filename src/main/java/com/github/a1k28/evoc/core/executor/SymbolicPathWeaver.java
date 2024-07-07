@@ -159,7 +159,6 @@ public class SymbolicPathWeaver {
                 Model model = solver.getModel();
 
                 for (SVar var : symbolicVarStack.getAll()) {
-//                for (Map.Entry<String, SVar> entry : symbolicVariables.entrySet()) {
                     SParam sParam = sPath.getParam(var.getName());
                     if (sParam != null && var.isOriginal()) {
                         Object evaluated = model.eval(var.getExrp(), true);
@@ -397,10 +396,6 @@ public class SymbolicPathWeaver {
             sVar = optional.get();
         }
         return sVar.getExrp();
-//        if (!symbolicVariables.containsKey(key)) {
-//            symbolicVariables.put(key, new SVar(key, value, mkExpr(value, type), true));
-//        }
-//        return symbolicVariables.get(key).getExrp();
     }
 
     private Expr mkExpr(Value value, Type type) {
@@ -458,12 +453,6 @@ public class SymbolicPathWeaver {
                 isOriginal = false;
             }
             symbolicVarStack.add(new SVar(key, variable, expression, isOriginal));
-
-//            if (symbolicVariables.containsKey(key) && symbolicVariables.get(key).isOriginal()){
-//                symbolicVariables.put(key+"_ORIGINAL", symbolicVariables.get(key));
-//                isOriginal = false;
-//            }
-//            symbolicVariables.put(key, new SVar(key, variable, expression, isOriginal));
         }
     }
 
