@@ -2,7 +2,6 @@ package com.github.a1k28.evoc.core.executor.struct;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import sootup.core.jimple.common.stmt.Stmt;
 
 import java.util.ArrayList;
@@ -10,7 +9,6 @@ import java.util.List;
 
 @Getter
 @Setter
-@ToString
 public class SNode {
     private final Stmt unit;
     private SType type;
