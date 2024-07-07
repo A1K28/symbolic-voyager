@@ -117,20 +117,11 @@ public class SymbolicPathWeaver {
 
     private void analyzeReturnValues(SNode node, List<SVar> sVars) throws ClassNotFoundException {
         symbolicVarStack.push();
-        boolean asd = false;
+
+        SType type = null;
 
         if (node.getType() == SType.ASSIGNMENT) {
-            JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
-            Value leftOp = assignStmt.getLeftOp();
-            List<SVar> returnValues = handleAssignment(node);
-            if (!returnValues.isEmpty()) asd = true;
-            for (SVar sVar : returnValues) {
-                symbolicVarStack.push();
-                updateSymbolicVariable(leftOp, sVar.getExrp());
-                for (SNode child : node.getChildren())
-                    analyzeReturnValues(child, sVars);
-                symbolicVarStack.pop();
-            }
+            type = handleAssignment(node, true, sVars);
         }
 
         if (node.getType() == SType.RETURN) {
@@ -138,7 +129,7 @@ public class SymbolicPathWeaver {
             sVars.add(symbolicVarStack.get(getValueKey(unit.getOp())).get());
         }
 
-        if (!asd) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
+        if (SType.INVOKE != type) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
 
         symbolicVarStack.pop();
     }
@@ -146,7 +137,8 @@ public class SymbolicPathWeaver {
     private void analyzePaths(SPath sPath, SNode node) throws ClassNotFoundException {
         solver.push();
         symbolicVarStack.push();
-        boolean asd = false;
+
+        SType type = null;
 
         // handle node types
         if (node.getType() == SType.BRANCH_TRUE
@@ -154,17 +146,7 @@ public class SymbolicPathWeaver {
             handleBranch(node);
         }
         if (node.getType() == SType.ASSIGNMENT) {
-            JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
-            Value leftOp = assignStmt.getLeftOp();
-            List<SVar> returnValues = handleAssignment(node);
-            if (!returnValues.isEmpty()) asd = true;
-            for (SVar sVar : returnValues) {
-                symbolicVarStack.push();
-                updateSymbolicVariable(leftOp, sVar.getExrp());
-                for (SNode child : node.getChildren())
-                    analyzePaths(sPath, child);
-                symbolicVarStack.pop();
-            }
+            type = handleAssignment(node, false, sPath);
         }
         if (node.getType() == SType.INVOKE) {
 //                handleInvoke();
@@ -173,7 +155,7 @@ public class SymbolicPathWeaver {
         // check satisfiability
         if (solver.check() != Status.SATISFIABLE) {
             log.warn("Path is unsatisfiable\n");
-        } else if (!asd) {
+        } else if (SType.INVOKE != type) {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
                 for (SNode child : node.getChildren())
@@ -193,6 +175,24 @@ public class SymbolicPathWeaver {
         Expr z3Condition = translateCondition(condition);
         solver.add(ctx.mkEq(z3Condition, ctx.mkBool(
                 node.getType() == SType.BRANCH_TRUE)));
+    }
+
+    private SType handleAssignment(SNode node, boolean isInnerCall, Object... args)
+            throws ClassNotFoundException {
+        JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+        Value leftOp = assignStmt.getLeftOp();
+        List<SVar> returnValues = handleAssignment(node);
+        for (SVar sVar : returnValues) {
+            symbolicVarStack.push();
+            updateSymbolicVariable(leftOp, sVar.getExrp());
+            if (isInnerCall) for (SNode child : node.getChildren())
+                    analyzeReturnValues(child, (List<SVar>) args[0]);
+            else for (SNode child : node.getChildren())
+                    analyzePaths((SPath) args[0], child);
+            symbolicVarStack.pop();
+        }
+        if (!returnValues.isEmpty()) return SType.INVOKE;
+        return SType.ASSIGNMENT;
     }
 
     private List<SVar> handleAssignment(SNode node) throws ClassNotFoundException {
