@@ -12,4 +12,13 @@ public class SVar {
     private final Value value;
     private final Expr exrp;
     private final boolean isOriginal;
+
+    public static SVar renew(SVar sVar) {
+        return new SVar(
+                sVar.getName(),
+                sVar.getValue(),
+                sVar.getExrp(),
+                true
+        );
+    }
 }

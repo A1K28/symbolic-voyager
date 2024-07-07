@@ -14,7 +14,7 @@ public class SStack {
     }
 
     public Optional<SVar> get(String key) {
-        for (int i = 0; i <= index; i++) {
+        for (int i = index; i >= 0; i--) {
             if (stack.get(i).containsKey(key))
                 return Optional.ofNullable(stack.get(i).get(key));
         }
@@ -26,7 +26,7 @@ public class SStack {
     }
 
     public void update(String oldKey, String newKey) {
-        for (int i = 0; i <= index; i++) {
+        for (int i = index; i >= 0; i--) {
             if (stack.get(i).containsKey(oldKey)) {
                 stack.get(i).put(newKey, stack.get(i).get(oldKey));
                 stack.get(i).remove(oldKey);

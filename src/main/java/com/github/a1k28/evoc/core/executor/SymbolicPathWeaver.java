@@ -13,6 +13,7 @@ import sootup.core.jimple.common.ref.JArrayRef;
 import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
+import sootup.core.jimple.common.stmt.JReturnStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.model.Body;
@@ -23,14 +24,16 @@ import sootup.java.core.JavaSootClassSource;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathWeaver {
     private static final Logger log = Logger.getInstance(SymbolicPathWeaver.class);
     private final String classname;
-    private Solver solver;
-    private Context ctx;
+    private static Context ctx = null;
+    private static Solver solver = null;
+
 //    private Map<String, SVar> symbolicVariables;
     private final SStack symbolicVarStack = new SStack();
     private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
@@ -54,13 +57,12 @@ public class SymbolicPathWeaver {
         closeZ3();
     }
 
-    public List<Value> getPossibleReturnValues(String methodName, List<Value> args) throws ClassNotFoundException {
-        initZ3();
+    public List<SVar> getPossibleReturnValues(String methodName, List<SVar> args) throws ClassNotFoundException {
         SPath sPath = createPath(methodName);
-        args.forEach(this::getSymbolicValue);
-        List<Value> vals = analyzeReturnValues(sPath, sPath.getRoot());
-        closeZ3();
-        return vals;
+        args.forEach(symbolicVarStack::add);
+        List<SVar> sVars = new ArrayList<>();
+        analyzeReturnValues(sPath.getRoot(), sVars);
+        return sVars;
     }
 
     private SPath createPath(String methodName) throws ClassNotFoundException {
@@ -77,12 +79,9 @@ public class SymbolicPathWeaver {
         StmtGraph<?> cfg = body.getStmtGraph();
         createFlowDiagram(sPath, cfg);
 
+        log.debug("Printing method: " + methodName);
         sPath.print();
         return sPath;
-    }
-
-    private List<Value> analyzeReturnValues(SPath sPath, SNode node) {
-        return null;
     }
 
     public static void createFlowDiagram(SPath sPath, StmtGraph<?> cfg) {
@@ -96,12 +95,6 @@ public class SymbolicPathWeaver {
 
         if (!cfg.getTails().contains(current)) {
             List<Stmt> succs = cfg.getAllSuccessors(current);
-//            if (node.getType() == SType.ASSIGNMENT) {
-//                if (((JAssignStmt) current).getRightOp() instanceof AbstractInvokeExpr invoke) {
-//                    String asd = "asdaw";
-//                }
-//            }
-
             if (node.getType() == SType.BRANCH) {
                 if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
                 SNode node2 = sPath.createNode(current);
@@ -122,55 +115,127 @@ public class SymbolicPathWeaver {
         }
     }
 
-    private void analyzePaths(SPath sPath, SNode node) {
+    private void analyzeReturnValues(SNode node, List<SVar> sVars) throws ClassNotFoundException {
+        symbolicVarStack.push();
+        boolean asd = false;
+
+        if (node.getType() == SType.ASSIGNMENT) {
+            JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+            Value leftOp = assignStmt.getLeftOp();
+            List<SVar> returnValues = handleAssignment(node);
+            if (!returnValues.isEmpty()) asd = true;
+            for (SVar sVar : returnValues) {
+                symbolicVarStack.push();
+                updateSymbolicVariable(leftOp, sVar.getExrp());
+                for (SNode child : node.getChildren())
+                    analyzeReturnValues(child, sVars);
+                symbolicVarStack.pop();
+            }
+        }
+
+        if (node.getType() == SType.RETURN) {
+            JReturnStmt unit = (JReturnStmt) node.getUnit();
+            sVars.add(symbolicVarStack.get(getValueKey(unit.getOp())).get());
+        }
+
+        if (!asd) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
+
+        symbolicVarStack.pop();
+    }
+
+    private void analyzePaths(SPath sPath, SNode node) throws ClassNotFoundException {
         solver.push();
         symbolicVarStack.push();
+        boolean asd = false;
 
         // handle node types
-        if (node.getType() != SType.ROOT) {
-            Stmt unit = node.getUnit();
-            if (node.getType() == SType.BRANCH_TRUE
-                    || node.getType() == SType.BRANCH_FALSE) {
-                JIfStmt ifStmt = (JIfStmt) unit;
-                Value condition = ifStmt.getCondition();
-                Expr z3Condition = translateCondition(condition);
-                solver.add(ctx.mkEq(z3Condition, ctx.mkBool(
-                        node.getType() == SType.BRANCH_TRUE)));
-            } else if (node.getType() == SType.ASSIGNMENT) {
-                JAssignStmt assignStmt = (JAssignStmt) unit;
-                Value leftOp = assignStmt.getLeftOp();
-                Value rightOp = assignStmt.getRightOp();
-                AssignmentExprHolder holder = translateValues(leftOp, rightOp);
-                updateSymbolicVariable(leftOp, holder.getRight());
+        if (node.getType() == SType.BRANCH_TRUE
+                || node.getType() == SType.BRANCH_FALSE) {
+            handleBranch(node);
+        }
+        if (node.getType() == SType.ASSIGNMENT) {
+            JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+            Value leftOp = assignStmt.getLeftOp();
+            List<SVar> returnValues = handleAssignment(node);
+            if (!returnValues.isEmpty()) asd = true;
+            for (SVar sVar : returnValues) {
+                symbolicVarStack.push();
+                updateSymbolicVariable(leftOp, sVar.getExrp());
+                for (SNode child : node.getChildren())
+                    analyzePaths(sPath, child);
+                symbolicVarStack.pop();
             }
+        }
+        if (node.getType() == SType.INVOKE) {
+//                handleInvoke();
         }
 
         // check satisfiability
         if (solver.check() != Status.SATISFIABLE) {
             log.warn("Path is unsatisfiable\n");
-        } else {
+        } else if (!asd) {
             // recurse for children
             if (!node.getChildren().isEmpty()) {
                 for (SNode child : node.getChildren())
                     analyzePaths(sPath, child);
             } else {
-                // if tail
-                log.focus("Path is satisfiable");
-                Model model = solver.getModel();
-
-                for (SVar var : symbolicVarStack.getAll()) {
-                    SParam sParam = sPath.getParam(var.getName());
-                    if (sParam != null && var.isOriginal()) {
-                        Object evaluated = model.eval(var.getExrp(), true);
-                        log.info(var.getValue() + " = " + evaluated + " " + sParam + " " + var.isOriginal());
-                    }
-                }
-                log.empty();
+                handleSatisfiability(sPath);
             }
         }
 
         solver.pop();
         symbolicVarStack.pop();
+    }
+
+    private void handleBranch(SNode node) {
+        JIfStmt ifStmt = (JIfStmt) node.getUnit();
+        Value condition = ifStmt.getCondition();
+        Expr z3Condition = translateCondition(condition);
+        solver.add(ctx.mkEq(z3Condition, ctx.mkBool(
+                node.getType() == SType.BRANCH_TRUE)));
+    }
+
+    private List<SVar> handleAssignment(SNode node) throws ClassNotFoundException {
+        JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+        Value leftOp = assignStmt.getLeftOp();
+        Value rightOp = assignStmt.getRightOp();
+        SAssignment holder = translateAndWrapValues(leftOp, rightOp);
+
+        if (holder.getRight().getSType() == SType.INVOKE) {
+            SMethodExpr methodExpr = holder.getRight().asMethod();
+            if (methodExpr.isUnknown()) {
+                return returnPermutations(methodExpr);
+            } else {
+                updateSymbolicVariable(leftOp, handleMethodCall(holder.getRight().asMethod()));
+            }
+        } else {
+            updateSymbolicVariable(leftOp, holder.getRight().getExpr());
+        }
+        return Collections.emptyList();
+    }
+
+    private List<SVar> returnPermutations(SMethodExpr methodExpr) throws ClassNotFoundException {
+        List<SVar> args = methodExpr.getInvokeExpr().getArgs().stream()
+                .map(this::getSymbolicVar)
+                .map(SVar::renew)
+                .toList();
+        String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
+        return new SymbolicPathWeaver(classname).getPossibleReturnValues(sig, args);
+    }
+
+    private void handleSatisfiability(SPath sPath) {
+        // if tail
+        log.info("Path is satisfiable");
+        Model model = solver.getModel();
+
+        for (SVar var : symbolicVarStack.getAll()) {
+            SParam sParam = sPath.getParam(var.getName());
+            if (sParam != null && var.isOriginal()) {
+                Object evaluated = model.eval(var.getExrp(), true);
+                log.debug(var.getValue() + " = " + evaluated + " " + sParam + " " + var.isOriginal());
+            }
+        }
+        log.empty();
     }
 
     private Expr translateCondition(Value condition) {
@@ -200,6 +265,24 @@ public class SymbolicPathWeaver {
             }
         }
         throw new RuntimeException("Condition could not be translated: " + condition);
+    }
+
+    private SAssignment translateAndWrapValues(Value value1, Value value2) {
+        SExpr left;
+        if (value1 instanceof Local) {
+            left = new SExpr(getSymbolicValue(value1, value2.getType()));
+        } else {
+            left = new SExpr(translateValue(value1));
+        }
+
+        SExpr right;
+        if (value2 instanceof AbstractInvokeExpr invoke) {
+            right = wrapMethodCall(invoke);
+        } else {
+            right = new SExpr(translateValue(value2));
+        }
+
+        return new SAssignment(left, right);
     }
 
     private AssignmentExprHolder translateValues(Value value1, Value value2) {
@@ -333,6 +416,40 @@ public class SymbolicPathWeaver {
         throw new RuntimeException("Condition could not be translated: " + binop);
     }
 
+    private SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+        String methodSignature = invoke.getMethodSignature().toString();
+
+        List<Value> args = new ArrayList<>();
+        if (invoke instanceof AbstractInstanceInvokeExpr i)
+            args.add(i.getBase());
+        for (Value arg : invoke.getArgs())
+            args.add(arg);
+        if (invoke instanceof JDynamicInvokeExpr i)
+            for (Value arg : i.getBootstrapArgs())
+                args.add(arg);
+
+        if (methodModels.containsKey(methodSignature)) {
+            return new SMethodExpr(invoke, args, false);
+        } else {
+            return new SMethodExpr(invoke, args, true);
+        }
+    }
+
+    private Expr handleMethodCall(SMethodExpr methodExpr) {
+        String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
+
+        List<Expr> args = methodExpr.getArgs().stream()
+                .map(this::translateValue)
+                .collect(Collectors.toList());
+
+        BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
+        if (methodModel != null) {
+            return methodModel.apply(methodExpr.getInvokeExpr(), args);
+        } else {
+            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
+        }
+    }
+
     private Expr handleMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
@@ -354,38 +471,51 @@ public class SymbolicPathWeaver {
     }
 
     private Expr handleUnknownMethod(AbstractInvokeExpr invoke, List<Expr> args) {
-        // strategy 1: create a fresh symbolic variable
-        Sort returnSort = translateType(invoke.getType());
-        String freshVarName = "result_" + invoke.getMethodSignature().getSubSignature().getName() + "_" + System.identityHashCode(invoke);
-        Expr result = ctx.mkConst(freshVarName, returnSort);
-
-        // strategy 2: add constraints based on method properties
-        if (invoke.getMethodSignature().getSubSignature().getName().startsWith("get")) {
-            // Getter methods typically return a non-null value
-            if (returnSort instanceof SeqSort || returnSort.toString().equals("Object")) {
-                solver.add(ctx.mkNot(ctx.mkEq(result, mkNull(returnSort))));
-            }
-        } else if (invoke.getMethodSignature().getDeclClassType().toString().equals(classname)) {
-//            return callMethod(invoke, args);
-        } else {
-            // TODO: mock and save param as field/param
-            log.warn("Mocking unknown method: " + invoke.getMethodSignature() +". If you would like to" +
-                    " disable this behaviour, please specify the flag --no-mocks");
-            return getSymbolicValue(invoke, invoke.getType());
-//            throw new RuntimeException("Unknown method: " + invoke.getMethodSignature());
+        if (invoke.getMethodSignature().getDeclClassType().toString().equals(classname)) {
         }
 
-        return result;
+        throw new RuntimeException("Unknown method: " + invoke.getMethodSignature());
+
+//        // strategy 1: create a fresh symbolic variable
+//        Sort returnSort = translateType(invoke.getType());
+//        String freshVarName = "result_" + invoke.getMethodSignature().getSubSignature().getName() + "_" + System.identityHashCode(invoke);
+//        Expr result = ctx.mkConst(freshVarName, returnSort);
+//
+//        // strategy 2: add constraints based on method properties
+//        if (invoke.getMethodSignature().getSubSignature().getName().startsWith("get")) {
+//            // Getter methods typically return a non-null value
+//            if (returnSort instanceof SeqSort || returnSort.toString().equals("Object")) {
+//                solver.add(ctx.mkNot(ctx.mkEq(result, mkNull(returnSort))));
+//            }
+//        } else if (invoke.getMethodSignature().getDeclClassType().toString().equals(classname)) {
+////            return callMethod(invoke, args);
+//        } else {
+//            // TODO: mock and save param as field/param
+//            log.warn("Mocking unknown method: " + invoke.getMethodSignature() +". If you would like to" +
+//                    " disable this behaviour, please specify the flag --no-mocks");
+//            return getSymbolicValue(invoke, invoke.getType());
+////            throw new RuntimeException("Unknown method: " + invoke.getMethodSignature());
+//        }
+//
+//        return result;
     }
 
 //    private Expr callMethod(AbstractInvokeExpr invoke, List<Expr> args) {
 //    }
 
     private Expr getSymbolicValue(Value value) {
-        return getSymbolicValue(value, null);
+        return getSymbolicVar(value, null).getExrp();
     }
 
     private Expr getSymbolicValue(Value value, Type type) {
+        return getSymbolicVar(value, type).getExrp();
+    }
+
+    private SVar getSymbolicVar(Value value) {
+        return getSymbolicVar(value, null);
+    }
+
+    private SVar getSymbolicVar(Value value, Type type) {
         String key = getValueKey(value);
         SVar sVar;
         Optional<SVar> optional = symbolicVarStack.get(key);
@@ -395,7 +525,7 @@ public class SymbolicPathWeaver {
         } else {
             sVar = optional.get();
         }
-        return sVar.getExrp();
+        return sVar;
     }
 
     private Expr mkExpr(Value value, Type type) {
@@ -460,19 +590,21 @@ public class SymbolicPathWeaver {
         return value.toString();
     }
 
-    private void initZ3() {
+    private static void initZ3() {
         // Initialize Z3
-        ctx = new Context();
-        solver = ctx.mkSolver();
+        if (ctx == null) {
+            ctx = new Context();
+            solver = ctx.mkSolver();
+        }
     }
 
-    private void closeZ3() {
+    private static void closeZ3() {
         ctx.close();
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathWeaver("com.github.a1k28.Stack").analyzeSymbolicPaths( "test_string");
+        new SymbolicPathWeaver("com.github.a1k28.Stack").analyzeSymbolicPaths( "test_method_call");
     }
 }
