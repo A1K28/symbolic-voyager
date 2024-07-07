@@ -2,10 +2,10 @@ package com.github.a1k28.evoc.core.executor.struct;
 
 import com.microsoft.z3.Expr;
 import lombok.AllArgsConstructor;
-import lombok.Setter;
+import lombok.Getter;
 import sootup.core.jimple.basic.Value;
 
-@Setter
+@Getter
 @AllArgsConstructor
 public class SVar {
     private final String name;
