@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.helper;
 
 import com.google.gson.Gson;
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestClient {
     private static final Gson gson = new Gson();
 

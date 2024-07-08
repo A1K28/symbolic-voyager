@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.helper;
 
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -10,7 +11,7 @@ import java.util.List;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Opcodes.IF_ACMPNE;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ASMHelper {
     public final static List<Integer> genericComparisonOpCodes = List.of(
             IFEQ, IFNE, IFLT, IFGE, IFGT, IFLE

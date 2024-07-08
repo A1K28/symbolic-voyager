@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.helper;
 
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.launcher.Launcher;
@@ -11,7 +12,7 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import java.lang.reflect.Method;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DynamicTestRunner {
     private static final Logger log = Logger.getInstance(DynamicTestRunner.class);
 

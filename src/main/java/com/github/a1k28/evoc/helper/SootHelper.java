@@ -1,13 +1,9 @@
 package com.github.a1k28.evoc.helper;
 
-import com.github.a1k28.evoc.core.executor.struct.SNode;
-import com.github.a1k28.evoc.core.executor.struct.SPath;
-import com.github.a1k28.evoc.core.executor.struct.SType;
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
-import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
-import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.ClassType;
@@ -21,9 +17,8 @@ import sootup.java.core.language.JavaLanguage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootHelper {
     public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
         int javaVersion = getJavaVersion(Class.forName(className));
@@ -53,39 +48,40 @@ public class SootHelper {
     public static SootMethod getSootMethod(SootClass<JavaSootClassSource> sootClass, String methodName) {
         // Get the method
         return sootClass.getMethods().stream()
-                .filter(e -> e.getName().equals(methodName)).findFirst().get();
+                .filter(e -> e.getSignature().getSubSignature().toString().equals(methodName)
+                        || e.getName().equals(methodName)).findFirst().get();
     }
 
-    public static void createFlowDiagram(SPath sPath, StmtGraph<?> cfg) {
-        Stmt start = cfg.getStartingStmt();
-        dfs(cfg, start, sPath, sPath.getRoot());
-    }
+//    public static void createFlowDiagram(SPath sPath, StmtGraph<?> cfg) {
+//        Stmt start = cfg.getStartingStmt();
+//        dfs(cfg, start, sPath, sPath.getRoot());
+//    }
 
-    private static void dfs(StmtGraph<?> cfg, Stmt current, SPath sPath, SNode parent) {
-        SNode node = sPath.createNode(current);
-        parent.addChild(node);
-
-        if (!cfg.getTails().contains(current)) {
-            List<Stmt> succs = cfg.getAllSuccessors(current);
-            if (node.getType() == SType.BRANCH) {
-                if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
-                SNode node2 = sPath.createNode(current);
-                parent.addChild(node2);
-
-                node.setType(SType.BRANCH_FALSE);
-                node2.setType(SType.BRANCH_TRUE);
-
-                dfs(cfg, succs.get(0), sPath, node);
-                dfs(cfg, succs.get(1), sPath, node2);
-            } else {
-                for (Stmt succ : succs) {
-                    if (!node.containsParent(succ)) {
-                        dfs(cfg, succ, sPath, node);
-                    }
-                }
-            }
-        }
-    }
+//    private static void dfs(StmtGraph<?> cfg, Stmt current, SPath sPath, SNode parent) {
+//        SNode node = sPath.createNode(current);
+//        parent.addChild(node);
+//
+//        if (!cfg.getTails().contains(current)) {
+//            List<Stmt> succs = cfg.getAllSuccessors(current);
+//            if (node.getType() == SType.BRANCH) {
+//                if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
+//                SNode node2 = sPath.createNode(current);
+//                parent.addChild(node2);
+//
+//                node.setType(SType.BRANCH_FALSE);
+//                node2.setType(SType.BRANCH_TRUE);
+//
+//                dfs(cfg, succs.get(0), sPath, node);
+//                dfs(cfg, succs.get(1), sPath, node2);
+//            } else {
+//                for (Stmt succ : succs) {
+//                    if (!node.containsParent(succ)) {
+//                        dfs(cfg, succ, sPath, node);
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     public static int getJavaVersion(Class<?> clazz) {
         try (InputStream is = clazz.getClassLoader().getResourceAsStream(

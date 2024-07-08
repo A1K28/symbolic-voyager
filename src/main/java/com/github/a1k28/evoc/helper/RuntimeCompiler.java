@@ -4,6 +4,7 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import javax.tools.JavaCompiler;
@@ -15,7 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RuntimeCompiler {
     private static final Logger log = Logger.getInstance(RuntimeCompiler.class);
 

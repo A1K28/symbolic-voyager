@@ -30,6 +30,7 @@ public class SStack {
             if (stack.get(i).containsKey(oldKey)) {
                 stack.get(i).put(newKey, stack.get(i).get(oldKey));
                 stack.get(i).remove(oldKey);
+                return;
             }
         }
     }
