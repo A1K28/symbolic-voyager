@@ -61,29 +61,29 @@ public class Z3Translator {
         return ctx.mkConst(value.toString(), sort);
     }
 
-    public SAssignment translateAndWrapValues(Value value1, Value value2) {
+    public SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr left;
         if (value1 instanceof Local) {
-            left = new SExpr(getSymbolicValue(value1, value2.getType()));
+            left = new SExpr(getSymbolicValue(value1, value2.getType(), varType));
         } else {
-            left = new SExpr(translateValue(value1));
+            left = new SExpr(translateValue(value1, varType));
         }
 
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
             right = wrapMethodCall(invoke);
         } else {
-            right = new SExpr(translateValue(value2));
+            right = new SExpr(translateValue(value2, varType));
         }
 
         return new SAssignment(left, right);
     }
 
-    public Expr handleMethodCall(SMethodExpr methodExpr) {
+    public Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
 
         List<Expr> args = methodExpr.getArgs().stream()
-                .map(this::translateValue)
+                .map(e -> this.translateValue(e, varType))
                 .collect(Collectors.toList());
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
@@ -94,9 +94,9 @@ public class Z3Translator {
         }
     }
 
-    public Expr translateCondition(Value condition) {
+    public Expr translateCondition(Value condition, VarType varType) {
         if (condition instanceof AbstractConditionExpr exp) {
-            AssignmentExprHolder holder = translateValues(exp.getOp1(), exp.getOp2());
+            AssignmentExprHolder holder = translateValues(exp.getOp1(), exp.getOp2(), varType);
             Expr e1 = holder.getLeft();
             Expr e2 = holder.getRight();
             if (e1.isBool() && e2.isInt()) {
@@ -142,23 +142,23 @@ public class Z3Translator {
         }
     }
 
-    private AssignmentExprHolder translateValues(Value value1, Value value2) {
+    private AssignmentExprHolder translateValues(Value value1, Value value2, VarType varType) {
         Expr left;
         if (value1 instanceof Local) {
-            left = getSymbolicValue(value1, value2.getType());
+            left = getSymbolicValue(value1, value2.getType(), varType);
         } else {
-            left = translateValue(value1);
+            left = translateValue(value1, varType);
         }
-        Expr right = translateValue(value2);
+        Expr right = translateValue(value2, varType);
         return new AssignmentExprHolder(left, right);
     }
 
-    private Expr translateValue(Value value) {
+    private Expr translateValue(Value value, VarType varType) {
         if (value instanceof Local) {
-            return getSymbolicValue(value);
+            return getSymbolicValue(value, varType);
         }
         if (value instanceof JFieldRef) {
-            return getSymbolicValue(value);
+            return getSymbolicValue(value, varType);
         }
         if (value instanceof IntConstant v) {
             return ctx.mkInt(v.getValue());
@@ -179,7 +179,7 @@ public class Z3Translator {
             return ctx.mkString(v.getValue().replaceFirst("\u0001", ""));
         }
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
-            return handleMethodCall(abstractInvoke);
+            return handleMethodCall(abstractInvoke, varType);
         }
         if (value instanceof JNewExpr) {
             return ctx.mkConst(value.toString(), ctx.mkUninterpretedSort(value.getType().toString()));
@@ -195,15 +195,15 @@ public class Z3Translator {
         }
         if (value instanceof AbstractUnopExpr unop) {
             if (value instanceof JLengthExpr)
-                return ctx.mkLength(translateValue(value));
+                return ctx.mkLength(translateValue(value, varType));
             if (unop instanceof JNegExpr)
-                return ctx.mkNot(translateValue(value));
+                return ctx.mkNot(translateValue(value, varType));
         }
         if (value instanceof AbstractExprVisitor visitor) {
             // handle
         }
         if (value instanceof AbstractBinopExpr binop) {
-            AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2());
+            AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2(), varType);
             Expr left = holder.getLeft();
             Expr right = holder.getRight();
             if (binop instanceof JAddExpr)
@@ -273,17 +273,17 @@ public class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + binop);
     }
 
-    private Expr handleMethodCall(AbstractInvokeExpr invoke) {
+    private Expr handleMethodCall(AbstractInvokeExpr invoke, VarType varType) {
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Expr> args = new ArrayList<>();
         if (invoke instanceof AbstractInstanceInvokeExpr i)
-            args.add(translateValue(i.getBase()));
+            args.add(translateValue(i.getBase(), varType));
         for (Value arg : invoke.getArgs())
-            args.add(translateValue(arg));
+            args.add(translateValue(arg, varType));
         if (invoke instanceof JDynamicInvokeExpr i)
             for (Value arg : i.getBootstrapArgs())
-                args.add(translateValue(arg));
+                args.add(translateValue(arg, varType));
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
         if (methodModel != null) {
@@ -358,19 +358,19 @@ public class Z3Translator {
         return ctx.mkUninterpretedSort(type.toString());
     }
 
-    private Expr getSymbolicValue(Value value) {
-        return getSymbolicVar(value, null).getExpr();
+    private Expr getSymbolicValue(Value value, VarType varType) {
+        return getSymbolicVar(value, null, varType).getExpr();
     }
 
-    private Expr getSymbolicValue(Value value, Type type) {
-        return getSymbolicVar(value, type).getExpr();
-    }
-//
-    public SVar getSymbolicVar(Value value) {
-        return getSymbolicVar(value, null);
+    private Expr getSymbolicValue(Value value, Type type, VarType varType) {
+        return getSymbolicVar(value, type, varType).getExpr();
     }
 
-    public void updateSymbolicVariable(Value variable, Expr expression) {
+    public SVar getSymbolicVarStrict(Value value) {
+        return getSymbolicVar(value, null, null);
+    }
+
+    public void updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
             String key = getValueKey(variable);
             boolean isOriginal = true;
@@ -379,20 +379,20 @@ public class Z3Translator {
                 symbolicVarStack.update(key, key+"_ORIGINAL");
                 isOriginal = false;
             }
-            symbolicVarStack.add(new SVar(key, variable, expression, isOriginal));
+            symbolicVarStack.add(new SVar(key, variable, expression, varType, isOriginal));
         }
     }
 
-    private SVar getSymbolicVar(Value value, Type type) {
+    private SVar getSymbolicVar(Value value, Type type, VarType varType) {
         String key = getValueKey(value);
-        SVar sVar;
         Optional<SVar> optional = symbolicVarStack.get(key);
-        if (optional.isEmpty()) {
-            sVar = new SVar(key, value, mkExpr(value, type), true);
-            symbolicVarStack.add(sVar);
-        } else {
-            sVar = optional.get();
-        }
+        return optional.orElseGet(() -> saveSymbolicVar(value, type, varType));
+    }
+
+    public SVar saveSymbolicVar(Value value, Type type, VarType varType) {
+        String key = getValueKey(value);
+        SVar sVar = new SVar(key, value, mkExpr(value, type), varType, true);
+        symbolicVarStack.add(sVar);
         return sVar;
     }
 
