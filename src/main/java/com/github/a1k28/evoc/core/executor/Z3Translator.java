@@ -16,8 +16,9 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class Z3Translator {
+class Z3Translator {
     private static Context ctx = null;
+    private final SPath sPath;
     private final SStack symbolicVarStack;
     private static Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
 
@@ -32,36 +33,40 @@ public class Z3Translator {
                 ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
     }
 
-    public Z3Translator(SStack symbolicVarStack) {
+    Z3Translator(SPath sPath, SStack symbolicVarStack) {
+        this.sPath = sPath;
         this.symbolicVarStack = symbolicVarStack;
     }
 
-    public static Solver makeSolver() {
+    static Solver makeSolver() {
         return ctx.mkSolver();
     }
 
-    public static void initZ3() {
+    static void initZ3() {
         // Initialize Z3
         if (ctx == null) {
             ctx = new Context();
         }
     }
 
-    public static void closeZ3() {
+    static void closeZ3() {
         ctx.close();
     }
 
-    public Expr mkEq(Expr expr, boolean val) {
+    Expr mkEq(Expr expr, boolean val) {
         return ctx.mkEq(expr, ctx.mkBool(val));
     }
 
-    public Expr mkExpr(Value value, Type type) {
-        if (type == null) type = value.getType();
-        Sort sort = translateType(type);
-        return ctx.mkConst(value.toString(), sort);
+    Expr mkEq(Expr expr, Expr val) {
+        return ctx.mkEq(expr, val);
     }
 
-    public SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
+    Expr mkExpr(String name, Type type) {
+        Sort sort = translateType(type);
+        return ctx.mkConst(name, sort);
+    }
+
+    SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr left;
         if (value1 instanceof Local) {
             left = new SExpr(getSymbolicValue(value1, value2.getType(), varType));
@@ -79,7 +84,7 @@ public class Z3Translator {
         return new SAssignment(left, right);
     }
 
-    public Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
+    Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
 
         List<Expr> args = methodExpr.getArgs().stream()
@@ -94,7 +99,7 @@ public class Z3Translator {
         }
     }
 
-    public Expr translateCondition(Value condition, VarType varType) {
+    Expr translateCondition(Value condition, VarType varType) {
         if (condition instanceof AbstractConditionExpr exp) {
             AssignmentExprHolder holder = translateValues(exp.getOp1(), exp.getOp2(), varType);
             Expr e1 = holder.getLeft();
@@ -366,37 +371,34 @@ public class Z3Translator {
         return getSymbolicVar(value, type, varType).getExpr();
     }
 
-    public SVar getSymbolicVarStrict(Value value) {
+    SVar getSymbolicVarStrict(Value value) {
         return getSymbolicVar(value, null, null);
     }
 
-    public void updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
+    SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
-            String key = getValueKey(variable);
-            boolean isOriginal = true;
-            Optional<SVar> optional = symbolicVarStack.get(key);
-            if (optional.isPresent() && optional.get().isOriginal()) {
-                symbolicVarStack.update(key, key+"_ORIGINAL");
-                isOriginal = false;
-            }
-            symbolicVarStack.add(new SVar(key, variable, expression, varType, isOriginal));
+            String name = getValueName(variable);
+            if (name.startsWith("this.")) name = name.substring(5);
+            if (sPath.getFields().contains(name)) varType = VarType.FIELD;
+            return symbolicVarStack.add(name, variable, expression, varType);
         }
+        return null;
     }
 
     private SVar getSymbolicVar(Value value, Type type, VarType varType) {
-        String key = getValueKey(value);
+        String key = getValueName(value);
         Optional<SVar> optional = symbolicVarStack.get(key);
         return optional.orElseGet(() -> saveSymbolicVar(value, type, varType));
     }
 
-    public SVar saveSymbolicVar(Value value, Type type, VarType varType) {
-        String key = getValueKey(value);
-        SVar sVar = new SVar(key, value, mkExpr(value, type), varType, true);
-        symbolicVarStack.add(sVar);
-        return sVar;
+    SVar saveSymbolicVar(Value value, Type type, VarType varType) {
+        String name = getValueName(value);
+        if (type == null) type = value.getType();
+        Expr expr = mkExpr(name, type);
+        return updateSymbolicVariable(value, expr, varType);
     }
 
-    public String getValueKey(Value value) {
+    String getValueName(Value value) {
         return value.toString();
     }
 
