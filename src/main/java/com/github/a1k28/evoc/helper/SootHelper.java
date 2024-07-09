@@ -1,9 +1,16 @@
 package com.github.a1k28.evoc.helper;
 
+import com.github.a1k28.evoc.core.executor.struct.SNode;
+import com.github.a1k28.evoc.core.executor.struct.SParam;
+import com.github.a1k28.evoc.core.executor.struct.SPath;
+import com.github.a1k28.evoc.core.executor.struct.SType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
+import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
+import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.ClassType;
@@ -12,11 +19,14 @@ import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.core.JavaProject;
 import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootClassSource;
+import sootup.java.core.JavaSootField;
 import sootup.java.core.language.JavaLanguage;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootHelper {
@@ -95,6 +105,63 @@ public class SootHelper {
             return mapVersionToJava(majorVersion, minorVersion);
         } catch (IOException e) {
             throw new RuntimeException("Error reading class file", e);
+        }
+    }
+
+    public static void createFlowDiagram(SPath sPath, Body body) {
+        StmtGraph<?> cfg = body.getStmtGraph();
+        Stmt start = cfg.getStartingStmt();
+        dfs(cfg, start, sPath, sPath.getRoot());
+    }
+
+    public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
+        List<JavaSootField> fields = new ArrayList<>();
+        addFields(sootClass, fields);
+        return fields;
+    }
+
+    private static void addFields(SootClass<?> sootClass, List<JavaSootField> fields) throws ClassNotFoundException {
+        sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) fields.add(j);});
+        if (sootClass.hasSuperclass()) {
+            // TODO: stop within the same package?
+            String name = sootClass.getSuperclass().get().toString();
+            if (!name.equals(Object.class.getName())) {
+                SootClass<?> parent = SootHelper.getSootClass(sootClass.getSuperclass().get().toString());
+                addFields(parent, fields);
+            }
+        }
+    }
+
+//    private void addField(JavaSootField field) {
+//        String key = field.toString();
+//        if (key.contains(": "))
+//            key = key.substring(key.indexOf(": "), key.length()-1);
+//        this.nameToParamIdx.put(key, new SParam());
+//    }
+
+    private static void dfs(StmtGraph<?> cfg, Stmt current, SPath sPath, SNode parent) {
+        SNode node = sPath.createNode(current);
+        parent.addChild(node);
+
+        if (!cfg.getTails().contains(current)) {
+            List<Stmt> succs = cfg.getAllSuccessors(current);
+            if (node.getType() == SType.BRANCH) {
+                if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
+                SNode node2 = sPath.createNode(current);
+                parent.addChild(node2);
+
+                node.setType(SType.BRANCH_FALSE);
+                node2.setType(SType.BRANCH_TRUE);
+
+                dfs(cfg, succs.get(0), sPath, node);
+                dfs(cfg, succs.get(1), sPath, node2);
+            } else {
+                for (Stmt succ : succs) {
+                    if (!node.containsParent(succ)) {
+                        dfs(cfg, succ, sPath, node);
+                    }
+                }
+            }
         }
     }
 
