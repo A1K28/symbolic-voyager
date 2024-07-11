@@ -226,13 +226,10 @@ public class SymbolicPathWeaver {
         Model model = solver.getModel();
 
         for (SVar var : symbolicVarStack.getAll()) {
-//            SParam sParam = sPath.getParam(var.getName());
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER && var.getType() != VarType.FIELD) continue;
             Object evaluated = model.eval(var.getExpr(), true);
             log.debug(evaluated + " " + var);
-//            if (sParam != null && var.isOriginal()) {
-//            }
         }
         log.empty();
     }

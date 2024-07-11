@@ -16,12 +16,10 @@ public class SPath {
 
     private final SNode root;
     private final Set<String> fields;
-//    private final Map<String, SParam> nameToParamIdx;
 
     public SPath() {
         this.root = new SNode();
         this.fields = new HashSet<>();
-//        this.nameToParamIdx = new HashMap<>();
     }
 
     public SNode createNode(Stmt unit) {
@@ -32,33 +30,6 @@ public class SPath {
         this.root.print(1);
         log.empty();
     }
-
-//    public SParam getParam(String key) {
-//        if (key.contains(": "))
-//            key = key.substring(key.indexOf(": "), key.length()-1);
-//        if (nameToParamIdx.containsKey(key))
-//            return nameToParamIdx.get(key);
-//        return null;
-//    }
-
-//    public void addFields(SootClass sootClass) throws ClassNotFoundException {
-//        sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) addField(j);});
-//        if (sootClass.hasSuperclass()) {
-//            // TODO: stop within the same package?
-//            String name = sootClass.getSuperclass().get().toString();
-//            if (!name.equals(Object.class.getName())) {
-//                SootClass parent = SootHelper.getSootClass(sootClass.getSuperclass().get().toString());
-//                addFields(parent);
-//            }
-//        }
-//    }
-//
-//    private void addField(JavaSootField field) {
-//        String key = field.toString();
-//        if (key.contains(": "))
-//            key = key.substring(key.indexOf(": "), key.length()-1);
-//        this.nameToParamIdx.put(key, new SParam());
-//    }
 
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
