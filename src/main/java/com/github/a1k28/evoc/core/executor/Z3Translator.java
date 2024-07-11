@@ -66,19 +66,26 @@ class Z3Translator {
         return ctx.mkConst(name, sort);
     }
 
-    SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
-        SExpr left;
-        if (value1 instanceof Local) {
-            left = new SExpr(getSymbolicValue(value1, value2.getType(), varType));
-        } else {
-            left = new SExpr(translateValue(value1, varType));
-        }
+    Expr mkExpr(String name, Sort sort) {
+        return ctx.mkConst(name, sort);
+    }
 
+    SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
             right = wrapMethodCall(invoke);
         } else {
             right = new SExpr(translateValue(value2, varType));
+        }
+
+        SExpr left;
+        if (value1 instanceof Local) {
+            if (value2.getType().getClass() == UnknownType.class)
+                left = new SExpr(getSymbolicValue(value1, right.getExpr().getSort(), varType));
+            else
+                left = new SExpr(getSymbolicValue(value1, value2.getType(), varType));
+        } else {
+            left = new SExpr(translateValue(value1, varType));
         }
 
         return new SAssignment(left, right);
@@ -371,6 +378,10 @@ class Z3Translator {
         return getSymbolicVar(value, type, varType).getExpr();
     }
 
+    private Expr getSymbolicValue(Value value, Sort sort, VarType varType) {
+        return getSymbolicVarBySort(value, sort, varType).getExpr();
+    }
+
     SVar getSymbolicVarStrict(Value value) {
         return getSymbolicVar(value, null, null);
     }
@@ -391,10 +402,22 @@ class Z3Translator {
         return optional.orElseGet(() -> saveSymbolicVar(value, type, varType));
     }
 
+    private SVar getSymbolicVarBySort(Value value, Sort sort, VarType varType) {
+        String key = getValueName(value);
+        Optional<SVar> optional = symbolicVarStack.get(key);
+        return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType));
+    }
+
     SVar saveSymbolicVar(Value value, Type type, VarType varType) {
         String name = getValueName(value);
         if (type == null) type = value.getType();
         Expr expr = mkExpr(name, type);
+        return updateSymbolicVariable(value, expr, varType);
+    }
+
+    SVar saveSymbolicVar(Value value, Sort sort, VarType varType) {
+        String name = getValueName(value);
+        Expr expr = mkExpr(name, sort);
         return updateSymbolicVariable(value, expr, varType);
     }
 
