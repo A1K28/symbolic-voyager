@@ -102,9 +102,9 @@ public class SymbolicPathWeaver {
         if (node.getType() == SType.ASSIGNMENT) {
             type = handleAssignment(node, false, sPath);
         }
-//        if (node.getType() == SType.INVOKE) {
-//                handleInvoke();
-//        }
+        if (node.getType() == SType.INVOKE) {
+            // handle void calls
+        }
 
         // check satisfiability
         if (solver.check() != Status.SATISFIABLE) {
