@@ -1,7 +1,6 @@
 package ${package};
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
