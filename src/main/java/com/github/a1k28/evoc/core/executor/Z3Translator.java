@@ -20,41 +20,42 @@ class Z3Translator {
     private static Context ctx = null;
     private final SPath sPath;
     private final SStack symbolicVarStack;
-    private static Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
-
-    static {
-        methodModels = new HashMap<>();
-        // Register known method models
-        methodModels.put("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
-                ctx.mkEq(args.get(0), args.get(1)));
-        methodModels.put("<java.lang.String: int length()>", (invoke, args) ->
-                ctx.mkLength(args.get(0)));
-        methodModels.put("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
-                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
-    }
+    private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
 
     Z3Translator(SPath sPath, SStack symbolicVarStack) {
+        initZ3();
+
         this.sPath = sPath;
         this.symbolicVarStack = symbolicVarStack;
+
+        this.methodModels = new HashMap<>();
+        // Register known method models
+        this.methodModels.put("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
+                mkEq(args.get(0), args.get(1)));
+        this.methodModels.put("<java.lang.String: int length()>", (invoke, args) ->
+                ctx.mkLength(args.get(0)));
+        this.methodModels.put("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
+                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
     }
 
     static Solver makeSolver() {
         return ctx.mkSolver();
     }
 
-    static void initZ3() {
+    static synchronized void initZ3() {
         // Initialize Z3
         if (ctx == null) {
             ctx = new Context();
         }
     }
 
-    static void closeZ3() {
+    static synchronized void close() {
         ctx.close();
+        ctx = null;
     }
 
     Expr mkEq(Expr expr, boolean val) {
-        return ctx.mkEq(expr, ctx.mkBool(val));
+        return mkEq(expr, ctx.mkBool(val));
     }
 
     Expr mkEq(Expr expr, Expr val) {
@@ -108,9 +109,9 @@ class Z3Translator {
 
     Expr translateCondition(Value condition, VarType varType) {
         if (condition instanceof AbstractConditionExpr exp) {
-            AssignmentExprHolder holder = translateValues(exp.getOp1(), exp.getOp2(), varType);
-            Expr e1 = holder.getLeft();
-            Expr e2 = holder.getRight();
+            SAssignment holder = translateAndWrapValues(exp.getOp1(), exp.getOp2(), varType);
+            Expr e1 = holder.getLeft().getExpr();
+            Expr e2 = holder.getRight().getExpr();
             if (e1.isBool() && e2.isInt()) {
                 int val = ((IntNum) e2).getInt();
                 e2 = ctx.mkBool(val == 1);
@@ -215,9 +216,9 @@ class Z3Translator {
             // handle
         }
         if (value instanceof AbstractBinopExpr binop) {
-            AssignmentExprHolder holder = translateValues(binop.getOp1(), binop.getOp2(), varType);
-            Expr left = holder.getLeft();
-            Expr right = holder.getRight();
+            SAssignment holder = translateAndWrapValues(binop.getOp1(), binop.getOp2(), varType);
+            Expr left = holder.getLeft().getExpr();
+            Expr right = holder.getRight().getExpr();
             if (binop instanceof JAddExpr)
                 return ctx.mkAdd(left, right);
             if (binop instanceof JSubExpr)
@@ -389,7 +390,6 @@ class Z3Translator {
     SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
             String name = getValueName(variable);
-            if (name.startsWith("this.")) name = name.substring(5);
             if (sPath.getFields().contains(name)) varType = VarType.FIELD;
             return symbolicVarStack.add(name, variable, expression, varType);
         }
@@ -422,7 +422,9 @@ class Z3Translator {
     }
 
     String getValueName(Value value) {
-        return value.toString();
+        String res = value.toString();
+        if (res.startsWith("this.")) res = res.substring(5);
+        return res;
     }
 
     private Expr mkNull(SStack stack, Sort sort) {

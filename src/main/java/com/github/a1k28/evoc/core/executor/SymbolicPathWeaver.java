@@ -37,11 +37,10 @@ public class SymbolicPathWeaver {
     }
 
     public void analyzeSymbolicPaths(String methodName) throws ClassNotFoundException {
-        initZ3();
         solver = makeSolver();
         SPath sPath = createPath(methodName);
         analyzePaths(sPath.getRoot());
-        closeZ3();
+        close();
     }
 
     public List<List<SVar>> getPossibleReturnValues(String methodName, List<SVar> args) throws ClassNotFoundException {
@@ -182,9 +181,9 @@ public class SymbolicPathWeaver {
                         varType);
             }
         } else {
-            if (holder.getRight().getExpr() != null && !holder.getRight().getExpr().isConst()) {
-                solver.add(z3t.mkEq(holder.getLeft().getExpr(), holder.getRight().getExpr()));
-            }
+//            if (holder.getRight().getExpr() != null && !holder.getRight().getExpr().isConst()) {
+//                solver.add(z3t.mkEq(holder.getLeft().getExpr(), holder.getRight().getExpr()));
+//            }
 
             z3t.updateSymbolicVariable(leftOp, holder.getRight().getExpr(), varType);
         }

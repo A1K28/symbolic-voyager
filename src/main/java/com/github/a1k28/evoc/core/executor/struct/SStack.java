@@ -31,10 +31,12 @@ public class SStack {
     }
 
     public SVar add(String name, Value value, Expr expr, VarType type) {
+//        Optional<SVar> existing = find(value, expr);
+//        if (existing.isPresent()) return existing.get();
+
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
         if (optional.isPresent()) {
-//            update(name, name+"_DECLARATION");
             sVar = new SVar(name, value, expr, type, false);
         }
         else {
@@ -80,6 +82,11 @@ public class SStack {
     public void pop() {
         stack.remove(index);
         index--;
+    }
+
+    private Optional<SVar> find(Value value, Expr expr) {
+        return getAll().stream().filter(e -> e.getValue().toString().equals(value.toString())
+                && e.getExpr().equals(expr)).findFirst();
     }
 
     private void _add(SVar sVar) {
