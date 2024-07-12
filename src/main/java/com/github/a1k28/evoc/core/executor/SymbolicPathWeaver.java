@@ -69,23 +69,6 @@ public class SymbolicPathWeaver {
         return sPath;
     }
 
-    private void analyzeReturnValues(SNode node, List<List<SVar>> sVars) throws ClassNotFoundException {
-        symbolicVarStack.push();
-
-        SType type = null;
-
-        if (node.getType() == SType.ASSIGNMENT) {
-            type = handleAssignment(node, true, sVars);
-        }
-        if (node.getType() == SType.RETURN) {
-            sVars.add(handleReturn(node));
-        }
-
-        if (SType.INVOKE != type) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
-
-        symbolicVarStack.pop();
-    }
-
     private void analyzePaths(SNode node) throws ClassNotFoundException {
         solver.push();
         symbolicVarStack.push();
@@ -100,10 +83,10 @@ public class SymbolicPathWeaver {
             handleBranch(node);
         }
         if (node.getType() == SType.ASSIGNMENT) {
-            type = handleAssignment(node, false, sPath);
+            type = handleAssignment(node, false);
         }
         if (node.getType() == SType.INVOKE) {
-            // handle void calls
+            System.out.println("Handle void method calls");
         }
 
         // check satisfiability
@@ -123,6 +106,23 @@ public class SymbolicPathWeaver {
         symbolicVarStack.pop();
     }
 
+    private void analyzeReturnValues(SNode node, List<List<SVar>> sVars) throws ClassNotFoundException {
+        symbolicVarStack.push();
+
+        SType type = null;
+
+        if (node.getType() == SType.ASSIGNMENT) {
+            type = handleAssignment(node, true, sVars);
+        }
+        if (node.getType() == SType.RETURN) {
+            sVars.add(handleReturn(node));
+        }
+
+        if (SType.INVOKE != type) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
+
+        symbolicVarStack.pop();
+    }
+
     private void handleBranch(SNode node) {
         JIfStmt ifStmt = (JIfStmt) node.getUnit();
         Value condition = ifStmt.getCondition();
@@ -132,33 +132,8 @@ public class SymbolicPathWeaver {
 
     private SType handleAssignment(SNode node, boolean isInnerCall, Object... args)
             throws ClassNotFoundException {
-        JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
-        VarType varType = getVarType(assignStmt);
-
-        Value leftOp = assignStmt.getLeftOp();
         List<List<SVar>> response = handleAssignment(node);
-
-        for (List<SVar> returnValues : response) {
-            symbolicVarStack.push();
-            for (SVar sVar : returnValues) {
-                if (sVar.getType() != VarType.FIELD) continue;
-                z3t.updateSymbolicVariable(sVar.getValue(), sVar.getExpr(), VarType.FIELD);
-            }
-
-            for (SVar sVar : returnValues) {
-                if (sVar.getType() != VarType.RETURN_VALUE) continue;
-                symbolicVarStack.push();
-                z3t.updateSymbolicVariable(leftOp, sVar.getExpr(), varType);
-                if (isInnerCall) for (SNode child : node.getChildren())
-                    analyzeReturnValues(child, (List<List<SVar>>) args[0]);
-                else for (SNode child : node.getChildren())
-                    analyzePaths(child);
-                symbolicVarStack.pop();
-            }
-
-            symbolicVarStack.pop();
-        }
-
+        updateStack(node, response, isInnerCall, args);
         if (!response.isEmpty()) return SType.INVOKE;
         return SType.ASSIGNMENT;
     }
@@ -196,6 +171,34 @@ public class SymbolicPathWeaver {
         vars.addAll(symbolicVarStack.getFields());
         keepLastOccurrence(vars);
         return vars;
+    }
+
+    private void updateStack(SNode node, List<List<SVar>> vars, boolean isInnerCall, Object... args)
+            throws ClassNotFoundException {
+        JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+        VarType varType = getVarType(assignStmt);
+        Value leftOp = assignStmt.getLeftOp();
+        for (List<SVar> returnValues : vars) {
+            symbolicVarStack.push();
+
+            for (SVar sVar : returnValues) {
+                if (sVar.getType() != VarType.FIELD) continue;
+                z3t.updateSymbolicVariable(sVar.getValue(), sVar.getExpr(), VarType.FIELD);
+            }
+
+            for (SVar sVar : returnValues) {
+                if (sVar.getType() != VarType.RETURN_VALUE) continue;
+                symbolicVarStack.push();
+                z3t.updateSymbolicVariable(leftOp, sVar.getExpr(), varType);
+                if (isInnerCall) for (SNode child : node.getChildren())
+                    analyzeReturnValues(child, (List<List<SVar>>) args[0]);
+                else for (SNode child : node.getChildren())
+                    analyzePaths(child);
+                symbolicVarStack.pop();
+            }
+
+            symbolicVarStack.pop();
+        }
     }
 
     private void keepLastOccurrence(List<SVar> vars) {
