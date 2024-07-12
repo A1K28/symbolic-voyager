@@ -144,7 +144,13 @@
       <artifactId>java-jar</artifactId>
       <version>4.11.2</version>
     </dependency>
-<!--    <dependency>-->
+    <!-- https://mvnrepository.com/artifact/org.freemarker/freemarker -->
+    <dependency>
+      <groupId>org.freemarker</groupId>
+      <artifactId>freemarker</artifactId>
+      <version>2.3.33</version>
+    </dependency>
+    <!--    <dependency>-->
 <!--      <groupId>org.sosy-lab</groupId>-->
 <!--      <artifactId>java-smt</artifactId>-->
 <!--      <version>3.14.3</version>-->
