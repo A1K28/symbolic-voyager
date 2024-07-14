@@ -10,12 +10,12 @@ import java.util.List;
 public class SMethodExpr extends SExpr {
     private final AbstractInvokeExpr invokeExpr;
     private final List<Value> args;
-    private final boolean isUnknown;
+    private final boolean invokable;
 
-    public SMethodExpr(AbstractInvokeExpr invokeExpr, List<Value> args, boolean isUnknown) {
+    public SMethodExpr(AbstractInvokeExpr invokeExpr, List<Value> args, boolean invokable) {
         super(SType.INVOKE);
         this.invokeExpr = invokeExpr;
         this.args = args;
-        this.isUnknown = isUnknown;
+        this.invokable = invokable;
     }
 }

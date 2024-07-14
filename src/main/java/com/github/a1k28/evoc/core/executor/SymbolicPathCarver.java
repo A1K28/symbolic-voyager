@@ -138,7 +138,7 @@ public class SymbolicPathCarver {
             throws ClassNotFoundException {
         JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
         SMethodExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
-        if (!wrapped.isUnknown()) return SType.OTHER;
+        if (!wrapped.isInvokable()) return SType.OTHER;
         List<List<SVar>> res = returnPermutations(wrapped);
         updateStack(node, res, isInnerCall, args);
         return SType.INVOKE;
@@ -153,7 +153,7 @@ public class SymbolicPathCarver {
 
         if (holder.getRight().getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = holder.getRight().asMethod();
-            if (methodExpr.isUnknown()) {
+            if (methodExpr.isInvokable()) {
                 return returnPermutations(methodExpr);
             } else {
                 z3t.updateSymbolicVariable(

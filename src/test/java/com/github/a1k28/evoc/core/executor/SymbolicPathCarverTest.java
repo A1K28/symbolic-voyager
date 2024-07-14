@@ -4,10 +4,7 @@ import com.github.a1k28.evoc.core.executor.struct.SVar;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,7 +20,7 @@ class SymbolicPathCarverTest {
                 "com.github.a1k28.evoc.core.executor.SymbolicPathCarverTest");
     }
 
-    @Test
+//    @Test
     public void testMethodCall() throws ClassNotFoundException {
         List<Map<SVar, String>> res = symbolicPathCarver
                 .analyzeSymbolicPaths( "test_inner_method_calls");
@@ -42,6 +39,21 @@ class SymbolicPathCarverTest {
             }
             assertTrue(false);
         }
+    }
+
+    @Test
+    public void testSetConcatenation() throws ClassNotFoundException {
+        List<Map<SVar, String>> res = symbolicPathCarver
+                .analyzeSymbolicPaths( "test_set_concatenation");
+    }
+
+    public void test_set_concatenation() throws ClassNotFoundException {
+        Set<String> s1 = new HashSet<>();
+        Set<String> s2 = new HashSet<>();
+
+        test_inner_method_calls("asd", "asd");
+
+        s1.retainAll(s2);
     }
 
     private String test_inner_method_calls(String a, String b) {

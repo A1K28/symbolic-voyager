@@ -36,6 +36,8 @@ class Z3Translator {
                 ctx.mkLength(args.get(0)));
         this.methodModels.put("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
                 ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
+//        this.methodModels.put("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
+//                ctx.mkSetIntersection(args.get(0), args.get(1)));
     }
 
     static Solver makeSolver() {
@@ -74,7 +76,8 @@ class Z3Translator {
     SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke);
+            right = wrapMethodCall(invoke, varType);
+//            if (right == null) right = new SExpr(translateValue(value2, varType));
         } else {
             right = new SExpr(translateValue(value2, varType));
         }
@@ -138,6 +141,10 @@ class Z3Translator {
 
     SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
+
+        // TODO: mock method calls
+//        if (methodSignature.equals("<java.util.Set: boolean retainAll(java.util.Collection)>"))
+//            return new SExpr(translateValue(invoke, varType))
 
         List<Value> args = new ArrayList<>();
         if (invoke instanceof AbstractInstanceInvokeExpr i)
@@ -372,7 +379,7 @@ class Z3Translator {
     }
 
     SVar getSymbolicVarStrict(Value value) {
-        return getSymbolicVar(value, null, null);
+        return getSymbolicVar(value, value.getType(), VarType.OTHER);
     }
 
     SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
