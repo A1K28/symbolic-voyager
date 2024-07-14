@@ -30,6 +30,7 @@ public class SymbolicPathCarver {
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
     private final SPath sPath;
+    private final List<Map<SVar, String>> satisfiableResults = new ArrayList<>();
 
     public SymbolicPathCarver(String classname) {
         this.classname = classname;
@@ -37,11 +38,12 @@ public class SymbolicPathCarver {
         this.z3t = new Z3Translator(sPath, symbolicVarStack);
     }
 
-    public void analyzeSymbolicPaths(String methodName) throws ClassNotFoundException {
+    public List<Map<SVar, String>> analyzeSymbolicPaths(String methodName) throws ClassNotFoundException {
         solver = makeSolver();
         SPath sPath = createPath(methodName);
         analyzePaths(sPath.getRoot());
         close();
+        return satisfiableResults;
     }
 
     public List<List<SVar>> getPossibleReturnValues(String methodName, List<SVar> args) throws ClassNotFoundException {
@@ -271,12 +273,15 @@ public class SymbolicPathCarver {
         log.info("Path is satisfiable");
         Model model = solver.getModel();
 
+        Map<SVar, String> res = new HashMap<>();
         for (SVar var : symbolicVarStack.getAll()) {
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER && var.getType() != VarType.FIELD) continue;
             Object evaluated = model.eval(var.getExpr(), true);
+            res.put(var, evaluated.toString());
             log.debug(evaluated + " " + var);
         }
+        satisfiableResults.add(res);
         log.empty();
     }
 
@@ -304,6 +309,7 @@ public class SymbolicPathCarver {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathCarver("com.github.a1k28.Stack").analyzeSymbolicPaths( "test_method_call");
+        new SymbolicPathCarver("com.github.a1k28.Stack")
+                .analyzeSymbolicPaths( "test_method_call");
     }
 }
