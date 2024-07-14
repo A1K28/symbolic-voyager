@@ -202,7 +202,7 @@ class Z3Translator {
                 return ctx.mkNot(translateValue(value, varType));
         }
         if (value instanceof AbstractExprVisitor visitor) {
-            // handle
+            // TODO: handle
         }
         if (value instanceof AbstractBinopExpr binop) {
             SAssignment holder = translateAndWrapValues(binop.getOp1(), binop.getOp2(), varType);
@@ -255,7 +255,6 @@ class Z3Translator {
 //        else if (value instanceof JPhiExpr)
 //            return ctx.mkMod(left, right);
 
-//        return null;
         throw new RuntimeException("Could not resolve type for: " + value);
     }
 

@@ -91,18 +91,7 @@ public class SymbolicPathCarver {
             type = handleVoidMethodCall(node, false);
         }
 
-        // check satisfiability
-        if (solver.check() != Status.SATISFIABLE) {
-            log.warn("Path is unsatisfiable\n");
-        } else if (SType.INVOKE != type) {
-            // recurse for children
-            if (!node.getChildren().isEmpty()) {
-                for (SNode child : node.getChildren())
-                    analyzePaths(child);
-            } else {
-                handleSatisfiability();
-            }
-        }
+        checkSatisfiability(node, type);
 
         solver.pop();
         symbolicVarStack.pop();
@@ -263,8 +252,22 @@ public class SymbolicPathCarver {
         return new SymbolicPathCarver(classname).getPossibleReturnValues(sig, args);
     }
 
+    private void checkSatisfiability(SNode node, SType type) throws ClassNotFoundException {
+        if (solver.check() != Status.SATISFIABLE) {
+            log.warn("Path is unsatisfiable\n");
+        } else if (SType.INVOKE != type) {
+            if (node.getChildren().isEmpty()) {
+                // if tail
+                handleSatisfiability();
+            } else {
+                // recurse for children
+                for (SNode child : node.getChildren())
+                    analyzePaths(child);
+            }
+        }
+    }
+
     private void handleSatisfiability() {
-        // if tail
         log.info("Path is satisfiable");
         Model model = solver.getModel();
 
