@@ -76,7 +76,7 @@ class Z3Translator {
     SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke, varType);
+            right = wrapMethodCall(invoke);
 //            if (right == null) right = new SExpr(translateValue(value2, varType));
         } else {
             right = new SExpr(translateValue(value2, varType));
