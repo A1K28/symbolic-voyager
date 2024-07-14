@@ -19,18 +19,19 @@ import sootup.java.core.JavaSootClassSource;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.a1k28.evoc.core.executor.Z3Translator.*;
+import static com.github.a1k28.evoc.core.executor.Z3Translator.close;
+import static com.github.a1k28.evoc.core.executor.Z3Translator.makeSolver;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
-public class SymbolicPathWeaver {
-    private static final Logger log = Logger.getInstance(SymbolicPathWeaver.class);
+public class SymbolicPathCarver {
+    private static final Logger log = Logger.getInstance(SymbolicPathCarver.class);
     private final String classname;
     private static Solver solver = null;
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
     private final SPath sPath;
 
-    public SymbolicPathWeaver(String classname) {
+    public SymbolicPathCarver(String classname) {
         this.classname = classname;
         this.sPath = new SPath();
         this.z3t = new Z3Translator(sPath, symbolicVarStack);
@@ -87,6 +88,7 @@ public class SymbolicPathWeaver {
         }
         if (node.getType() == SType.INVOKE) {
             System.out.println("Handle void method calls");
+            type = handleVoidMethodCall(node, false);
         }
 
         // check satisfiability
@@ -117,6 +119,9 @@ public class SymbolicPathWeaver {
         if (node.getType() == SType.RETURN) {
             sVars.add(handleReturn(node));
         }
+        if (node.getType() == SType.RETURN_VOID) {
+            sVars.add(handleVoidReturn());
+        }
 
         if (SType.INVOKE != type) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
 
@@ -133,9 +138,19 @@ public class SymbolicPathWeaver {
     private SType handleAssignment(SNode node, boolean isInnerCall, Object... args)
             throws ClassNotFoundException {
         List<List<SVar>> response = handleAssignment(node);
-        updateStack(node, response, isInnerCall, args);
+        updateStackWithReturnValue(node, response, isInnerCall, args);
         if (!response.isEmpty()) return SType.INVOKE;
         return SType.ASSIGNMENT;
+    }
+
+    private SType handleVoidMethodCall(SNode node, boolean isInnerCall, Object... args)
+            throws ClassNotFoundException {
+        JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
+        SMethodExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
+        if (!wrapped.isUnknown()) return SType.OTHER;
+        List<List<SVar>> res = returnPermutations(wrapped);
+        updateStack(node, res, isInnerCall, args);
+        return SType.INVOKE;
     }
 
     private List<List<SVar>> handleAssignment(SNode node) throws ClassNotFoundException {
@@ -173,11 +188,37 @@ public class SymbolicPathWeaver {
         return vars;
     }
 
+    private List<SVar> handleVoidReturn() {
+        List<SVar> vars = new ArrayList<>(symbolicVarStack.getFields());
+        keepLastOccurrence(vars);
+        return vars;
+    }
+
     private void updateStack(SNode node, List<List<SVar>> vars, boolean isInnerCall, Object... args)
             throws ClassNotFoundException {
+        for (List<SVar> returnValues : vars) {
+            symbolicVarStack.push();
+
+            for (SVar sVar : returnValues) {
+                if (sVar.getType() != VarType.FIELD) continue;
+                z3t.updateSymbolicVariable(sVar.getValue(), sVar.getExpr(), VarType.FIELD);
+            }
+
+            if (isInnerCall) for (SNode child : node.getChildren())
+                analyzeReturnValues(child, (List<List<SVar>>) args[0]);
+            else for (SNode child : node.getChildren())
+                analyzePaths(child);
+
+            symbolicVarStack.pop();
+        }
+    }
+
+    private void updateStackWithReturnValue(SNode node, List<List<SVar>> vars, boolean isInnerCall, Object... args)
+            throws ClassNotFoundException {
         JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
-        VarType varType = getVarType(assignStmt);
         Value leftOp = assignStmt.getLeftOp();
+        VarType varType = getVarType(assignStmt);
+
         for (List<SVar> returnValues : vars) {
             symbolicVarStack.push();
 
@@ -219,7 +260,7 @@ public class SymbolicPathWeaver {
                 .collect(Collectors.toList());
         args.addAll(symbolicVarStack.getFields());
         String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
-        return new SymbolicPathWeaver(classname).getPossibleReturnValues(sig, args);
+        return new SymbolicPathCarver(classname).getPossibleReturnValues(sig, args);
     }
 
     private void handleSatisfiability() {
@@ -243,8 +284,11 @@ public class SymbolicPathWeaver {
 
     private SVar copyReturnValue(SNode node) {
         JReturnStmt unit = (JReturnStmt) node.getUnit();
-        SVar sVar = symbolicVarStack.get(z3t.getValueName(unit.getOp())).get();
-        return new SVar(sVar, VarType.RETURN_VALUE);
+        String name = z3t.getValueName(unit.getOp());
+        Optional<SVar> optional = symbolicVarStack.get(name);
+        if (optional.isPresent()) return new SVar(optional.get(), VarType.RETURN_VALUE);
+        Expr expr = z3t.translateValue(unit.getOp(), VarType.RETURN_VALUE);
+        return new SVar(name, unit.getOp(), expr, VarType.RETURN_VALUE, true);
     }
 
     private VarType getVarType(Stmt unit) {
@@ -257,6 +301,6 @@ public class SymbolicPathWeaver {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathWeaver("com.github.a1k28.Stack").analyzeSymbolicPaths( "test_method_call");
+        new SymbolicPathCarver("com.github.a1k28.Stack").analyzeSymbolicPaths( "test_method_call");
     }
 }

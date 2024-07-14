@@ -136,7 +136,7 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    private SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+    SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Value> args = new ArrayList<>();
@@ -155,18 +155,7 @@ class Z3Translator {
         }
     }
 
-    private AssignmentExprHolder translateValues(Value value1, Value value2, VarType varType) {
-        Expr left;
-        if (value1 instanceof Local) {
-            left = getSymbolicValue(value1, value2.getType(), varType);
-        } else {
-            left = translateValue(value1, varType);
-        }
-        Expr right = translateValue(value2, varType);
-        return new AssignmentExprHolder(left, right);
-    }
-
-    private Expr translateValue(Value value, VarType varType) {
+    Expr translateValue(Value value, VarType varType) {
         if (value instanceof Local) {
             return getSymbolicValue(value, varType);
         }

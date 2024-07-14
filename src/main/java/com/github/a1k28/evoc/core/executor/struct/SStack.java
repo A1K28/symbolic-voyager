@@ -61,7 +61,6 @@ public class SStack {
                 .map(Map::values)
                 .flatMap(Collection::stream)
                 .flatMap(Collection::stream)
-//                .map()
                 .collect(Collectors.toList());
     }
 
