@@ -16,10 +16,12 @@ public class SPath {
 
     private final SNode root;
     private final Set<String> fields;
+    private final String classname;
 
-    public SPath() {
+    public SPath(String classname) {
         this.root = new SNode();
         this.fields = new HashSet<>();
+        this.classname = classname;
     }
 
     public SNode createNode(Stmt unit) {

@@ -25,7 +25,6 @@ import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathCarver {
     private static final Logger log = Logger.getInstance(SymbolicPathCarver.class);
-    private final String classname;
     private static Solver solver = null;
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
@@ -33,8 +32,7 @@ public class SymbolicPathCarver {
     private final List<Map<SVar, String>> satisfiableResults = new ArrayList<>();
 
     public SymbolicPathCarver(String classname) {
-        this.classname = classname;
-        this.sPath = new SPath();
+        this.sPath = new SPath(classname);
         this.z3t = new Z3Translator(sPath, symbolicVarStack);
     }
 
@@ -56,7 +54,7 @@ public class SymbolicPathCarver {
 
     private SPath createPath(String methodName) throws ClassNotFoundException {
         // Find all paths
-        SootClass<JavaSootClassSource> sootClass = getSootClass(classname);
+        SootClass<JavaSootClassSource> sootClass = getSootClass(sPath.getClassname());
 
         SootMethod method = getSootMethod(sootClass, methodName);
         Body body = method.getBody();
@@ -137,28 +135,30 @@ public class SymbolicPathCarver {
     private SType handleVoidMethodCall(SNode node, boolean isInnerCall, Object... args)
             throws ClassNotFoundException {
         JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
-        SMethodExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
-        if (!wrapped.isInvokable()) return SType.OTHER;
-        List<List<SVar>> res = returnPermutations(wrapped);
+        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
+        if (wrapped.getSType() != SType.INVOKE) return SType.OTHER;
+        SMethodExpr method = wrapped.asMethod();
+        if (!method.isInvokable()) return SType.OTHER;
+        List<List<SVar>> res = returnPermutations(method);
         updateStack(node, res, isInnerCall, args);
         return SType.INVOKE;
     }
 
     private List<List<SVar>> handleAssignment(SNode node) throws ClassNotFoundException {
         JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
-        VarType varType = getVarType(assignStmt);
         Value leftOp = assignStmt.getLeftOp();
         Value rightOp = assignStmt.getRightOp();
-        SAssignment holder = z3t.translateAndWrapValues(leftOp, rightOp, varType);
+        VarType varType = getVarType(rightOp);
+        SExpr holder = z3t.translateAndWrapValue(rightOp, varType);
 
-        if (holder.getRight().getSType() == SType.INVOKE) {
-            SMethodExpr methodExpr = holder.getRight().asMethod();
+        if (holder.getSType() == SType.INVOKE) {
+            SMethodExpr methodExpr = holder.asMethod();
             if (methodExpr.isInvokable()) {
                 return returnPermutations(methodExpr);
             } else {
                 z3t.updateSymbolicVariable(
                         leftOp,
-                        z3t.handleMethodCall(holder.getRight().asMethod(), varType),
+                        z3t.handleMethodCall(holder.asMethod(), varType),
                         varType);
             }
         } else {
@@ -166,7 +166,7 @@ public class SymbolicPathCarver {
 //                solver.add(z3t.mkEq(holder.getLeft().getExpr(), holder.getRight().getExpr()));
 //            }
 
-            z3t.updateSymbolicVariable(leftOp, holder.getRight().getExpr(), varType);
+            z3t.updateSymbolicVariable(leftOp, holder.getExpr(), varType);
         }
         return Collections.emptyList();
     }
@@ -251,7 +251,7 @@ public class SymbolicPathCarver {
                 .collect(Collectors.toList());
         args.addAll(symbolicVarStack.getFields());
         String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
-        return new SymbolicPathCarver(classname).getPossibleReturnValues(sig, args);
+        return new SymbolicPathCarver(sPath.getClassname()).getPossibleReturnValues(sig, args);
     }
 
     private void checkSatisfiability(SNode node, SType type) throws ClassNotFoundException {
@@ -276,7 +276,9 @@ public class SymbolicPathCarver {
         Map<SVar, String> res = new HashMap<>();
         for (SVar var : symbolicVarStack.getAll()) {
             if (!var.isDeclaration()) continue;
-            if (var.getType() != VarType.PARAMETER && var.getType() != VarType.FIELD) continue;
+            if (var.getType() != VarType.PARAMETER
+                    && var.getType() != VarType.FIELD
+                    && var.getType() != VarType.METHOD_MOCK) continue;
             Object evaluated = model.eval(var.getExpr(), true);
             res.put(var, evaluated.toString());
             log.debug(evaluated + " " + var);
@@ -304,6 +306,13 @@ public class SymbolicPathCarver {
         if (val.startsWith("this.")) val = val.substring(5);
         if (sPath.getFields().contains(val)) return VarType.FIELD;
         return VarType.getType(unit);
+    }
+
+    private VarType getVarType(Value value) {
+        String val = value.toString();
+        if (val.startsWith("this.")) val = val.substring(5);
+        if (sPath.getFields().contains(val)) return VarType.FIELD;
+        return VarType.getType(value);
     }
 
     public static void main(String[] args) throws ClassNotFoundException {

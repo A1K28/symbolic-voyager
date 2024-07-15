@@ -73,11 +73,18 @@ class Z3Translator {
         return ctx.mkConst(name, sort);
     }
 
+    SExpr translateAndWrapValue(Value value, VarType varType) {
+        if (value instanceof AbstractInvokeExpr invoke) {
+            return wrapMethodCall(invoke, varType);
+        } else {
+            return new SExpr(translateValue(value, varType));
+        }
+    }
+
     SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke);
-//            if (right == null) right = new SExpr(translateValue(value2, varType));
+            right = wrapMethodCall(invoke, varType);
         } else {
             right = new SExpr(translateValue(value2, varType));
         }
@@ -92,6 +99,7 @@ class Z3Translator {
             left = new SExpr(translateValue(value1, varType));
         }
 
+
         return new SAssignment(left, right);
     }
 
@@ -103,11 +111,11 @@ class Z3Translator {
                 .collect(Collectors.toList());
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
-        if (methodModel != null) {
-            return methodModel.apply(methodExpr.getInvokeExpr(), args);
-        } else {
-            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
-        }
+        return methodModel.apply(methodExpr.getInvokeExpr(), args);
+//        if (methodModel != null) {
+//        } else {
+//            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
+//        }
     }
 
     Expr translateCondition(Value condition, VarType varType) {
@@ -139,12 +147,17 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+        return wrapMethodCall(invoke, VarType.OTHER);
+    }
+
+    SExpr wrapMethodCall(AbstractInvokeExpr invoke, VarType varType) {
         String methodSignature = invoke.getMethodSignature().toString();
 
-        // TODO: mock method calls
-//        if (methodSignature.equals("<java.util.Set: boolean retainAll(java.util.Collection)>"))
-//            return new SExpr(translateValue(invoke, varType))
+        // mock method call
+        if (methodSignature.startsWith("<" + sPath.getClassname() + ":")) {
+            return new SExpr(translateValue(invoke, varType));
+        }
 
         List<Value> args = new ArrayList<>();
         if (invoke instanceof AbstractInstanceInvokeExpr i)
@@ -297,7 +310,9 @@ class Z3Translator {
         if (methodModel != null) {
             return methodModel.apply(invoke, args);
         } else {
-            return handleUnknownMethod(invoke, args);
+            Sort sort = translateType(invoke.getType());
+            return ctx.mkConst(invoke.toString(), sort);
+//            return handleUnknownMethod(invoke, args);
         }
     }
 

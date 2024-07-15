@@ -51,9 +51,15 @@ class SymbolicPathCarverTest {
         Set<String> s1 = new HashSet<>();
         Set<String> s2 = new HashSet<>();
 
-        test_inner_method_calls("asd", "asd");
+        String asd = test_inner_method_calls("asd", "asd");
 
-        s1.retainAll(s2);
+        if (asd.length() > 10) {
+            int a = 20;
+        } else {
+            int a = 30;
+        }
+
+//        s1.retainAll(s2);
     }
 
     private String test_inner_method_calls(String a, String b) {
