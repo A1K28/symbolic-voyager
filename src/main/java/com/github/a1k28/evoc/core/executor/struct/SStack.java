@@ -31,9 +31,6 @@ public class SStack {
     }
 
     public SVar add(String name, Value value, Expr expr, VarType type) {
-//        Optional<SVar> existing = find(value, expr);
-//        if (existing.isPresent()) return existing.get();
-
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
         if (optional.isPresent()) {
@@ -44,16 +41,6 @@ public class SStack {
         }
         _add(sVar);
         return sVar;
-    }
-
-    public void update(String oldKey, String newKey) {
-        for (int i = index; i >= 0; i--) {
-            if (stack.get(i).containsKey(oldKey)) {
-                stack.get(i).put(newKey, stack.get(i).get(oldKey));
-                stack.get(i).remove(oldKey);
-                return;
-            }
-        }
     }
 
     public List<SVar> getAll() {
@@ -81,11 +68,6 @@ public class SStack {
     public void pop() {
         stack.remove(index);
         index--;
-    }
-
-    private Optional<SVar> find(Value value, Expr expr) {
-        return getAll().stream().filter(e -> e.getValue().toString().equals(value.toString())
-                && e.getExpr().equals(expr)).findFirst();
     }
 
     private void _add(SVar sVar) {

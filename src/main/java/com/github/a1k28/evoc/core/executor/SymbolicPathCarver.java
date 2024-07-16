@@ -162,10 +162,8 @@ public class SymbolicPathCarver {
                         varType);
             }
         } else {
-//            if (holder.getRight().getExpr() != null && !holder.getRight().getExpr().isConst()) {
-//                solver.add(z3t.mkEq(holder.getLeft().getExpr(), holder.getRight().getExpr()));
-//            }
-
+            // if method cannot be invoked, then mock it.
+            if (varType == VarType.METHOD) varType = VarType.METHOD_MOCK;
             z3t.updateSymbolicVariable(leftOp, holder.getExpr(), varType);
         }
         return Collections.emptyList();

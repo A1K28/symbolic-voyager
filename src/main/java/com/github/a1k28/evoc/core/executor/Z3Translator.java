@@ -66,7 +66,7 @@ class Z3Translator {
 
     Expr mkExpr(String name, Type type) {
         Sort sort = translateType(type);
-        return ctx.mkConst(name, sort);
+        return mkExpr(name, sort);
     }
 
     Expr mkExpr(String name, Sort sort) {
@@ -75,7 +75,7 @@ class Z3Translator {
 
     SExpr translateAndWrapValue(Value value, VarType varType) {
         if (value instanceof AbstractInvokeExpr invoke) {
-            return wrapMethodCall(invoke, varType);
+            return wrapMethodCall(invoke);
         } else {
             return new SExpr(translateValue(value, varType));
         }
@@ -84,17 +84,19 @@ class Z3Translator {
     SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke, varType);
+            right = wrapMethodCall(invoke);
         } else {
             right = new SExpr(translateValue(value2, varType));
         }
 
         SExpr left;
-        if (value1 instanceof Local) {
+        if (value1 instanceof Local || value1 instanceof JFieldRef) {
+            Sort sort;
             if (value2.getType().getClass() == UnknownType.class)
-                left = new SExpr(getSymbolicValue(value1, right.getExpr().getSort(), varType));
+                sort = right.getExpr().getSort();
             else
-                left = new SExpr(getSymbolicValue(value1, value2.getType(), varType));
+                sort = translateType(value2.getType());
+            left = new SExpr(getSymbolicValue(value1, sort, varType));
         } else {
             left = new SExpr(translateValue(value1, varType));
         }
@@ -147,16 +149,16 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
-        return wrapMethodCall(invoke, VarType.OTHER);
-    }
+//    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+//        return wrapMethodCall(invoke, VarType.OTHER);
+//    }
 
-    SExpr wrapMethodCall(AbstractInvokeExpr invoke, VarType varType) {
+    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
         // mock method call
         if (methodSignature.startsWith("<" + sPath.getClassname() + ":")) {
-            return new SExpr(translateValue(invoke, varType));
+            return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
         }
 
         List<Value> args = new ArrayList<>();
@@ -299,12 +301,12 @@ class Z3Translator {
 
         List<Expr> args = new ArrayList<>();
         if (invoke instanceof AbstractInstanceInvokeExpr i)
-            args.add(translateValue(i.getBase(), varType));
+            args.add(translateValue(i.getBase(), VarType.BASE_ARG));
         for (Value arg : invoke.getArgs())
-            args.add(translateValue(arg, varType));
+            args.add(translateValue(arg, VarType.METHOD_ARG));
         if (invoke instanceof JDynamicInvokeExpr i)
             for (Value arg : i.getBootstrapArgs())
-                args.add(translateValue(arg, varType));
+                args.add(translateValue(arg, VarType.METHOD_ARG));
 
         BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
         if (methodModel != null) {
@@ -385,37 +387,12 @@ class Z3Translator {
         return getSymbolicVar(value, null, varType).getExpr();
     }
 
-    private Expr getSymbolicValue(Value value, Type type, VarType varType) {
-        return getSymbolicVar(value, type, varType).getExpr();
-    }
-
     private Expr getSymbolicValue(Value value, Sort sort, VarType varType) {
         return getSymbolicVarBySort(value, sort, varType).getExpr();
     }
 
     SVar getSymbolicVarStrict(Value value) {
         return getSymbolicVar(value, value.getType(), VarType.OTHER);
-    }
-
-    SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
-        if (variable != null && expression != null) {
-            String name = getValueName(variable);
-            if (sPath.getFields().contains(name)) varType = VarType.FIELD;
-            return symbolicVarStack.add(name, variable, expression, varType);
-        }
-        return null;
-    }
-
-    private SVar getSymbolicVar(Value value, Type type, VarType varType) {
-        String key = getValueName(value);
-        Optional<SVar> optional = symbolicVarStack.get(key);
-        return optional.orElseGet(() -> saveSymbolicVar(value, type, varType));
-    }
-
-    private SVar getSymbolicVarBySort(Value value, Sort sort, VarType varType) {
-        String key = getValueName(value);
-        Optional<SVar> optional = symbolicVarStack.get(key);
-        return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType));
     }
 
     SVar saveSymbolicVar(Value value, Type type, VarType varType) {
@@ -437,7 +414,24 @@ class Z3Translator {
         return res;
     }
 
-    private Expr mkNull(SStack stack, Sort sort) {
-        return ctx.mkConst("null_" + sort.toString(), sort);
+    SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
+        if (variable != null && expression != null) {
+            String name = getValueName(variable);
+            if (sPath.getFields().contains(name)) varType = VarType.FIELD;
+            return symbolicVarStack.add(name, variable, expression, varType);
+        }
+        return null;
+    }
+
+    private SVar getSymbolicVar(Value value, Type type, VarType varType) {
+        String key = getValueName(value);
+        Optional<SVar> optional = symbolicVarStack.get(key);
+        return optional.orElseGet(() -> saveSymbolicVar(value, type, varType));
+    }
+
+    private SVar getSymbolicVarBySort(Value value, Sort sort, VarType varType) {
+        String key = getValueName(value);
+        Optional<SVar> optional = symbolicVarStack.get(key);
+        return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType));
     }
 }

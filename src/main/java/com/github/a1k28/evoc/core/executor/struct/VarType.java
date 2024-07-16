@@ -11,7 +11,10 @@ public enum VarType {
     PARAMETER,
     LOCAL,
     RETURN_VALUE,
+    METHOD,
     METHOD_MOCK,
+    BASE_ARG,
+    METHOD_ARG,
     OTHER;
 
     public static VarType getType(Stmt unit) {
@@ -27,7 +30,7 @@ public enum VarType {
 
     public static VarType getType(Value unit) {
         if (unit instanceof AbstractInstanceInvokeExpr)
-            return METHOD_MOCK;
+            return METHOD;
         return OTHER;
     }
 }
