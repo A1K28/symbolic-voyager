@@ -42,26 +42,12 @@ public class SymbolicPathCarver {
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
     }
 
-//    public List<Map<SVar, String>> analyzeSymbolicPaths(String methodName)
-//            throws ClassNotFoundException {
-//        return analyzeSymbolicPaths(methodName, new SParamList());
-//    }
-
     public List<SatisfiableResult> analyzeSymbolicPaths()
             throws ClassNotFoundException {
         solver = makeSolver();
-//        SMethodPath sMethodPath = createMethodPath(methodName);
         analyzePaths(sMethodPath.getRoot());
         return satisfiableResults;
     }
-
-//    public List<List<SVar>> getPossibleReturnValues(String methodName, List<SVar> args) throws ClassNotFoundException {
-//        SPath sPath = createPath(methodName);
-//        args.forEach(symbolicVarStack::add);
-//        List<List<SVar>> sVars = new ArrayList<>();
-//        analyzeReturnValues(sPath.getRoot(), sVars);
-//        return sVars;
-//    }
 
     private SMethodPath createMethodPath(String classname, String methodName, SParamList paramList)
             throws ClassNotFoundException {
@@ -114,26 +100,6 @@ public class SymbolicPathCarver {
         solver.pop();
         symbolicVarStack.pop();
     }
-
-//    private void analyzeReturnValues(SNode node, List<List<SVar>> sVars) throws ClassNotFoundException {
-//        symbolicVarStack.push();
-//
-//        SType type = null;
-//
-//        if (node.getType() == SType.ASSIGNMENT) {
-//            type = handleAssignment(node, true, sVars);
-//        }
-//        if (node.getType() == SType.RETURN) {
-//            sVars.add(handleReturn(node));
-//        }
-//        if (node.getType() == SType.RETURN_VOID) {
-//            sVars.add(handleVoidReturn());
-//        }
-//
-//        if (SType.INVOKE != type) for (SNode child : node.getChildren()) analyzeReturnValues(child, sVars);
-//
-//        symbolicVarStack.pop();
-//    }
 
     private void handleBranch(SNode node) {
         JIfStmt ifStmt = (JIfStmt) node.getUnit();
@@ -203,25 +169,6 @@ public class SymbolicPathCarver {
         return vars;
     }
 
-//    private void updateStack(SNode node, List<List<SVar>> vars, boolean isInnerCall, Object... args)
-//            throws ClassNotFoundException {
-//        for (List<SVar> returnValues : vars) {
-//            symbolicVarStack.push();
-//
-//            for (SVar sVar : returnValues) {
-//                if (sVar.getType() != VarType.FIELD) continue;
-//                z3t.updateSymbolicVariable(sVar.getValue(), sVar.getExpr(), VarType.FIELD);
-//            }
-//
-//            if (isInnerCall) for (SNode child : node.getChildren())
-//                analyzeReturnValues(child, (List<List<SVar>>) args[0]);
-//            else for (SNode child : node.getChildren())
-//                analyzePaths(child);
-//
-//            symbolicVarStack.pop();
-//        }
-//    }
-
     private void updateStackAndPropagate(SNode node, List<SatisfiableResult> satisfiableResults)
             throws ClassNotFoundException {
         Value leftOp = null;
@@ -255,28 +202,6 @@ public class SymbolicPathCarver {
             solver.pop();
             symbolicVarStack.pop();
         }
-
-//        for (List<SVar> returnValues : vars) {
-//            symbolicVarStack.push();
-//
-//            for (SVar sVar : returnValues) {
-//                if (sVar.getType() != VarType.FIELD) continue;
-//                z3t.updateSymbolicVariable(sVar.getValue(), sVar.getExpr(), VarType.FIELD);
-//            }
-//
-//            for (SVar sVar : returnValues) {
-//                if (sVar.getType() != VarType.RETURN_VALUE) continue;
-//                symbolicVarStack.push();
-//                z3t.updateSymbolicVariable(leftOp, sVar.getExpr(), varType);
-////                if (isInnerCall) for (SNode child : node.getChildren())
-////                    analyzeReturnValues(child, (List<List<SVar>>) args[0]);
-//                for (SNode child : node.getChildren())
-//                    analyzePaths(child);
-//                symbolicVarStack.pop();
-//            }
-//
-//            symbolicVarStack.pop();
-//        }
     }
 
     private void keepLastOccurrence(List<SVar> vars) {
@@ -291,10 +216,6 @@ public class SymbolicPathCarver {
     }
 
     private List<SatisfiableResult> returnPermutations(SMethodExpr methodExpr) throws ClassNotFoundException {
-//        List<SVar> args = methodExpr.getInvokeExpr().getArgs().stream()
-//                .map(z3t::getSymbolicVarStrict)
-//                .map(SVar::renew)
-//                .collect(Collectors.toList());
         String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
         List<Value> args = methodExpr.getArgs();
         args.addAll(symbolicVarStack.getFields().stream()
@@ -305,7 +226,6 @@ public class SymbolicPathCarver {
                 .collect(Collectors.toList());
         return new SymbolicPathCarver(sMethodPath.getClassname(), sig, new SParamList(exprArgs))
                 .analyzeSymbolicPaths();
-//        return new SymbolicPathCarver(sMethodPath.getClassname(), sig, new SParamList(exprArgs)).analyzeSymbolicPaths();
     }
 
     private Z3Status checkSatisfiability(SNode node, SType type) {
