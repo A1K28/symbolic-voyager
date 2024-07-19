@@ -27,14 +27,4 @@ public class SVar {
     public SVar(SVar sVar, VarType varType) {
         this(sVar.getName(), sVar.getValue(), sVar.getExpr(), varType, sVar.isDeclaration());
     }
-
-    public static SVar renew(SVar sVar) {
-        return new SVar(
-                sVar.getName(),
-                sVar.getValue(),
-                sVar.getExpr(),
-                sVar.getType(),
-                true
-        );
-    }
 }
