@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.executor.struct;
 
+import com.github.a1k28.evoc.core.executor.model.SType;
 import com.github.a1k28.evoc.helper.Logger;
 import lombok.Getter;
 import sootup.core.jimple.basic.Value;
@@ -11,17 +12,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Getter
-public class SPath {
-    private static final Logger log = Logger.getInstance(SPath.class);
+public class SMethodPath {
+    private static final Logger log = Logger.getInstance(SMethodPath.class);
 
     private final SNode root;
     private final Set<String> fields;
     private final String classname;
+    private final String methodName;
+    private final SParamList paramList;
 
-    public SPath(String classname) {
+    public SMethodPath(String classname, String methodName, SParamList paramList) {
         this.root = new SNode();
         this.fields = new HashSet<>();
         this.classname = classname;
+        this.methodName = methodName;
+        this.paramList = paramList;
     }
 
     public SNode createNode(Stmt unit) {

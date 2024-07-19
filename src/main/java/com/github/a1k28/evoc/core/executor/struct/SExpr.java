@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.executor.struct;
 
+import com.github.a1k28.evoc.core.executor.model.SType;
 import com.microsoft.z3.Expr;
 import lombok.Getter;
 

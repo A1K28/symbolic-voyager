@@ -1,8 +1,8 @@
 package com.github.a1k28.evoc.helper;
 
 import com.github.a1k28.evoc.core.executor.struct.SNode;
-import com.github.a1k28.evoc.core.executor.struct.SPath;
-import com.github.a1k28.evoc.core.executor.struct.SType;
+import com.github.a1k28.evoc.core.executor.struct.SMethodPath;
+import com.github.a1k28.evoc.core.executor.model.SType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
@@ -70,10 +70,10 @@ public class SootHelper {
         }
     }
 
-    public static void createFlowDiagram(SPath sPath, Body body) {
+    public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
         StmtGraph<?> cfg = body.getStmtGraph();
         Stmt start = cfg.getStartingStmt();
-        dfs(cfg, start, sPath, sPath.getRoot());
+        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
     }
 
     public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
@@ -94,26 +94,26 @@ public class SootHelper {
         }
     }
 
-    private static void dfs(StmtGraph<?> cfg, Stmt current, SPath sPath, SNode parent) {
-        SNode node = sPath.createNode(current);
+    private static void dfs(StmtGraph<?> cfg, Stmt current, SMethodPath sMethodPath, SNode parent) {
+        SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
 
         if (!cfg.getTails().contains(current)) {
             List<Stmt> succs = cfg.getAllSuccessors(current);
             if (node.getType() == SType.BRANCH) {
                 if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
-                SNode node2 = sPath.createNode(current);
+                SNode node2 = sMethodPath.createNode(current);
                 parent.addChild(node2);
 
                 node.setType(SType.BRANCH_FALSE);
                 node2.setType(SType.BRANCH_TRUE);
 
-                dfs(cfg, succs.get(0), sPath, node);
-                dfs(cfg, succs.get(1), sPath, node2);
+                dfs(cfg, succs.get(0), sMethodPath, node);
+                dfs(cfg, succs.get(1), sMethodPath, node2);
             } else {
                 for (Stmt succ : succs) {
                     if (!node.containsParent(succ)) {
-                        dfs(cfg, succ, sPath, node);
+                        dfs(cfg, succ, sMethodPath, node);
                     }
                 }
             }

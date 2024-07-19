@@ -1,29 +1,39 @@
 package com.github.a1k28.evoc.core.executor;
 
+import com.github.a1k28.evoc.core.executor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.executor.struct.SVar;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static com.github.a1k28.evoc.core.executor.Z3Translator.close;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SymbolicPathCarverTest {
     private SymbolicPathCarver symbolicPathCarver;
-
     private int asd;
+    private final String classname = "com.github.a1k28.evoc.core.executor.SymbolicPathCarverTest";
 
     @BeforeEach
     public void setup() {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-        symbolicPathCarver = new SymbolicPathCarver(
-                "com.github.a1k28.evoc.core.executor.SymbolicPathCarverTest");
+//        symbolicPathCarver = new SymbolicPathCarver(
+//                "com.github.a1k28.evoc.core.executor.SymbolicPathCarverTest");
+    }
+
+    @AfterEach
+    public void closeContext() {
+        close();
     }
 
 //    @Test
     public void testMethodCall() throws ClassNotFoundException {
-        List<Map<SVar, String>> res = symbolicPathCarver
-                .analyzeSymbolicPaths( "test_inner_method_calls");
+        List<Map<SVar, String>> res = new SymbolicPathCarver(classname, "test_inner_method_calls")
+                .analyzeSymbolicPaths().stream()
+                .map(SatisfiableResult::getSymbolicParameterValues).toList();
 
         List<Map<String, Object>> solutionSet = new ArrayList<>();
         solutionSet.add(Map.of("a", 0, "b", 0, "asd", "17"));
@@ -43,15 +53,16 @@ class SymbolicPathCarverTest {
 
     @Test
     public void testSetConcatenation() throws ClassNotFoundException {
-        List<Map<SVar, String>> res = symbolicPathCarver
-                .analyzeSymbolicPaths( "test_set_concatenation");
+        List<Map<SVar, String>> res = new SymbolicPathCarver(classname, "test_set_concatenation")
+                .analyzeSymbolicPaths().stream()
+                .map(SatisfiableResult::getSymbolicParameterValues).toList();
     }
 
     public void test_set_concatenation() throws ClassNotFoundException {
         Set<String> s1 = new HashSet<>();
         Set<String> s2 = new HashSet<>();
 
-        String asd = test_inner_method_calls("asd", "asd");
+        String asd = test_inner_method_calls("", "asd");
 
         if (asd.length() > 10) {
             int a = 20;

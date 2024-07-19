@@ -1,5 +1,7 @@
 package com.github.a1k28.evoc.core.executor;
 
+import com.github.a1k28.evoc.core.executor.model.MethodModel;
+import com.github.a1k28.evoc.core.executor.model.VarType;
 import com.github.a1k28.evoc.core.executor.struct.*;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
@@ -18,30 +20,34 @@ import java.util.stream.Collectors;
 
 class Z3Translator {
     private static Context ctx = null;
-    private final SPath sPath;
+    private static Solver solver;
+    private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
-    private final Map<String, BiFunction<AbstractInvokeExpr, List<Expr>, Expr>> methodModels;
+    private final Map<String, MethodModel> methodModels;
 
-    Z3Translator(SPath sPath, SStack symbolicVarStack) {
+    Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
         initZ3();
 
-        this.sPath = sPath;
+        this.sMethodPath = sMethodPath;
         this.symbolicVarStack = symbolicVarStack;
 
         this.methodModels = new HashMap<>();
+        addMethodModel("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
+                mkEq(args.get(0), args.get(1)), false);
         // Register known method models
-        this.methodModels.put("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
-                mkEq(args.get(0), args.get(1)));
-        this.methodModels.put("<java.lang.String: int length()>", (invoke, args) ->
-                ctx.mkLength(args.get(0)));
-        this.methodModels.put("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
-                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())));
+        addMethodModel("<java.lang.String: int length()>", (invoke, args) ->
+                ctx.mkLength(args.get(0)), true);
+        addMethodModel("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
+                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())), false);
 //        this.methodModels.put("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
 //                ctx.mkSetIntersection(args.get(0), args.get(1)));
     }
 
-    static Solver makeSolver() {
-        return ctx.mkSolver();
+    static synchronized Solver makeSolver() {
+        if (solver == null) {
+            solver = ctx.mkSolver();
+        }
+        return solver;
     }
 
     static synchronized void initZ3() {
@@ -107,13 +113,17 @@ class Z3Translator {
 
     Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
+        MethodModel methodModel = methodModels.get(methodSignature);
 
-        List<Expr> args = methodExpr.getArgs().stream()
+        List<Expr> args = new ArrayList<>();
+        if (methodModel.hasBase())
+            args.add(translateValue(methodExpr.getBase(), varType));
+
+        args.addAll(methodExpr.getArgs().stream()
                 .map(e -> this.translateValue(e, varType))
-                .collect(Collectors.toList());
+                .toList());
 
-        BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
-        return methodModel.apply(methodExpr.getInvokeExpr(), args);
+        return methodModel.getBiFunction().apply(methodExpr.getInvokeExpr(), args);
 //        if (methodModel != null) {
 //        } else {
 //            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
@@ -149,21 +159,13 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-//    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
-//        return wrapMethodCall(invoke, VarType.OTHER);
-//    }
-
     SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
-        // mock method call
-        if (methodSignature.startsWith("<" + sPath.getClassname() + ":")) {
-            return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
-        }
-
         List<Value> args = new ArrayList<>();
+        Value base = null;
         if (invoke instanceof AbstractInstanceInvokeExpr i)
-            args.add(i.getBase());
+            base = i.getBase();
         for (Value arg : invoke.getArgs())
             args.add(arg);
         if (invoke instanceof JDynamicInvokeExpr i)
@@ -171,9 +173,12 @@ class Z3Translator {
                 args.add(arg);
 
         if (methodModels.containsKey(methodSignature)) {
-            return new SMethodExpr(invoke, args, false);
+            return new SMethodExpr(invoke, base, args, false);
+        } else if (!methodSignature.startsWith("<" + sMethodPath.getClassname() + ":")) {
+            // mock method call outside the current class
+            return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
         } else {
-            return new SMethodExpr(invoke, args, true);
+            return new SMethodExpr(invoke, base, args, true);
         }
     }
 
@@ -203,7 +208,7 @@ class Z3Translator {
             return ctx.mkString(v.getValue().replaceFirst("\u0001", ""));
         }
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
-            return handleMethodCall(abstractInvoke, varType);
+            return handleMethodCall(abstractInvoke);
         }
         if (value instanceof JNewExpr) {
             return ctx.mkConst(value.toString(), ctx.mkUninterpretedSort(value.getType().toString()));
@@ -296,21 +301,24 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + binop);
     }
 
-    private Expr handleMethodCall(AbstractInvokeExpr invoke, VarType varType) {
+    private Expr handleMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Expr> args = new ArrayList<>();
+        Expr base = null;
         if (invoke instanceof AbstractInstanceInvokeExpr i)
-            args.add(translateValue(i.getBase(), VarType.BASE_ARG));
+            base = translateValue(i.getBase(), VarType.BASE_ARG);
         for (Value arg : invoke.getArgs())
             args.add(translateValue(arg, VarType.METHOD_ARG));
         if (invoke instanceof JDynamicInvokeExpr i)
             for (Value arg : i.getBootstrapArgs())
                 args.add(translateValue(arg, VarType.METHOD_ARG));
 
-        BiFunction<AbstractInvokeExpr, List<Expr>, Expr> methodModel = methodModels.get(methodSignature);
+        MethodModel methodModel = methodModels.get(methodSignature);
         if (methodModel != null) {
-            return methodModel.apply(invoke, args);
+            if (methodModel.hasBase())
+                args.add(0, base);
+            return methodModel.getBiFunction().apply(invoke, args);
         } else {
             Sort sort = translateType(invoke.getType());
             return ctx.mkConst(invoke.toString(), sort);
@@ -416,8 +424,11 @@ class Z3Translator {
 
     SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
+            if (variable.toString().equals("$stack2")) {
+                String asd = "asdawd";
+            }
             String name = getValueName(variable);
-            if (sPath.getFields().contains(name)) varType = VarType.FIELD;
+            if (sMethodPath.getFields().contains(name)) varType = VarType.FIELD;
             return symbolicVarStack.add(name, variable, expression, varType);
         }
         return null;
@@ -433,5 +444,11 @@ class Z3Translator {
         String key = getValueName(value);
         Optional<SVar> optional = symbolicVarStack.get(key);
         return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType));
+    }
+
+    private void addMethodModel(String name,
+                                BiFunction<AbstractInvokeExpr, List<Expr>, Expr> biFunction,
+                                boolean hasBase) {
+        methodModels.put(name, new MethodModel(name, biFunction, hasBase));
     }
 }

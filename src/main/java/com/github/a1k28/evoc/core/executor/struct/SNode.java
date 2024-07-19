@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.executor.struct;
 
+import com.github.a1k28.evoc.core.executor.model.SType;
 import lombok.Getter;
 import lombok.Setter;
 import sootup.core.jimple.common.stmt.Stmt;

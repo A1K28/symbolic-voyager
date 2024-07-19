@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.executor.struct;
+package com.github.a1k28.evoc.core.executor.model;
 
 public enum SType {
     ROOT,
