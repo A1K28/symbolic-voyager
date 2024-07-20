@@ -24,4 +24,9 @@ class Z3ExtendedContext extends Context {
     Expr mkSetContains(Expr var1, Expr var2) {
         return z3SetCollection.contains(System.identityHashCode(var1), var2);
     }
+
+    Expr mkSetRemove(Expr var1, Expr var2) {
+        z3SetCollection.remove(System.identityHashCode(var1), var2);
+        return super.mkSetDel(var1, var2);
+    }
 }

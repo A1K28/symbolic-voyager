@@ -23,11 +23,19 @@ public class Z3SetCollection {
 
     public BoolExpr contains(int hashCode, Expr element) {
         if (!setMap.containsKey(hashCode)) return ctx.mkBool(false);
-        BoolExpr boolExpr = ctx.mkBool(false);
-        for (Expr value : setMap.get(hashCode)) {
-            boolExpr = ctx.mkOr(boolExpr, ctx.mkEq(value, element));
+        Set<Expr> set = setMap.get(hashCode);
+        Expr[] expressions = new Expr[set.size()];
+        int i = 0;
+        for (Expr value : set) {
+            expressions[i] = ctx.mkEq(value, element);
+            i++;
         }
-        return boolExpr;
+        return ctx.mkOr(expressions);
+    }
+
+    public void remove(int hashCode, Expr element) {
+        if (!setMap.containsKey(hashCode)) return;
+        setMap.get(hashCode).remove(element);
     }
 
     public int size(int hashCode) {

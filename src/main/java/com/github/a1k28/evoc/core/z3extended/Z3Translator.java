@@ -1,8 +1,8 @@
 package com.github.a1k28.evoc.core.z3extended;
 
-import com.github.a1k28.evoc.core.executor.model.MethodModel;
-import com.github.a1k28.evoc.core.executor.model.VarType;
-import com.github.a1k28.evoc.core.executor.struct.*;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodModel;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
@@ -30,8 +30,10 @@ public class Z3Translator {
         this.sMethodPath = sMethodPath;
         this.symbolicVarStack = symbolicVarStack;
 
-        this.methodModels = new HashMap<>();
         // Register known method models
+        this.methodModels = new HashMap<>();
+
+        // strings
         addMethodModel("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
                 mkEq(args.get(0), args.get(1)), true);
         addMethodModel("<java.lang.String: int length()>", (invoke, args) ->
@@ -39,6 +41,7 @@ public class Z3Translator {
         addMethodModel("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
                 ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())), false);
 
+        // sets
         addMethodModel("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
                 ctx.mkSetIntersection(args.get(0), args.get(1)), true);
         addMethodModel("<java.util.Set: boolean add(java.lang.Object)>", (invoke, args) ->
@@ -47,8 +50,8 @@ public class Z3Translator {
                 ctx.mkSetLength(args.get(0)), true);
         addMethodModel("<java.util.Set: boolean contains(java.lang.Object)>", (invoke, args) ->
                 ctx.mkSetContains(args.get(0), args.get(1)), true);
-//        this.methodModels.put("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
-//                ctx.mkSetIntersection(args.get(0), args.get(1)));
+        addMethodModel("<java.util.Set: boolean remove(java.lang.Object)>", (invoke, args) ->
+                ctx.mkSetRemove(args.get(0), args.get(1)), true);
     }
 
     public static synchronized Solver makeSolver() {
