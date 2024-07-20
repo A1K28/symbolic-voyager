@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.executor;
+package com.github.a1k28.evoc.core.z3extended;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Version;
