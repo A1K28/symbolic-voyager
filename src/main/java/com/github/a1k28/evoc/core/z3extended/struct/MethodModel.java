@@ -15,6 +15,32 @@ public enum MethodModel {
     STRING_LEN("<java.lang.String: int length()>",true),
     STRING_SOOT_CONCAT("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
 
+    // --- lists ---
+    // size
+    // isEmpty
+    // add (element)
+    // add (index, element)
+    // addAll (list)
+    // addAll (index, list)
+    // remove (element)
+    // remove (index)
+    // removeAll
+    // contains
+    // containsAll
+    // retainAll
+    // clear
+    // equals
+    // hashCode
+    // get
+    // set
+    // indexOf
+    // lastIndexOf
+    // replaceAll ?
+    // sort ?
+    // iterators ?
+    // subList ?
+    // stream ?
+
     // sets
     SET_RETAIN_ALL("<java.util.Set: boolean retainAll(java.util.Collection)>",true),
     SET_ADD("<java.util.Set: boolean add(java.lang.Object)>",true),

@@ -15,10 +15,10 @@ public class Z3SetCollection {
         this.setMap = new HashMap<>();
     }
 
-    public void add(int hashCode, Expr o) {
+    public void add(int hashCode, Expr element) {
         if (!setMap.containsKey(hashCode))
             setMap.put(hashCode, new HashSet<>());
-        setMap.get(hashCode).add(o);
+        setMap.get(hashCode).add(element);
     }
 
     public BoolExpr contains(int hashCode, Expr element) {
