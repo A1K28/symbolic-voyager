@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.executor.model;
+package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
 import com.microsoft.z3.Expr;
 import lombok.Getter;

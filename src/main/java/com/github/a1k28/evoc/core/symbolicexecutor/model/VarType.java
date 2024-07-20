@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.executor.model;
+package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.AbstractInstanceInvokeExpr;

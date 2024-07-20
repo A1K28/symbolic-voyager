@@ -1,6 +1,6 @@
-package com.github.a1k28.evoc.core.executor.struct;
+package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
-import com.github.a1k28.evoc.core.executor.model.SType;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import lombok.Getter;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;

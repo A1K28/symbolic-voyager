@@ -1,6 +1,6 @@
-package com.github.a1k28.evoc.core.executor.model;
+package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
-import com.github.a1k28.evoc.core.executor.struct.SVar;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.microsoft.z3.BoolExpr;
 import lombok.Getter;
 

@@ -1,7 +1,8 @@
-package com.github.a1k28.evoc.core.executor;
+package com.github.a1k28.evoc.core.symbolicexecutor;
 
-import com.github.a1k28.evoc.core.executor.model.*;
-import com.github.a1k28.evoc.core.executor.struct.*;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
+import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
 import com.microsoft.z3.*;
@@ -17,8 +18,8 @@ import sootup.java.core.JavaSootClassSource;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.a1k28.evoc.core.executor.Z3Translator.close;
-import static com.github.a1k28.evoc.core.executor.Z3Translator.makeSolver;
+import static com.github.a1k28.evoc.core.z3extended.Z3Translator.close;
+import static com.github.a1k28.evoc.core.z3extended.Z3Translator.makeSolver;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathCarver {
