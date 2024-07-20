@@ -21,12 +21,15 @@ public class SMethodPath {
     private final String methodName;
     private final SParamList paramList;
 
+    private Integer totalLines;
+
     public SMethodPath(String classname, String methodName, SParamList paramList) {
         this.root = new SNode();
         this.fields = new HashSet<>();
         this.classname = classname;
         this.methodName = methodName;
         this.paramList = paramList;
+        this.totalLines = 0;
     }
 
     public SNode createNode(Stmt unit) {
@@ -63,5 +66,9 @@ public class SMethodPath {
         }
         log.warn("Could not identify: " + unit);
         return SType.OTHER;
+    }
+
+    public void incrementTotalLines() {
+        this.totalLines += 1;
     }
 }

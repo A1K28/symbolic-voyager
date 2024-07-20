@@ -16,7 +16,6 @@ import sootup.core.types.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 class Z3Translator {
     private static Context ctx = null;
@@ -33,12 +32,19 @@ class Z3Translator {
 
         this.methodModels = new HashMap<>();
         addMethodModel("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
-                mkEq(args.get(0), args.get(1)), false);
+                mkEq(args.get(0), args.get(1)), true);
         // Register known method models
         addMethodModel("<java.lang.String: int length()>", (invoke, args) ->
                 ctx.mkLength(args.get(0)), true);
+        addMethodModel("<java.util.Set: int size()>", (invoke, args) ->
+                ctx.mkLength(args.get(0)), true);
+
         addMethodModel("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
                 ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())), false);
+        addMethodModel("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
+                ctx.mkSetIntersection(args.get(0), args.get(1)), true);
+        addMethodModel("<java.util.Set: boolean add(java.lang.Object)>", (invoke, args) ->
+                ctx.mkSetAdd(args.get(0), args.get(1)), true);
 //        this.methodModels.put("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
 //                ctx.mkSetIntersection(args.get(0), args.get(1)));
     }
@@ -176,6 +182,7 @@ class Z3Translator {
             return new SMethodExpr(invoke, base, args, false);
         } else if (!methodSignature.startsWith("<" + sMethodPath.getClassname() + ":")) {
             // mock method call outside the current class
+            System.out.println("mocked method " + methodSignature);
             return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
         } else {
             return new SMethodExpr(invoke, base, args, true);
@@ -211,14 +218,14 @@ class Z3Translator {
             return handleMethodCall(abstractInvoke);
         }
         if (value instanceof JNewExpr) {
-            return ctx.mkConst(value.toString(), ctx.mkUninterpretedSort(value.getType().toString()));
+            return ctx.mkConst(value.toString(), translateType(value.getType()));
         }
         if (value instanceof JArrayRef) {
             // Create an integer sort for array indices
             IntSort intSort = ctx.getIntSort();
 
             // Create an uninterpreted sort for array elements
-            Sort elementSort = ctx.mkUninterpretedSort(value.getType().toString());
+            Sort elementSort = translateType(value.getType());
 
             return ctx.mkArrayConst(value.toString(), intSort, elementSort);
         }
@@ -378,8 +385,11 @@ class Z3Translator {
             return ctx.mkArraySort(ctx.getIntSort(), elementSort);
         }
         if (type instanceof ReferenceType) {
-            if (type.toString().equals(String.class.getName())) {
+            String val = type.toString();
+            if (String.class.getName().equals(val))
                 return ctx.getStringSort();
+            if (HashSet.class.getName().equals(val)) {
+                return ctx.mkSetSort(ctx.mkStringSort());
             }
             // For other reference types, use an uninterpreted sort
             return ctx.mkUninterpretedSort("Object");

@@ -1,9 +1,6 @@
 package com.github.a1k28.evoc.core.executor;
 
-import com.github.a1k28.evoc.core.executor.model.SType;
-import com.github.a1k28.evoc.core.executor.model.SatisfiableResult;
-import com.github.a1k28.evoc.core.executor.model.VarType;
-import com.github.a1k28.evoc.core.executor.model.Z3Status;
+import com.github.a1k28.evoc.core.executor.model.*;
 import com.github.a1k28.evoc.core.executor.struct.*;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
@@ -30,7 +27,7 @@ public class SymbolicPathCarver {
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
     private final SMethodPath sMethodPath;
-    private final List<SatisfiableResult> satisfiableResults = new ArrayList<>();
+    private final SatisfiableResults satisfiableResults;
 
     public SymbolicPathCarver(String classname, String methodName) throws ClassNotFoundException {
         this(classname, methodName, new SParamList());
@@ -40,9 +37,10 @@ public class SymbolicPathCarver {
             throws ClassNotFoundException {
         this.sMethodPath = createMethodPath(classname, methodName, paramList);
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
+        this.satisfiableResults = new SatisfiableResults(sMethodPath.getTotalLines(), new ArrayList<>());
     }
 
-    public List<SatisfiableResult> analyzeSymbolicPaths()
+    public SatisfiableResults analyzeSymbolicPaths()
             throws ClassNotFoundException {
         solver = makeSolver();
         analyzePaths(sMethodPath.getRoot());
@@ -74,6 +72,7 @@ public class SymbolicPathCarver {
         symbolicVarStack.push();
 
         SType type = null;
+        satisfiableResults.incrementCoveredLines();
 
         // handle node types
         if (node.getType() == SType.PARAMETER) {
@@ -110,9 +109,10 @@ public class SymbolicPathCarver {
 
     private SType handleAssignment(SNode node)
             throws ClassNotFoundException {
-        List<SatisfiableResult> response = handleAssignmentAndPropagate(node);
-        updateStackAndPropagate(node, response);
-        if (!response.isEmpty()) return SType.INVOKE;
+        SatisfiableResults response = handleAssignmentAndPropagate(node);
+        if (response == null) return SType.ASSIGNMENT;
+        updateStackAndPropagate(node, response.getResults());
+        if (!response.getResults().isEmpty()) return SType.INVOKE;
         return SType.ASSIGNMENT;
     }
 
@@ -128,7 +128,7 @@ public class SymbolicPathCarver {
 //        return SType.INVOKE;
 //    }
 
-    private List<SatisfiableResult> handleAssignmentAndPropagate(SNode node) throws ClassNotFoundException {
+    private SatisfiableResults handleAssignmentAndPropagate(SNode node) throws ClassNotFoundException {
         JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
         Value leftOp = assignStmt.getLeftOp();
         Value rightOp = assignStmt.getRightOp();
@@ -141,7 +141,6 @@ public class SymbolicPathCarver {
             if (methodExpr.isInvokable()) {
                 return returnPermutations(methodExpr);
             } else {
-                System.out.println(node);
                 z3t.updateSymbolicVariable(
                         leftOp,
                         z3t.handleMethodCall(holder.asMethod(), rightOpVarType),
@@ -152,7 +151,7 @@ public class SymbolicPathCarver {
             if (rightOpVarType == VarType.METHOD) leftOpVarType = VarType.METHOD_MOCK;
             z3t.updateSymbolicVariable(leftOp, holder.getExpr(), leftOpVarType);
         }
-        return Collections.emptyList();
+        return null;
     }
 
     private List<SVar> handleReturn(SNode node) {
@@ -215,7 +214,7 @@ public class SymbolicPathCarver {
         }
     }
 
-    private List<SatisfiableResult> returnPermutations(SMethodExpr methodExpr) throws ClassNotFoundException {
+    private SatisfiableResults returnPermutations(SMethodExpr methodExpr) throws ClassNotFoundException {
         String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
         List<Value> args = methodExpr.getArgs();
         args.addAll(symbolicVarStack.getFields().stream()
@@ -273,7 +272,7 @@ public class SymbolicPathCarver {
                 res
         );
 
-        satisfiableResults.add(satisfiableResult);
+        satisfiableResults.getResults().add(satisfiableResult);
         log.empty();
     }
 
