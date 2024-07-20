@@ -1,8 +1,8 @@
 package com.github.a1k28.evoc.core.z3extended;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodModel;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
+import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
@@ -14,44 +14,22 @@ import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.types.*;
 
-import java.util.*;
-import java.util.function.BiFunction;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 
 public class Z3Translator {
-    private static Z3ExtendedContext ctx = null;
+    public static Z3ExtendedContext ctx = null;
     private static Solver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
-    private final Map<String, MethodModel> methodModels;
 
     public Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
         initZ3();
 
         this.sMethodPath = sMethodPath;
         this.symbolicVarStack = symbolicVarStack;
-
-        // Register known method models
-        this.methodModels = new HashMap<>();
-
-        // strings
-        addMethodModel("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
-                mkEq(args.get(0), args.get(1)), true);
-        addMethodModel("<java.lang.String: int length()>", (invoke, args) ->
-                ctx.mkLength(args.get(0)), true);
-        addMethodModel("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
-                ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())), false);
-
-        // sets
-        addMethodModel("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
-                ctx.mkSetIntersection(args.get(0), args.get(1)), true);
-        addMethodModel("<java.util.Set: boolean add(java.lang.Object)>", (invoke, args) ->
-                ctx.mkSetAdd(args.get(0), args.get(1)), true);
-        addMethodModel("<java.util.Set: int size()>", (invoke, args) ->
-                ctx.mkSetLength(args.get(0)), true);
-        addMethodModel("<java.util.Set: boolean contains(java.lang.Object)>", (invoke, args) ->
-                ctx.mkSetContains(args.get(0), args.get(1)), true);
-        addMethodModel("<java.util.Set: boolean remove(java.lang.Object)>", (invoke, args) ->
-                ctx.mkSetRemove(args.get(0), args.get(1)), true);
     }
 
     public static synchronized Solver makeSolver() {
@@ -124,7 +102,7 @@ public class Z3Translator {
 
     public Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
-        MethodModel methodModel = methodModels.get(methodSignature);
+        MethodModel methodModel = MethodModel.get(methodSignature);
 
         List<Expr> args = new ArrayList<>();
         if (methodModel.hasBase())
@@ -134,7 +112,7 @@ public class Z3Translator {
                 .map(e -> this.translateValue(e, varType))
                 .toList());
 
-        return methodModel.getBiFunction().apply(methodExpr.getInvokeExpr(), args);
+        return methodModel.apply(ctx, methodSignature, args);
 //        if (methodModel != null) {
 //        } else {
 //            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
@@ -183,7 +161,7 @@ public class Z3Translator {
             for (Value arg : i.getBootstrapArgs())
                 args.add(arg);
 
-        if (methodModels.containsKey(methodSignature)) {
+        if (MethodModel.contains(methodSignature)) {
             return new SMethodExpr(invoke, base, args, false);
         } else if (!methodSignature.startsWith("<" + sMethodPath.getClassname() + ":")) {
             // mock method call outside the current class
@@ -326,11 +304,12 @@ public class Z3Translator {
             for (Value arg : i.getBootstrapArgs())
                 args.add(translateValue(arg, VarType.METHOD_ARG));
 
-        MethodModel methodModel = methodModels.get(methodSignature);
-        if (methodModel != null) {
+//        MethodModel methodModel = methodModels.get(methodSignature);
+        if (MethodModel.contains(methodSignature)) {
+            MethodModel methodModel = MethodModel.get(methodSignature);
             if (methodModel.hasBase())
                 args.add(0, base);
-            return methodModel.getBiFunction().apply(invoke, args);
+            return methodModel.apply(ctx, methodSignature, args);
         } else {
             Sort sort = translateType(invoke.getType());
             return ctx.mkConst(invoke.toString(), sort);
@@ -456,11 +435,5 @@ public class Z3Translator {
         String key = getValueName(value);
         Optional<SVar> optional = symbolicVarStack.get(key);
         return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType));
-    }
-
-    private void addMethodModel(String name,
-                                BiFunction<AbstractInvokeExpr, List<Expr>, Expr> biFunction,
-                                boolean hasBase) {
-        methodModels.put(name, new MethodModel(name, biFunction, hasBase));
     }
 }
