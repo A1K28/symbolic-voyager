@@ -1,8 +1,8 @@
 package com.github.a1k28.evoc.helper;
 
-import com.github.a1k28.evoc.core.executor.struct.SNode;
-import com.github.a1k28.evoc.core.executor.struct.SMethodPath;
-import com.github.a1k28.evoc.core.executor.model.SType;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
