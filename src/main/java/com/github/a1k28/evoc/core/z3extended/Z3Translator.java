@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.executor;
+package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.executor.model.MethodModel;
 import com.github.a1k28.evoc.core.executor.model.VarType;
@@ -17,75 +17,77 @@ import sootup.core.types.*;
 import java.util.*;
 import java.util.function.BiFunction;
 
-class Z3Translator {
-    private static Context ctx = null;
+public class Z3Translator {
+    private static Z3ExtendedContext ctx = null;
     private static Solver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
     private final Map<String, MethodModel> methodModels;
 
-    Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
+    public Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
         initZ3();
 
         this.sMethodPath = sMethodPath;
         this.symbolicVarStack = symbolicVarStack;
 
         this.methodModels = new HashMap<>();
+        // Register known method models
         addMethodModel("<java.lang.String: boolean equals(java.lang.Object)>", (invoke, args) ->
                 mkEq(args.get(0), args.get(1)), true);
-        // Register known method models
         addMethodModel("<java.lang.String: int length()>", (invoke, args) ->
                 ctx.mkLength(args.get(0)), true);
-        addMethodModel("<java.util.Set: int size()>", (invoke, args) ->
-                ctx.mkLength(args.get(0)), true);
-
         addMethodModel("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", (invoke, args) ->
                 ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString())), false);
+
         addMethodModel("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
                 ctx.mkSetIntersection(args.get(0), args.get(1)), true);
         addMethodModel("<java.util.Set: boolean add(java.lang.Object)>", (invoke, args) ->
                 ctx.mkSetAdd(args.get(0), args.get(1)), true);
+        addMethodModel("<java.util.Set: int size()>", (invoke, args) ->
+                ctx.mkSetLength(args.get(0)), true);
+        addMethodModel("<java.util.Set: boolean contains(java.lang.Object)>", (invoke, args) ->
+                ctx.mkSetContains(args.get(0), args.get(1)), true);
 //        this.methodModels.put("<java.util.Set: boolean retainAll(java.util.Collection)>", (invoke, args) ->
 //                ctx.mkSetIntersection(args.get(0), args.get(1)));
     }
 
-    static synchronized Solver makeSolver() {
+    public static synchronized Solver makeSolver() {
         if (solver == null) {
             solver = ctx.mkSolver();
         }
         return solver;
     }
 
-    static synchronized void initZ3() {
+    public static synchronized void initZ3() {
         // Initialize Z3
         if (ctx == null) {
-            ctx = new Context();
+            ctx = new Z3ExtendedContext();
         }
     }
 
-    static synchronized void close() {
+    public static synchronized void close() {
         ctx.close();
         ctx = null;
     }
 
-    Expr mkEq(Expr expr, boolean val) {
+    public Expr mkEq(Expr expr, boolean val) {
         return mkEq(expr, ctx.mkBool(val));
     }
 
-    Expr mkEq(Expr expr, Expr val) {
+    public Expr mkEq(Expr expr, Expr val) {
         return ctx.mkEq(expr, val);
     }
 
-    Expr mkExpr(String name, Type type) {
+    public Expr mkExpr(String name, Type type) {
         Sort sort = translateType(type);
         return mkExpr(name, sort);
     }
 
-    Expr mkExpr(String name, Sort sort) {
+    public Expr mkExpr(String name, Sort sort) {
         return ctx.mkConst(name, sort);
     }
 
-    SExpr translateAndWrapValue(Value value, VarType varType) {
+    public SExpr translateAndWrapValue(Value value, VarType varType) {
         if (value instanceof AbstractInvokeExpr invoke) {
             return wrapMethodCall(invoke);
         } else {
@@ -93,7 +95,7 @@ class Z3Translator {
         }
     }
 
-    SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
+    public SAssignment translateAndWrapValues(Value value1, Value value2, VarType varType) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
             right = wrapMethodCall(invoke);
@@ -117,7 +119,7 @@ class Z3Translator {
         return new SAssignment(left, right);
     }
 
-    Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
+    public Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
         MethodModel methodModel = methodModels.get(methodSignature);
 
@@ -136,7 +138,7 @@ class Z3Translator {
 //        }
     }
 
-    Expr translateCondition(Value condition, VarType varType) {
+    public Expr translateCondition(Value condition, VarType varType) {
         if (condition instanceof AbstractConditionExpr exp) {
             SAssignment holder = translateAndWrapValues(exp.getOp1(), exp.getOp2(), varType);
             Expr e1 = holder.getLeft().getExpr();
@@ -165,7 +167,7 @@ class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
+    public SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Value> args = new ArrayList<>();
@@ -189,7 +191,7 @@ class Z3Translator {
         }
     }
 
-    Expr translateValue(Value value, VarType varType) {
+    public Expr translateValue(Value value, VarType varType) {
         if (value instanceof Local) {
             return getSymbolicValue(value, varType);
         }
@@ -224,7 +226,7 @@ class Z3Translator {
             // Create an integer sort for array indices
             IntSort intSort = ctx.getIntSort();
 
-            // Create an uninterpreted sort for array elements
+            // Create a sort for array elements
             Sort elementSort = translateType(value.getType());
 
             return ctx.mkArrayConst(value.toString(), intSort, elementSort);
@@ -389,6 +391,7 @@ class Z3Translator {
             if (String.class.getName().equals(val))
                 return ctx.getStringSort();
             if (HashSet.class.getName().equals(val)) {
+//                return ctx.mkArraySort(ctx.getIntSort(), ctx.mkStringSort());
                 return ctx.mkSetSort(ctx.mkStringSort());
             }
             // For other reference types, use an uninterpreted sort
@@ -409,30 +412,26 @@ class Z3Translator {
         return getSymbolicVarBySort(value, sort, varType).getExpr();
     }
 
-    SVar getSymbolicVarStrict(Value value) {
-        return getSymbolicVar(value, value.getType(), VarType.OTHER);
-    }
-
-    SVar saveSymbolicVar(Value value, Type type, VarType varType) {
+    public SVar saveSymbolicVar(Value value, Type type, VarType varType) {
         String name = getValueName(value);
         if (type == null) type = value.getType();
         Expr expr = mkExpr(name, type);
         return updateSymbolicVariable(value, expr, varType);
     }
 
-    SVar saveSymbolicVar(Value value, Sort sort, VarType varType) {
+    public SVar saveSymbolicVar(Value value, Sort sort, VarType varType) {
         String name = getValueName(value);
         Expr expr = mkExpr(name, sort);
         return updateSymbolicVariable(value, expr, varType);
     }
 
-    String getValueName(Value value) {
+    public String getValueName(Value value) {
         String res = value.toString();
         if (res.startsWith("this.")) res = res.substring(5);
         return res;
     }
 
-    SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
+    public SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
             if (variable.toString().equals("$stack2")) {
                 String asd = "asdawd";
