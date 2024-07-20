@@ -415,9 +415,6 @@ public class Z3Translator {
 
     public SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
-            if (variable.toString().equals("$stack2")) {
-                String asd = "asdawd";
-            }
             String name = getValueName(variable);
             if (sMethodPath.getFields().contains(name)) varType = VarType.FIELD;
             return symbolicVarStack.add(name, variable, expression, varType);
