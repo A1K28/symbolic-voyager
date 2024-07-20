@@ -40,6 +40,7 @@ public enum MethodModel {
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
             case STRING_LEN -> ctx.mkLength(args.get(0));
             case STRING_SOOT_CONCAT -> ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString()));
+
             case SET_RETAIN_ALL -> ctx.mkSetIntersection(args.get(0), args.get(1));
             case SET_ADD -> ctx.mkSetAdd(args.get(0), args.get(1));
             case SET_LEN -> ctx.mkSetLength(args.get(0));
