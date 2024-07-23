@@ -38,6 +38,7 @@ public enum MethodModel {
     LIST_SET("<java.util.List: java.lang.Object set(int,java.lang.Object)>", true),
     LIST_INDEX_OF("<java.util.List: int indexOf(java.lang.Object)>", true),
     LIST_LAST_INDEX_OF("<java.util.List: int lastIndexOf(java.lang.Object)>", true),
+    LIST_OF_OBJECT_ARR("<java.util.List: java.util.List of(java.lang.Object[])>", true),
     LIST_OF("<java.util.List: java.util.List of()>", true),
     LIST_OF_1("<java.util.List: java.util.List of(java.lang.Object)>", true),
     LIST_OF_2("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object)>", true),
@@ -84,7 +85,7 @@ public enum MethodModel {
             case STRING_LEN -> ctx.mkLength(args.get(0));
             case STRING_SOOT_CONCAT -> ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString()));
 
-            case LIST_INIT -> ctx.mkList(args.get(0));
+            case LIST_INIT, LIST_OF_OBJECT_ARR -> ctx.mkList(args.get(0));
             case LIST_INIT_WITH_CAPACITY -> ctx.mkListWithCapacity(args.get(0), (IntExpr) args.get(1));
             case LIST_INIT_WITH_COLLECTION -> ctx.mkListWithCollection(args.get(0), args.get(1));
             case LIST_SIZE -> ctx.mkListLength(args.get(0));

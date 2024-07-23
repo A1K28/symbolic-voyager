@@ -58,7 +58,7 @@ public class Z3ListCollection {
         else if (arguments != null) l = new ArrayList(Arrays.stream(arguments).toList());
         else l = new ArrayList();
 
-        ArrayExpr arrayExpr = ctx.mkArrayConst(String.valueOf(hashCode), ctx.mkIntSort(), elementType);
+        ArrayExpr arrayExpr = ctx.mkArrayConst("ArrayList"+hashCode, ctx.mkIntSort(), elementType);
         for (int i = 0; i < l.size(); i++)
             ctx.mkStore(arrayExpr, ctx.mkInt(i), l.get(i));
 
@@ -261,7 +261,9 @@ public class Z3ListCollection {
 
     public static int ihc(Object o) {
         if (o instanceof ArrayExpr<?,?>) {
-            return Integer.parseInt(o.toString().substring(1, o.toString().length()-1));
+            try {
+                return Integer.parseInt(o.toString().replace("ArrayList", ""));
+            } catch (NumberFormatException ignored) {}
         }
         return System.identityHashCode(o);
     }

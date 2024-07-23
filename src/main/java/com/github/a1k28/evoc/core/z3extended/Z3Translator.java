@@ -197,7 +197,9 @@ public class Z3Translator {
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
             return handleMethodCall(abstractInvoke);
         }
-        if (value instanceof JNewExpr) {
+        if (value instanceof JNewExpr ||
+                value instanceof JNewArrayExpr ||
+                value instanceof JNewMultiArrayExpr) {
             return ctx.mkConst(value.toString(), translateType(value.getType()));
         }
         if (value instanceof JArrayRef) {
@@ -368,21 +370,45 @@ public class Z3Translator {
             return ctx.mkArraySort(ctx.getIntSort(), elementSort);
         }
         if (type instanceof ReferenceType) {
-            String val = type.toString();
-            if (String.class.getName().equals(val))
-                return ctx.getStringSort();
-            if (HashSet.class.getName().equals(val)) {
-//                return ctx.mkArraySort(ctx.getIntSort(), ctx.mkStringSort());
-                return ctx.mkSetSort(ctx.mkStringSort());
-            }
-            // For other reference types, use an uninterpreted sort
-            return ctx.mkUninterpretedSort("Object");
+            return translateReferenceType(type.toString());
         }
         if (type instanceof VoidType)
             return ctx.mkUninterpretedSort("Void");
 
         // For any other types, use an uninterpreted sort
         return ctx.mkUninterpretedSort(type.toString());
+    }
+
+    private Sort translateReferenceType(String value) {
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(value);
+        } catch (ClassNotFoundException e) {
+//            ("Class not found: " + value, e);
+            return ctx.mkUninterpretedSort("Object");
+        }
+        if (Boolean.class.isAssignableFrom(clazz))
+            return ctx.mkBoolSort();
+        if (Integer.class.isAssignableFrom(clazz))
+            return ctx.getIntSort();
+        if (Long.class.isAssignableFrom(clazz))
+            return ctx.mkIntSort();
+        if (Float.class.isAssignableFrom(clazz))
+            return ctx.mkFPSort32();
+        if (Double.class.isAssignableFrom(clazz))
+            return ctx.mkFPSort64();
+        if (Number.class.isAssignableFrom(clazz))
+            return ctx.mkRealSort();
+        if (String.class.isAssignableFrom(clazz))
+            return ctx.mkStringSort();
+        if (Set.class.isAssignableFrom(clazz))
+            return ctx.mkSetSort(ctx.mkUninterpretedSort("Object")); // todo: what here?
+        if (List.class.isAssignableFrom(clazz))
+            return ctx.mkListSort("ArrayList", ctx.mkUninterpretedSort("Object")); // todo: what here?
+
+        // TODO: handle sets & maps correctly
+
+        return ctx.mkUninterpretedSort("Object");
     }
 
     private Expr getSymbolicValue(Value value, VarType varType) {
