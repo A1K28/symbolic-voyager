@@ -89,8 +89,7 @@ public class SymbolicPathCarver {
             type = handleAssignment(node);
         }
         if (node.getType() == SType.INVOKE) {
-            System.out.println("Handle void method calls");
-//            type = handleVoidMethodCall(node, false);
+            type = handleVoidMethodCall(node);
         }
 
         if (Z3Status.SATISFIABLE == checkSatisfiability(node, type))
@@ -117,17 +116,20 @@ public class SymbolicPathCarver {
         return SType.ASSIGNMENT;
     }
 
-//    private SType handleVoidMethodCall(SNode node, boolean isInnerCall, Object... args)
-//            throws ClassNotFoundException {
-//        JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
-//        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
-//        if (wrapped.getSType() != SType.INVOKE) return SType.OTHER;
-//        SMethodExpr method = wrapped.asMethod();
-//        if (!method.isInvokable()) return SType.OTHER;
-//        List<List<SVar>> res = returnPermutations(method);
-//        updateStack(node, res, isInnerCall, args);
-//        return SType.INVOKE;
-//    }
+    private SType handleVoidMethodCall(SNode node)
+            throws ClassNotFoundException {
+        JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
+        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr());
+        if (wrapped.getSType() != SType.INVOKE) return SType.OTHER;
+        SMethodExpr method = wrapped.asMethod();
+        if (!method.isInvokable()) {
+            z3t.callProverMethod(method, getVarType(invoke));
+            return SType.OTHER;
+        }
+        SatisfiableResults response = returnPermutations(method);
+        updateStackAndPropagate(node, response.getResults());
+        return SType.INVOKE;
+    }
 
     private SatisfiableResults handleAssignmentAndPropagate(SNode node) throws ClassNotFoundException {
         JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
@@ -144,7 +146,7 @@ public class SymbolicPathCarver {
             } else {
                 z3t.updateSymbolicVariable(
                         leftOp,
-                        z3t.handleMethodCall(holder.asMethod(), rightOpVarType),
+                        z3t.callProverMethod(holder.asMethod(), rightOpVarType),
                         leftOpVarType);
             }
         } else {

@@ -14,10 +14,7 @@ import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.types.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class Z3Translator {
     public static Z3ExtendedContext ctx = null;
@@ -100,12 +97,12 @@ public class Z3Translator {
         return new SAssignment(left, right);
     }
 
-    public Expr handleMethodCall(SMethodExpr methodExpr, VarType varType) {
+    public Expr callProverMethod(SMethodExpr methodExpr, VarType varType) {
         String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
         MethodModel methodModel = MethodModel.get(methodSignature);
 
         List<Expr> args = new ArrayList<>();
-        if (methodModel.hasBase())
+        if (methodModel.hasBase() && methodExpr.getBase() != null)
             args.add(translateValue(methodExpr.getBase(), varType));
 
         args.addAll(methodExpr.getArgs().stream()
@@ -165,7 +162,7 @@ public class Z3Translator {
             return new SMethodExpr(invoke, base, args, false);
         } else if (!methodSignature.startsWith("<" + sMethodPath.getClassname() + ":")) {
             // mock method call outside the current class
-            System.out.println("mocked method " + methodSignature);
+            System.out.println("mocked method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
             return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
         } else {
             return new SMethodExpr(invoke, base, args, true);
@@ -292,6 +289,8 @@ public class Z3Translator {
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke) {
+        System.out.println("IN HANDLE METHOD CALL");
+
         String methodSignature = invoke.getMethodSignature().toString();
 
         List<Expr> args = new ArrayList<>();
