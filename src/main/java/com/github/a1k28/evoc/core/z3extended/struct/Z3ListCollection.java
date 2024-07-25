@@ -2,19 +2,28 @@ package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.model.ListModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
 import java.util.*;
 
 import static com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext.getSort;
 
-public class Z3ListCollection {
+public class Z3ListCollection implements IStack {
     private final Context ctx;
-    private final Map<Integer, ListModel> listMap; // TODO: stack struct?
+    private final Z3Stack<Integer, ListModel> stack; // TODO: stack struct?
+
+    @Override
+    public void push() {
+    }
+
+    @Override
+    public void pop() {
+    }
 
     public Z3ListCollection(Context context) {
         this.ctx = context;
-        this.listMap = new HashMap<>();
+        this.stack = new Z3Stack<>();
     }
 
     public Expr constructor(Expr var1) {
@@ -63,14 +72,15 @@ public class Z3ListCollection {
 //            ctx.mkStore(arrayExpr, ctx.mkInt(i), l.get(i));
         Expr arrayExpr = ctx.mkConst("ArrayList"+hashCode, SortType.ARRAY.value(ctx));
 
-        listMap.put(hashCode, new ListModel(arrayExpr, elementType, l));
+        stack.add(hashCode, new ListModel(arrayExpr, elementType, l));
         return arrayExpr;
     }
 
     public Expr sizeExpr(Expr var1) {
         int hashCode = ihc(var1);
-        if (listMap.containsKey(hashCode)) return ctx.mkInt(0);
-        return ctx.mkInt(listMap.get(hashCode).getArguments().size());
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkInt(0);
+        else return ctx.mkInt(listModel.get().getArguments().size());
     }
 
     public BoolExpr isEmpty(Expr var1) {
@@ -80,7 +90,7 @@ public class Z3ListCollection {
     public BoolExpr add(Expr var1, Expr element) {
         int hashCode = initList(var1);
         int size = size(var1);
-        ListModel listModel = listMap.get(hashCode);
+        ListModel listModel = stack.get(hashCode).orElseThrow();
 //        Sort sort = getSort(ctx, element);
 //        if (!listModel.getSort().equals(sort))
         listModel.getArguments().add(element);
@@ -91,7 +101,7 @@ public class Z3ListCollection {
 
     public BoolExpr add(Expr var1, int index, Expr var2) {
         int hashCode = initList(var1);
-        ListModel listModel = listMap.get(hashCode);
+        ListModel listModel = stack.get(hashCode).orElseThrow();
         int size = listModel.getArguments().size();
         if (index < 0 || index > size)
             return ctx.mkBool(false);
@@ -124,13 +134,13 @@ public class Z3ListCollection {
 
     public BoolExpr remove(Expr var1, Integer... indices) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
 
-        ListModel listModel = listMap.get(hashCode);
         Set<Integer> idx = new HashSet<>(Arrays.stream(indices).toList());
-        for (int i = listModel.getArguments().size()-1; i >= 0; i--)
+        for (int i = listModel.get().getArguments().size()-1; i >= 0; i--)
             if (idx.contains(i))
-                listModel.getArguments().remove(i);
+                listModel.get().getArguments().remove(i);
 
         int size = size(var1);
 //        constructor(hashCode,
@@ -144,19 +154,20 @@ public class Z3ListCollection {
 
     public BoolExpr remove(Expr var1, Expr element) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
-        int index = listMap.get(hashCode).getArguments().indexOf(element);
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
+        int index = listModel.get().getArguments().indexOf(element);
         return remove(var1, index);
     }
 
     public BoolExpr removeAll(Expr var1, Expr var2) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
-        ListModel listModel = listMap.get(hashCode);
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
         List<Expr> elements = get(var2).getArguments();
         Integer[] indices = new Integer[elements.size()];
         for (int i = 0; i < elements.size(); i++)
-            indices[i] = listModel.getArguments().indexOf(elements.get(i));
+            indices[i] = listModel.get().getArguments().indexOf(elements.get(i));
         int size = size(var1);
         remove(var1, indices);
         int newSize = size(var1);
@@ -165,8 +176,9 @@ public class Z3ListCollection {
 
     public BoolExpr contains(Expr var1, Expr element) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
-        List<Expr> set = listMap.get(hashCode).getArguments();
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
+        List<Expr> set = listModel.get().getArguments();
         Expr[] expressions = new Expr[set.size()];
         int i = 0;
         for (Expr value : set) {
@@ -178,8 +190,9 @@ public class Z3ListCollection {
 
     public BoolExpr containsAll(Expr var1, Expr var2) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
-        List<Expr> set = listMap.get(hashCode).getArguments();
+        Optional<ListModel> listModel = stack.get(hashCode);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
+        List<Expr> set = listModel.get().getArguments();
         List<Expr> elements = get(var2).getArguments();
         Expr[] expressions = new Expr[elements.size()];
         int i = 0;
@@ -217,7 +230,7 @@ public class Z3ListCollection {
     }
 
     public BoolExpr equals(Expr var1, Expr var2) {
-        if (!listMap.containsKey(ihc(var1))) return ctx.mkBool(false);
+        if (stack.get(ihc(var1)).isEmpty()) return ctx.mkBool(false);
         List<Expr> elements = get(var1).getArguments();
         List<Expr> exprs = get(var2).getArguments();
         if (elements.size() != exprs.size()) return ctx.mkBool(false);
@@ -234,7 +247,7 @@ public class Z3ListCollection {
     }
 
     public Expr set(Expr var1, int index, Expr element) {
-        if (listMap.containsKey(ihc(var1))) {
+        if (stack.get(ihc(var1)).isPresent()) {
             remove(var1, index);
             add(var1, index, element);
         }
@@ -255,12 +268,12 @@ public class Z3ListCollection {
 
     private ListModel get(Expr var1) {
         int hashCode = initList(var1);
-        return listMap.get(hashCode);
+        return stack.get(hashCode).orElseThrow();
     }
 
     private int initList(Expr var1) {
         int hashCode = ihc(var1);
-        if (!listMap.containsKey(hashCode))
+        if (stack.get(hashCode).isEmpty())
             constructor(var1);
         return hashCode;
     }

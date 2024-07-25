@@ -11,6 +11,9 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 public enum MethodModel {
+    // Integers
+    INT_VALUE_OF("<java.lang.Integer: java.lang.Integer valueOf(int)>", false),
+
     // strings
     STRING_EQUALS("<java.lang.String: boolean equals(java.lang.Object)>",true),
     STRING_LEN("<java.lang.String: int length()>",true),
@@ -81,6 +84,8 @@ public enum MethodModel {
     public Expr apply(Z3ExtendedContext ctx, String signature, List<Expr> args) {
         System.out.println("APPLYING: " + signature);
         return switch (map.get(signature)) {
+            case INT_VALUE_OF -> ctx.mkInt(String.valueOf(args.get(0)));
+
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
             case STRING_LEN -> ctx.mkLength(args.get(0));
             case STRING_SOOT_CONCAT -> ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString()));

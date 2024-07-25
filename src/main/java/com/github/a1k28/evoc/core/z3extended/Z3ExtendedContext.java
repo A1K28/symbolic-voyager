@@ -3,11 +3,12 @@ package com.github.a1k28.evoc.core.z3extended;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SetCollection;
+import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
 import java.util.List;
 
-public class Z3ExtendedContext extends Context {
+public class Z3ExtendedContext extends Context implements IStack {
     private final Z3SetCollection z3SetCollection;
     private final Z3ListCollection z3ListCollection;
 
@@ -15,6 +16,18 @@ public class Z3ExtendedContext extends Context {
         super();
         this.z3SetCollection = new Z3SetCollection(this);
         this.z3ListCollection = new Z3ListCollection(this);
+    }
+
+    @Override
+    public void push() {
+        this.z3SetCollection.push();
+        this.z3ListCollection.push();
+    }
+
+    @Override
+    public void pop() {
+        this.z3SetCollection.push();
+        this.z3ListCollection.push();
     }
 
     // sets

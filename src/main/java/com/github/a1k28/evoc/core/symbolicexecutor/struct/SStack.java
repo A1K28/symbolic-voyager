@@ -1,13 +1,15 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
+import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SStack {
+public class SStack implements IStack {
     private int index;
     private final List<Map<String, List<SVar>>> stack;
 
@@ -61,13 +63,17 @@ public class SStack {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public void push() {
         stack.add(new HashMap<>());
+        Z3Translator.ctx.push();
         index++;
     }
 
+    @Override
     public void pop() {
         stack.remove(index);
+        Z3Translator.ctx.pop();
         index--;
     }
 
