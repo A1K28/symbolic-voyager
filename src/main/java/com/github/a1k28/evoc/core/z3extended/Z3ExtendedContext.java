@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SetCollection;
 import com.microsoft.z3.*;
@@ -71,28 +72,28 @@ public class Z3ExtendedContext extends Context {
         return z3ListCollection.remove(var1, parseInt(index));
     }
 
-    public BoolExpr mkListRemoveAll(Expr var1, Expr element) {
-        return z3ListCollection.removeAll(var1, null);
+    public BoolExpr mkListRemoveAll(Expr var1, Expr var2) {
+        return z3ListCollection.removeAll(var1, var2);
     }
 
     public BoolExpr mkListContains(Expr var1, Expr element) {
         return z3ListCollection.contains(var1, element);
     }
 
-    public BoolExpr mkListContainsAll(Expr var1, Expr elements) {
-        return z3ListCollection.containsAll(var1, null);
+    public BoolExpr mkListContainsAll(Expr var1, Expr var2) {
+        return z3ListCollection.containsAll(var1, var2);
     }
 
-    public BoolExpr mkListRetainAll(Expr var1, Expr elements) {
-        return z3ListCollection.retainAll(var1, null);
+    public BoolExpr mkListRetainAll(Expr var1, Expr var2) {
+        return z3ListCollection.retainAll(var1, var2);
     }
 
     public Expr mkListClear(Expr var1) {
         return z3ListCollection.clear(var1);
     }
 
-    public BoolExpr mkListEquals(Expr var1, Expr expr) {
-        return z3ListCollection.equals(var1, null);
+    public BoolExpr mkListEquals(Expr var1, Expr var2) {
+        return z3ListCollection.equals(var1, var2);
     }
 
     public Expr mkListGet(Expr var1, IntExpr index) {
@@ -132,15 +133,19 @@ public class Z3ExtendedContext extends Context {
         return getSort(this, exprs);
     }
 
+    public static Sort getSort(Context ctx, Expr expr) {
+        return getSort(ctx, List.of(expr));
+    }
+
     public static Sort getSort(Context ctx, List<Expr> exprs) {
         if (exprs == null || exprs.isEmpty())
-            return ctx.mkUninterpretedSort("Object");
+            return SortType.OBJECT.value(ctx);
         Sort sort = exprs.get(0).getSort();
         if (sort == null || "Unknown".equalsIgnoreCase(sort.toString()))
-            return ctx.mkUninterpretedSort("Object");
+            return SortType.OBJECT.value(ctx);
         for (Expr expr : exprs) {
             if (!sort.equals(expr.getSort()))
-                ctx.mkUninterpretedSort("Object");
+                SortType.OBJECT.value(ctx);
         }
         return sort;
     }

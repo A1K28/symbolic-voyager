@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.model.ListModel;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.microsoft.z3.*;
 
 import java.util.*;
@@ -19,7 +20,7 @@ public class Z3ListCollection {
     public Expr constructor(Expr var1) {
         return constructor(ihc(var1),
                 null,
-                ctx.mkUninterpretedSort("Object"),
+                SortType.OBJECT.value(ctx),
                 null);
     }
 
@@ -28,7 +29,7 @@ public class Z3ListCollection {
                             Expr[] arguments) {
         return constructor(ihc(var1),
                 capacity,
-                ctx.mkUninterpretedSort("Object"),
+                SortType.OBJECT.value(ctx),
                 arguments);
     }
 
@@ -58,9 +59,10 @@ public class Z3ListCollection {
         else if (arguments != null) l = new ArrayList(Arrays.stream(arguments).toList());
         else l = new ArrayList();
 
-        ArrayExpr arrayExpr = ctx.mkArrayConst("ArrayList"+hashCode, ctx.mkIntSort(), elementType);
-        for (int i = 0; i < l.size(); i++)
-            ctx.mkStore(arrayExpr, ctx.mkInt(i), l.get(i));
+//        ArrayExpr arrayExpr = ctx.mkArrayConst("ArrayList"+hashCode, ctx.mkIntSort(), elementType);
+//        for (int i = 0; i < l.size(); i++)
+//            ctx.mkStore(arrayExpr, ctx.mkInt(i), l.get(i));
+        Expr arrayExpr = ctx.mkConst("ArrayList"+hashCode, SortType.ARRAY.value(ctx));
 
         listMap.put(hashCode, new ListModel(arrayExpr, elementType, l));
         return arrayExpr;
@@ -80,8 +82,10 @@ public class Z3ListCollection {
         int hashCode = initList(var1);
         int size = size(var1);
         ListModel listModel = listMap.get(hashCode);
+//        Sort sort = getSort(ctx, element);
+//        if (!listModel.getSort().equals(sort))
         listModel.getArguments().add(element);
-        ctx.mkStore(listModel.getExpr(), ctx.mkInt(listModel.getArguments().size()), element);
+//        ctx.mkStore(listModel.getExpr(), ctx.mkInt(listModel.getArguments().size()), element);
         int newSize = size(var1);
         return ctx.mkBool(newSize != size);
     }
@@ -94,7 +98,7 @@ public class Z3ListCollection {
             return ctx.mkBool(false);
 
         listModel.getArguments().add(index, var2);
-        ctx.mkStore(listModel.getExpr(), ctx.mkInt(index), var2);
+//        ctx.mkStore(listModel.getExpr(), ctx.mkInt(index), var2);
 
         int newSize = size(var1);
         return ctx.mkBool(newSize != size);
@@ -130,11 +134,10 @@ public class Z3ListCollection {
                 listModel.getArguments().remove(i);
 
         int size = size(var1);
-        constructor(hashCode,
-                null,
-                listModel.getSort(),
-                listModel.getArguments().toArray(new Expr[0]));
-
+//        constructor(hashCode,
+//                null,
+//                listModel.getSort(),
+//                listModel.getArguments().toArray(new Expr[0]));
 
         int newSize = size(var1);
         return ctx.mkBool(newSize != size);
@@ -147,13 +150,14 @@ public class Z3ListCollection {
         return remove(var1, index);
     }
 
-    public BoolExpr removeAll(Expr var1, List<Expr> element) {
+    public BoolExpr removeAll(Expr var1, Expr var2) {
         int hashCode = ihc(var1);
         if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
         ListModel listModel = listMap.get(hashCode);
-        Integer[] indices = new Integer[element.size()];
-        for (int i = 0; i < element.size(); i++)
-            indices[i] = listModel.getArguments().indexOf(element.get(i));
+        List<Expr> elements = get(var2).getArguments();
+        Integer[] indices = new Integer[elements.size()];
+        for (int i = 0; i < elements.size(); i++)
+            indices[i] = listModel.getArguments().indexOf(elements.get(i));
         int size = size(var1);
         remove(var1, indices);
         int newSize = size(var1);
@@ -173,16 +177,17 @@ public class Z3ListCollection {
         return ctx.mkOr(expressions);
     }
 
-    public BoolExpr containsAll(Expr var1, List<Expr> elements) {
+    public BoolExpr containsAll(Expr var1, Expr var2) {
         int hashCode = ihc(var1);
         if (!listMap.containsKey(hashCode)) return ctx.mkBool(false);
         List<Expr> set = listMap.get(hashCode).getArguments();
+        List<Expr> elements = get(var2).getArguments();
         Expr[] expressions = new Expr[elements.size()];
         int i = 0;
         for (Expr element : elements) {
             Expr[] exps = new Expr[set.size()];
             int j = 0;
-            for (Expr se : exps) {
+            for (Expr se : set) {
                 exps[j] = ctx.mkEq(se, element);
                 j++;
             }
@@ -192,8 +197,9 @@ public class Z3ListCollection {
         return ctx.mkAnd(expressions);
     }
 
-    public BoolExpr retainAll(Expr var1, List<Expr> elements) {
+    public BoolExpr retainAll(Expr var1, Expr var2) {
         int size = size(var1);
+        List<Expr> elements = get(var2).getArguments();
         for (Expr expr : get(var1).getArguments())
             if (!elements.contains(expr))
                 remove(var1, expr);
@@ -201,29 +207,30 @@ public class Z3ListCollection {
         return ctx.mkBool(newSize != size);
     }
 
-    // TODO: z3 list clear??
     public Expr clear(Expr var1) {
         ListModel listModel = get(var1);
         listModel.getArguments().clear();
-        return constructor(ihc(var1),
-                null,
-                listModel.getSort(),
-                null);
+        return listModel.getExpr();
+//        return constructor(ihc(var1),
+//                null,
+//                listModel.getSort(),
+//                null);
     }
 
-    public BoolExpr equals(Expr var1, Expr[] exprs) {
+    public BoolExpr equals(Expr var1, Expr var2) {
         if (!listMap.containsKey(ihc(var1))) return ctx.mkBool(false);
         List<Expr> elements = get(var1).getArguments();
-        if (elements.size() != exprs.length) return ctx.mkBool(false);
+        List<Expr> exprs = get(var2).getArguments();
+        if (elements.size() != exprs.size()) return ctx.mkBool(false);
         Expr[] result = new Expr[elements.size()];
         for (int i = 0; i < elements.size(); i++)
-            result[i] = ctx.mkEq(elements.get(i), exprs[i]);
+            result[i] = ctx.mkEq(elements.get(i), exprs.get(i));
         return ctx.mkAnd(result);
     }
 
     public Expr get(Expr var1, int index) {
         List<Expr> elements = get(var1).getArguments();
-        if (elements.size() >= index) return elements.get(elements.size()-1);
+        if (elements.size() <= index) return elements.get(elements.size()-1);
         return elements.get(index);
     }
 
@@ -260,7 +267,7 @@ public class Z3ListCollection {
     }
 
     public static int ihc(Object o) {
-        if (o instanceof ArrayExpr<?,?>) {
+        if (o instanceof Expr expr && SortType.ARRAY.equals(expr.getSort())) {
             try {
                 return Integer.parseInt(o.toString().replace("ArrayList", ""));
             } catch (NumberFormatException ignored) {}

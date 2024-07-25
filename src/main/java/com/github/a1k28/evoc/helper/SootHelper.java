@@ -98,8 +98,7 @@ public class SootHelper {
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
 
-        sMethodPath.incrementTotalLines();
-//        System.out.println(node);
+//        sMethodPath.incrementTotalLines();
 
         if (!cfg.getTails().contains(current)) {
             List<Stmt> succs = cfg.getAllSuccessors(current);

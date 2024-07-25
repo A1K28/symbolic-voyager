@@ -2,6 +2,7 @@ package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
@@ -385,7 +386,7 @@ public class Z3Translator {
             clazz = Class.forName(value);
         } catch (ClassNotFoundException e) {
 //            ("Class not found: " + value, e);
-            return ctx.mkUninterpretedSort("Object");
+            return SortType.OBJECT.value(ctx);
         }
         if (Boolean.class.isAssignableFrom(clazz))
             return ctx.mkBoolSort();
@@ -402,13 +403,13 @@ public class Z3Translator {
         if (String.class.isAssignableFrom(clazz))
             return ctx.mkStringSort();
         if (Set.class.isAssignableFrom(clazz))
-            return ctx.mkSetSort(ctx.mkUninterpretedSort("Object")); // todo: what here?
+            return ctx.mkSetSort(SortType.OBJECT.value(ctx)); // todo: what here?
         if (List.class.isAssignableFrom(clazz))
-            return ctx.mkListSort("ArrayList", ctx.mkUninterpretedSort("Object")); // todo: what here?
+            return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
 
         // TODO: handle sets & maps correctly
 
-        return ctx.mkUninterpretedSort("Object");
+        return SortType.OBJECT.value(ctx);
     }
 
     private Expr getSymbolicValue(Value value, VarType varType) {
