@@ -144,10 +144,8 @@ public class SymbolicPathCarver {
             if (methodExpr.isInvokable()) {
                 return returnPermutations(methodExpr);
             } else {
-                z3t.updateSymbolicVariable(
-                        leftOp,
-                        z3t.callProverMethod(holder.asMethod(), rightOpVarType),
-                        leftOpVarType);
+                Expr expr = z3t.callProverMethod(holder.asMethod(), rightOpVarType);
+                z3t.updateSymbolicVariable(leftOp, expr, leftOpVarType);
             }
         } else {
             // if method cannot be invoked, then mock it.
@@ -267,6 +265,7 @@ public class SymbolicPathCarver {
             log.debug(evaluated + " " + var);
         }
 
+        // TODO: handle throw clause
         SatisfiableResult satisfiableResult = new SatisfiableResult(
                 solver.getAssertions(),
                 symbolicVarStack.getFields(),
