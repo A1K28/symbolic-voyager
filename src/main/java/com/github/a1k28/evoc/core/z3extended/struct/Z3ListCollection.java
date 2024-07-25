@@ -10,7 +10,7 @@ import static com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext.getSort;
 
 public class Z3ListCollection {
     private final Context ctx;
-    private final Map<Integer, ListModel> listMap;
+    private final Map<Integer, ListModel> listMap; // TODO: stack struct?
 
     public Z3ListCollection(Context context) {
         this.ctx = context;
@@ -25,12 +25,11 @@ public class Z3ListCollection {
     }
 
     public Expr constructor(Expr var1,
-                            Integer capacity,
-                            Expr[] arguments) {
+                            Integer capacity) {
         return constructor(ihc(var1),
                 capacity,
                 SortType.OBJECT.value(ctx),
-                arguments);
+                null);
     }
 
     public Expr constructor(Expr var1,
@@ -94,7 +93,7 @@ public class Z3ListCollection {
         int hashCode = initList(var1);
         ListModel listModel = listMap.get(hashCode);
         int size = listModel.getArguments().size();
-        if (index > size)
+        if (index < 0 || index > size)
             return ctx.mkBool(false);
 
         listModel.getArguments().add(index, var2);
@@ -230,7 +229,7 @@ public class Z3ListCollection {
 
     public Expr get(Expr var1, int index) {
         List<Expr> elements = get(var1).getArguments();
-        if (elements.size() <= index) return elements.get(elements.size()-1);
+        if (index < 0 || index >= elements.size()) throw new RuntimeException("index out of bounds");
         return elements.get(index);
     }
 

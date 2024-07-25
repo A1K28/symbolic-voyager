@@ -25,11 +25,11 @@ public class Z3ExtendedContext extends Context {
     }
 
     public Expr mkList(Expr var1) {
-        return z3ListCollection.constructor(var1, null, null);
+        return z3ListCollection.constructor(var1);
     }
 
     public Expr mkListWithCapacity(Expr var1, IntExpr capacity) {
-        return z3ListCollection.constructor(var1, parseInt(capacity), null);
+        return z3ListCollection.constructor(var1, parseInt(capacity));
     }
 
     public Expr mkListWithCollection(Expr var1, Expr var2) {
