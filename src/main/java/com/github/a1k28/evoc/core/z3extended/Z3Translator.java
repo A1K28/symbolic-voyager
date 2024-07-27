@@ -13,6 +13,7 @@ import sootup.core.jimple.common.expr.*;
 import sootup.core.jimple.common.ref.JArrayRef;
 import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
+import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
 
 import java.util.*;
@@ -99,8 +100,8 @@ public class Z3Translator {
     }
 
     public Expr callProverMethod(SMethodExpr methodExpr, VarType varType) {
-        String methodSignature = methodExpr.getInvokeExpr().getMethodSignature().toString();
-        MethodModel methodModel = MethodModel.get(methodSignature);
+        MethodSignature methodSignature = methodExpr.getInvokeExpr().getMethodSignature();
+        MethodModel methodModel = MethodModel.get(methodSignature).orElseThrow();
 
         List<Expr> args = new ArrayList<>();
         if (methodModel.hasBase() && methodExpr.getBase() != null)
@@ -110,7 +111,7 @@ public class Z3Translator {
                 .map(e -> this.translateValue(e, varType))
                 .toList());
 
-        return methodModel.apply(ctx, methodSignature, args);
+        return methodModel.apply(ctx, args);
 //        if (methodModel != null) {
 //        } else {
 //            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
@@ -147,7 +148,7 @@ public class Z3Translator {
     }
 
     public SExpr wrapMethodCall(AbstractInvokeExpr invoke) {
-        String methodSignature = invoke.getMethodSignature().toString();
+        MethodSignature methodSignature = invoke.getMethodSignature();
 
         List<Value> args = new ArrayList<>();
         Value base = null;
@@ -159,12 +160,19 @@ public class Z3Translator {
             for (Value arg : i.getBootstrapArgs())
                 args.add(arg);
 
-        if (MethodModel.contains(methodSignature)) {
+//        Class.forName(invoke.getMethodSignature().getDeclClassType().toString());
+
+        if (MethodModel.get(methodSignature).isPresent()) {
             return new SMethodExpr(invoke, base, args, false);
-        } else if (!methodSignature.startsWith("<" + sMethodPath.getClassname() + ":")) {
+        } else if (!methodSignature.toString().startsWith("<" + sMethodPath.getClassname() + ":")) {
             // mock method call outside the current class
-            System.out.println("mocked method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
-            return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
+            if (invoke.getMethodSignature().getType().getClass() == VoidType.class) {
+                System.out.println("ignored method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
+                return new SExpr(translateValue(invoke, VarType.METHOD));
+            } else {
+                System.out.println("mocked method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
+                return new SExpr(translateValue(invoke, VarType.METHOD_MOCK));
+            }
         } else {
             return new SMethodExpr(invoke, base, args, true);
         }
@@ -176,6 +184,9 @@ public class Z3Translator {
         }
         if (value instanceof JFieldRef) {
             return getSymbolicValue(value, varType);
+        }
+        else if (value instanceof JCastExpr v) {
+            return getSymbolicValue(v.getOp(), varType);
         }
         if (value instanceof IntConstant v) {
             return ctx.mkInt(v.getValue());
@@ -199,8 +210,11 @@ public class Z3Translator {
             return handleMethodCall(abstractInvoke);
         }
         if (value instanceof JNewExpr ||
-                value instanceof JNewArrayExpr ||
                 value instanceof JNewMultiArrayExpr) {
+            return ctx.mkConst(value.toString(), translateType(value.getType()));
+        }
+        // TODO: handle arrays
+        if (value instanceof JNewArrayExpr) {
             return ctx.mkConst(value.toString(), translateType(value.getType()));
         }
         if (value instanceof JArrayRef) {
@@ -259,8 +273,6 @@ public class Z3Translator {
                 return translateConditionValue(binop, left, right);
             // handle other binary operations
         }
-//        else if (value instanceof JCastExpr)
-//            return ctx.mkMod(left, right);
 //        else if (value instanceof JInstanceOfExpr)
 //            return ctx.mkMod(left, right);
 //        else if (value instanceof JNewArrayExpr)
@@ -292,9 +304,9 @@ public class Z3Translator {
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke) {
-        System.out.println("IN HANDLE METHOD CALL");
+        System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature().toString());
 
-        String methodSignature = invoke.getMethodSignature().toString();
+        MethodSignature methodSignature = invoke.getMethodSignature();
 
         List<Expr> args = new ArrayList<>();
         Expr base = null;
@@ -303,15 +315,19 @@ public class Z3Translator {
         for (Value arg : invoke.getArgs())
             args.add(translateValue(arg, VarType.METHOD_ARG));
         if (invoke instanceof JDynamicInvokeExpr i)
-            for (Value arg : i.getBootstrapArgs())
-                args.add(translateValue(arg, VarType.METHOD_ARG));
+            for (Value arg : i.getBootstrapArgs()) {
+                if (!(arg instanceof MethodType) && !(arg instanceof MethodHandle))
+                    args.add(translateValue(arg, VarType.METHOD_ARG));
+                else
+                    symbolicVarStack.getAll();
+            }
 
-//        MethodModel methodModel = methodModels.get(methodSignature);
-        if (MethodModel.contains(methodSignature)) {
-            MethodModel methodModel = MethodModel.get(methodSignature);
+        Optional<MethodModel> optional = MethodModel.get(methodSignature);
+        if (optional.isPresent()) {
+            MethodModel methodModel = optional.get();
             if (methodModel.hasBase())
                 args.add(0, base);
-            return methodModel.apply(ctx, methodSignature, args);
+            return methodModel.apply(ctx, args);
         } else {
             Sort sort = translateType(invoke.getType());
             return ctx.mkConst(invoke.toString(), sort);
@@ -403,7 +419,7 @@ public class Z3Translator {
         if (String.class.isAssignableFrom(clazz))
             return ctx.mkStringSort();
         if (Set.class.isAssignableFrom(clazz))
-            return ctx.mkSetSort(SortType.OBJECT.value(ctx)); // todo: what here?
+            return ctx.mkSetSort(SortType.OBJECT.value(ctx));
         if (List.class.isAssignableFrom(clazz))
             return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
 

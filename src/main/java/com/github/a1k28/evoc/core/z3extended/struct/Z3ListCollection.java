@@ -254,6 +254,19 @@ public class Z3ListCollection implements IStack {
         return element;
     }
 
+    public Expr hashCode(Expr var1) {
+        return ctx.mkInt(get(var1).getArguments().hashCode());
+    }
+
+    public Expr subList(Expr var1, int fromIndex, int toIndex) {
+        ListModel listModel = get(var1);
+        List<Expr> arguments = listModel.getArguments().subList(fromIndex, toIndex);
+        return constructor(ihc(var1)+ (int)(Math.random()*10000),
+                null,
+                getSort(ctx, arguments),
+                arguments.toArray(new Expr[0]));
+    }
+
     public Expr indexOf(Expr var1, Expr element) {
         return ctx.mkInt(get(var1).getArguments().indexOf(element));
     }

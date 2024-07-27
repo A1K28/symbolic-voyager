@@ -4,86 +4,95 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import lombok.RequiredArgsConstructor;
+import sootup.core.signatures.MethodSignature;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RequiredArgsConstructor
 public enum MethodModel {
+    // SOOT
+//    SOOT_COMPARE("<sootup.dummy.InvokeDynamic: java.util.Comparator compare()>", true),
+//    SOOT_UNARY_OPERATOR_APPLY("<sootup.dummy.InvokeDynamic: java.util.function.UnaryOperator apply()>", true),
+
     // Integers
-    INT_VALUE_OF("<java.lang.Integer: java.lang.Integer valueOf(int)>", false),
+    INT_VALUE_OF(Integer.class,"java.lang.Integer valueOf(int)", false),
 
     // strings
-    STRING_EQUALS("<java.lang.String: boolean equals(java.lang.Object)>",true),
-    STRING_LEN("<java.lang.String: int length()>",true),
-    STRING_SOOT_CONCAT("<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
+    STRING_EQUALS(String.class,"boolean equals(java.lang.Object)",true),
+    STRING_LEN(String.class,"int length()",true),
+    STRING_SOOT_CONCAT(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
 
     // --- lists ---
-    LIST_INIT("<java.util.ArrayList: void <init>()>", true),
-    LIST_INIT_WITH_CAPACITY("<java.util.ArrayList: void <init>(int)>", true),
-    LIST_INIT_WITH_COLLECTION("<java.util.ArrayList: void <init>(java.util.Collection)>", true),
-    LIST_SIZE("<java.util.List: int size()>", true),
-    LIST_IS_EMPTY("<java.util.List: boolean isEmpty()>", true),
-    LIST_ADD("<java.util.List: boolean add(java.lang.Object)>", true),
-    LIST_ADD_BY_INDEX("<java.util.List: void add(int,java.lang.Object)>", true),
-    LIST_ADD_ALL("<java.util.List: boolean addAll(java.util.Collection)>", true),
-    LIST_ADD_ALL_BY_INDEX("<java.util.List: boolean addAll(int,java.util.Collection)>", true),
-    LIST_REMOVE("<java.util.List: boolean remove(java.lang.Object)>", true),
-    LIST_REMOVE_BY_INDEX("<java.util.List: java.lang.Object remove(int)>", true),
-    LIST_REMOVE_ALL("<java.util.List: boolean removeAll(java.util.Collection)>", true),
-    LIST_CONTAINS("<java.util.List: boolean contains(java.lang.Object)>", true),
-    LIST_CONTAINS_ALL("<java.util.List: boolean containsAll(java.util.Collection)>", true),
-    LIST_RETAIN_ALL("<java.util.List: boolean retainAll(java.util.Collection)>", true),
-    LIST_CLEAR("<java.util.List: void clear()>", true),
-    LIST_EQUALS("<java.util.List: boolean equals(java.lang.Object)>", true),
-    LIST_GET("<java.util.List: java.lang.Object get(int)>", true),
-    LIST_SET("<java.util.List: java.lang.Object set(int,java.lang.Object)>", true),
-    LIST_INDEX_OF("<java.util.List: int indexOf(java.lang.Object)>", true),
-    LIST_LAST_INDEX_OF("<java.util.List: int lastIndexOf(java.lang.Object)>", true),
-    LIST_OF_OBJECT_ARR("<java.util.List: java.util.List of(java.lang.Object[])>", true),
-    LIST_OF("<java.util.List: java.util.List of()>", true),
-    LIST_OF_1("<java.util.List: java.util.List of(java.lang.Object)>", true),
-    LIST_OF_2("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_3("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_4("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_5("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_6("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_7("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_8("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_9("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
-    LIST_OF_10("<java.util.List: java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)>", true),
+    LIST_INIT(List.class,"void <init>()>", true),
+    LIST_INIT_WITH_CAPACITY(List.class,"void <init>(int)>", true),
+    LIST_INIT_WITH_COLLECTION(List.class,"void <init>(java.util.Collection)>", true),
+    LIST_SIZE(List.class,"int size()", true),
+    LIST_IS_EMPTY(List.class,"boolean isEmpty()", true),
+    LIST_ADD(List.class,"boolean add(java.lang.Object)", true),
+    LIST_ADD_BY_INDEX(List.class,"void add(int,java.lang.Object)", true),
+    LIST_ADD_ALL(List.class,"boolean addAll(java.util.Collection)", true),
+    LIST_ADD_ALL_BY_INDEX(List.class,"boolean addAll(int,java.util.Collection)", true),
+    LIST_REMOVE(List.class,"boolean remove(java.lang.Object)", true),
+    LIST_REMOVE_BY_INDEX(List.class,"java.lang.Object remove(int)", true),
+    LIST_REMOVE_ALL(List.class,"boolean removeAll(java.util.Collection)", true),
+    LIST_CONTAINS(List.class,"boolean contains(java.lang.Object)", true),
+    LIST_CONTAINS_ALL(List.class,"boolean containsAll(java.util.Collection)", true),
+    LIST_RETAIN_ALL(List.class,"boolean retainAll(java.util.Collection)", true),
+    LIST_CLEAR(List.class,"void clear()", true),
+    LIST_EQUALS(List.class,"boolean equals(java.lang.Object)", true),
+    LIST_GET(List.class,"java.lang.Object get(int)", true),
+    LIST_SET(List.class,"java.lang.Object set(int,java.lang.Object)", true),
+    LIST_HASH_CODE(List.class,"int hashCode()", true),
+    LIST_SUBLIST(List.class,"java.util.List subList(int,int)", true),
+    LIST_INDEX_OF(List.class,"int indexOf(java.lang.Object)", true),
+//    LIST_STREAM("<java.util.List: java.util.stream.Stream stream()>", true),
+    LIST_LAST_INDEX_OF(List.class,"int lastIndexOf(java.lang.Object)", true),
+    LIST_OF_OBJECT_ARR(List.class,"java.util.List of(java.lang.Object[])", true),
+    LIST_OF(List.class,"java.util.List of()", true),
+    LIST_OF_1(List.class,"java.util.List of(java.lang.Object)", true),
+    LIST_OF_2(List.class,"java.util.List of(java.lang.Object,java.lang.Object)", true),
+    LIST_OF_3(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_4(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_5(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_6(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_7(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_8(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_9(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_10(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
 
-    // hashCode ?
     // replaceAll ?
     // sort ?
     // iterators ?
-    // subList ?
     // stream ?
 
     // sets
-    SET_RETAIN_ALL("<java.util.Set: boolean retainAll(java.util.Collection)>",true),
-    SET_ADD("<java.util.Set: boolean add(java.lang.Object)>",true),
-    SET_LEN("<java.util.Set: int size()>",true),
-    SET_CONTAINS("<java.util.Set: boolean contains(java.lang.Object)>",true),
-    SET_REMOVE("<java.util.Set: boolean remove(java.lang.Object)>", true);
+    SET_RETAIN_ALL(Set.class,"boolean retainAll(java.util.Collection)",true),
+    SET_ADD(Set.class,"boolean add(java.lang.Object)",true),
+    SET_LEN(Set.class,"int size()",true),
+    SET_CONTAINS(Set.class,"boolean contains(java.lang.Object)",true),
+    SET_REMOVE(Set.class,"boolean remove(java.lang.Object)", true);
 
-    private static final Map<String, MethodModel> map = new HashMap<>();
+    private static final Map<String, List<MethodModel>> map = new HashMap<>();
 
     static {
         for (MethodModel e : MethodModel.values()) {
-            map.put(e.signature, e);
+            if (!map.containsKey(e.signature)) map.put(e.signature, new ArrayList<>());
+            map.get(e.signature).add(e);
         }
     }
 
     // i love you <3 mpua
 
+    private final Class<?> clazz;
     private final String signature;
     private final boolean hasBase;
 
-    public Expr apply(Z3ExtendedContext ctx, String signature, List<Expr> args) {
-        System.out.println("APPLYING: " + signature);
-        return switch (map.get(signature)) {
+    public Expr apply(Z3ExtendedContext ctx, List<Expr> args) {
+        System.out.println("APPLYING: " + clazz.getName() + ": " + signature);
+        return switch (this) {
+//            case SOOT_COMPARE -> ctx.mkInt(1);
+//            case SOOT_UNARY_OPERATOR_APPLY -> ctx.mkInt(0);
+
             case INT_VALUE_OF -> ctx.mkInt(String.valueOf(args.get(0)));
 
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
@@ -109,6 +118,8 @@ public enum MethodModel {
             case LIST_EQUALS -> ctx.mkListEquals(args.get(0), args.get(1));
             case LIST_GET -> ctx.mkListGet(args.get(0), (IntExpr) args.get(1));
             case LIST_SET -> ctx.mkListSet(args.get(0), (IntExpr) args.get(1), args.get(2));
+            case LIST_HASH_CODE -> ctx.mkListHashCode(args.get(0));
+            case LIST_SUBLIST -> ctx.mkListSublist(args.get(0), (IntExpr) args.get(1), (IntExpr) args.get(2));
             case LIST_INDEX_OF -> ctx.mkListIndexOf(args.get(0), args.get(1));
             case LIST_LAST_INDEX_OF -> ctx.mkListLastIndexOf(args.get(0), args.get(1));
             case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4, LIST_OF_5,
@@ -123,15 +134,32 @@ public enum MethodModel {
         };
     }
 
-    public static MethodModel get(String signature) {
-        return map.get(signature);
-    }
+    public static Optional<MethodModel> get(MethodSignature methodSignature) {
+        if (map.containsKey(methodSignature.toString()))
+            return Optional.of(map.get(methodSignature.toString()).get(0));
 
-    public static boolean contains(String signature) {
-        return map.containsKey(signature);
+        Class<?> clazz = getClassFromSignature(methodSignature);
+        String subSignature = methodSignature.getSubSignature().toString();
+        if (!map.containsKey(subSignature)) return Optional.empty();
+        List<MethodModel> methodModels = map.get(subSignature);
+        for (MethodModel methodModel : methodModels) {
+            if (methodModel.clazz.isAssignableFrom(clazz))
+                return Optional.of(methodModel);
+        }
+
+        return Optional.empty();
     }
 
     public boolean hasBase() {
         return hasBase;
+    }
+
+    private static Class<?> getClassFromSignature(MethodSignature methodSignature) {
+        try {
+            return Class.forName(methodSignature.getDeclClassType().toString());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return Object.class;
+        }
     }
 }

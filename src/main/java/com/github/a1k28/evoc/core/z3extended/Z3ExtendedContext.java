@@ -117,6 +117,14 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3ListCollection.set(var1, parseInt(index), element);
     }
 
+    public Expr mkListHashCode(Expr var1) {
+        return z3ListCollection.hashCode(var1);
+    }
+
+    public Expr mkListSublist(Expr var1, IntExpr fromIndex, IntExpr toIndex) {
+        return z3ListCollection.subList(var1, parseInt(fromIndex), parseInt(toIndex));
+    }
+
     public Expr mkListIndexOf(Expr var1, Expr element) {
         return z3ListCollection.indexOf(var1, element);
     }
