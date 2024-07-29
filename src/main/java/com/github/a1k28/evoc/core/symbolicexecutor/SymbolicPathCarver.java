@@ -92,9 +92,11 @@ public class SymbolicPathCarver {
             type = handleVoidMethodCall(node);
         }
 
+//        solver.push();
         if (Z3Status.SATISFIABLE == checkSatisfiability(node, type))
             for (SNode child : node.getChildren())
                 analyzePaths(child);
+//        solver.pop();
 
         solver.pop();
         symbolicVarStack.pop();
@@ -315,8 +317,98 @@ public class SymbolicPathCarver {
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
 //        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
-                .analyzeSymbolicPaths();
+//        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
+//                .analyzeSymbolicPaths();
+
+        Z3Translator.initZ3();
+
+        Context ctx = new Context();
+        ArrayExpr array = ctx.mkArrayConst("arr", ctx.getIntSort(), ctx.getIntSort());
+
+// Create a variable to be "removed"
+        IntExpr variableToRemove = ctx.mkInt(400);
+        IntExpr varrr = ctx.mkIntConst("x");
+
+// Store some constants in the array
+        array = ctx.mkStore(array, ctx.mkInt(0), ctx.mkInt(42));
+        array = ctx.mkStore(array, ctx.mkInt(1), varrr);
+        array = ctx.mkStore(array, ctx.mkInt(2), ctx.mkInt(7));
+
+// Assume the original size is 3
+        IntExpr originalSize = ctx.mkInt(3);
+
+// Create a new array with the variable "removed"
+        Expr<IntSort> defaultValue = ctx.mkInt(-1); // Use -1 as a sentinel value
+
+// Create a function to "remove" the variable from each index
+        BoolExpr condition = ctx.mkEq(variableToRemove, ctx.mkSelect(array, ctx.mkIntConst("i")));
+        Expr<IntSort> thenExpr = defaultValue;
+        Expr<IntSort> elseExpr = ctx.mkSelect(array, ctx.mkIntConst("i"));
+        Expr<IntSort> removalFunction = ctx.mkITE(condition, thenExpr, elseExpr);
+
+// Apply the removal function to the entire array
+        ArrayExpr newArray = ctx.mkLambda(new Expr[]{ctx.mkIntConst("i")}, removalFunction);
+
+        ArithExpr newSize = ctx.mkInt(0);
+        for (int i = 0; i < 3; i++) {
+            newSize = ctx.mkAdd(newSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(0), ctx.mkInt(1)));
+        }
+
+// Create a function to count non-default values
+//        FuncDecl<IntSort> countFunc = ctx.mkFuncDecl("countFunc", ctx.getIntSort(), ctx.getIntSort());
+//        ctx.mkForall(
+//                new Expr[]{ctx.mkIntConst("i")},
+//                ctx.mkEq(
+//                        ctx.mkApp(countFunc, ctx.mkIntConst("i")),
+//                        ctx.mkITE(
+//                                ctx.mkEq(ctx.mkSelect(newArray, ctx.mkIntConst("i")), defaultValue),
+//                                ctx.mkInt(0),
+//                                ctx.mkInt(1)
+//                        )
+//                ),
+//                1,
+//                null,
+//                null,
+//                null,
+//                null
+//        );
+//
+//// Sum up the count for all indices up to the original size
+//        for (int i = 0; i < 3; i++) {
+//            newSize = ctx.mkAdd(newSize, (ArithExpr) ctx.mkApp(countFunc, ctx.mkInt(i)));
+//        }
+
+// Now newSize represents the size of the new array after removal
+
+// We can use the solver to reason about the new size
+        Solver solver = ctx.mkSolver();
+
+// Check if the new size is less than the original size
+        BoolExpr sizeReduced = ctx.mkLt(newSize, originalSize);
+        solver.add(sizeReduced);
+
+        if (solver.check() == Status.SATISFIABLE) {
+            System.out.println("The size of the array may have been reduced");
+            Model model = solver.getModel();
+            System.out.println("Possible new size: " + model.eval(newSize, true));
+            System.out.println("Possible value of x that was removed: " + model.eval(varrr, true));
+        } else {
+            System.out.println("The size of the array was not reduced");
+        }
+
+// We can also check for specific size values
+        solver.push();
+//        solver.add(ctx.mkEq(newSize, ctx.mkInt(2)));
+
+        if (solver.check() == Status.SATISFIABLE) {
+            System.out.println("The new size could be 2");
+            Model model = solver.getModel();
+            System.out.println("A value of x that makes this true: " + model.eval(varrr, true));
+        } else {
+            System.out.println("The new size cannot be 2");
+        }
+        solver.pop();
+
         close();
     }
 }
