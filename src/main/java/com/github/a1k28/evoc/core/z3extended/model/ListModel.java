@@ -1,18 +1,19 @@
 package com.github.a1k28.evoc.core.z3extended.model;
 
+import com.microsoft.z3.ArrayExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
+@Setter
 @EqualsAndHashCode
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class ListModel {
-    private final Expr expr;
+    private ArrayExpr expr;
     private final Sort sort;
     private final List<Expr> arguments;
+    private final Expr sentinel;
 }

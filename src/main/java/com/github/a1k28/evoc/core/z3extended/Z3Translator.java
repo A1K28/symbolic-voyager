@@ -19,7 +19,7 @@ import sootup.core.types.*;
 import java.util.*;
 
 public class Z3Translator {
-    public static Z3ExtendedContext ctx = null;
+    private static Z3ExtendedContext ctx = null;
     private static Solver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
@@ -36,6 +36,10 @@ public class Z3Translator {
             solver = ctx.mkSolver();
         }
         return solver;
+    }
+
+    public static Z3ExtendedContext getContext() {
+        return ctx;
     }
 
     public static synchronized void initZ3() {
@@ -304,7 +308,7 @@ public class Z3Translator {
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke) {
-        System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature().toString());
+        System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature());
 
         MethodSignature methodSignature = invoke.getMethodSignature();
 

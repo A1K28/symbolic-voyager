@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SortType {
     ARRAY("Array"),
+    MAP("Map"),
     OBJECT("Object");
 
     private final String value;

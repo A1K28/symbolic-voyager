@@ -92,11 +92,11 @@ public class SymbolicPathCarver {
             type = handleVoidMethodCall(node);
         }
 
-//        solver.push();
+        solver.push();
         if (Z3Status.SATISFIABLE == checkSatisfiability(node, type))
             for (SNode child : node.getChildren())
                 analyzePaths(child);
-//        solver.pop();
+        solver.pop();
 
         solver.pop();
         symbolicVarStack.pop();
@@ -333,16 +333,19 @@ public class SymbolicPathCarver {
         array = ctx.mkStore(array, ctx.mkInt(0), ctx.mkInt(42));
         array = ctx.mkStore(array, ctx.mkInt(1), varrr);
         array = ctx.mkStore(array, ctx.mkInt(2), ctx.mkInt(7));
+        array = ctx.mkStore(array, ctx.mkInt(3), ctx.mkInt(142));
 
 // Assume the original size is 3
-        IntExpr originalSize = ctx.mkInt(3);
+//        IntExpr originalSize = ctx.mkInt(3);
 
 // Create a new array with the variable "removed"
-        Expr<IntSort> defaultValue = ctx.mkInt(-1); // Use -1 as a sentinel value
+        Expr<IntSort> sentinel = ctx.mkConst("null", ctx.mkIntSort()); // Use -1 as a sentinel value
+//        Expr<IntSort> sentinel = ctx.mkInt("99999999999999999999");
+//        Expr<IntSort> sentinel = ctx.mkInt(-1); // Use -1 as a sentinel value
 
 // Create a function to "remove" the variable from each index
         BoolExpr condition = ctx.mkEq(variableToRemove, ctx.mkSelect(array, ctx.mkIntConst("i")));
-        Expr<IntSort> thenExpr = defaultValue;
+        Expr<IntSort> thenExpr = sentinel;
         Expr<IntSort> elseExpr = ctx.mkSelect(array, ctx.mkIntConst("i"));
         Expr<IntSort> removalFunction = ctx.mkITE(condition, thenExpr, elseExpr);
 
@@ -350,8 +353,15 @@ public class SymbolicPathCarver {
         ArrayExpr newArray = ctx.mkLambda(new Expr[]{ctx.mkIntConst("i")}, removalFunction);
 
         ArithExpr newSize = ctx.mkInt(0);
-        for (int i = 0; i < 3; i++) {
-            newSize = ctx.mkAdd(newSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(0), ctx.mkInt(1)));
+        ArithExpr originalSize = ctx.mkInt(4);
+        for (int i = 0; i < 4; i++) {
+            Expr condition1 = ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), sentinel);
+            Expr thenExpr1 = ctx.mkInt(0);
+            Expr elseExpr1 = ctx.mkInt(1);
+            newSize = ctx.mkAdd(newSize, ctx.mkITE(condition1, thenExpr1, elseExpr1));
+
+//            newSize = ctx.mkAdd(newSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(0), ctx.mkInt(1)));
+//            originalSize = ctx.mkAdd(originalSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(1), ctx.mkInt(1)));
         }
 
 // Create a function to count non-default values
@@ -385,27 +395,27 @@ public class SymbolicPathCarver {
 
 // Check if the new size is less than the original size
         BoolExpr sizeReduced = ctx.mkLt(newSize, originalSize);
-        solver.add(sizeReduced);
+//        solver.push();
+        solver.add(ctx.mkEq(sizeReduced, ctx.mkBool(true)));
 
-        if (solver.check() == Status.SATISFIABLE) {
-            System.out.println("The size of the array may have been reduced");
-            Model model = solver.getModel();
-            System.out.println("Possible new size: " + model.eval(newSize, true));
-            System.out.println("Possible value of x that was removed: " + model.eval(varrr, true));
-        } else {
-            System.out.println("The size of the array was not reduced");
-        }
+//        if (solver.check() == Status.SATISFIABLE) {
+//            System.out.println("The size of the array may have been reduced");
+//            Model model = solver.getModel();
+//            System.out.println("Possible new size: " + model.eval(newSize, true));
+//            System.out.println("Possible value of x that was removed: " + model.eval(varrr, true));
+//        } else {
+//            System.out.println("The size of the array was not reduced");
+//        }
 
 // We can also check for specific size values
         solver.push();
 //        solver.add(ctx.mkEq(newSize, ctx.mkInt(2)));
 
         if (solver.check() == Status.SATISFIABLE) {
-            System.out.println("The new size could be 2");
             Model model = solver.getModel();
+            System.out.println("The new size could be: " + model.eval(newSize, true));
             System.out.println("A value of x that makes this true: " + model.eval(varrr, true));
-        } else {
-            System.out.println("The new size cannot be 2");
+            System.out.println("A value of sentinel that makes this true: " + model.eval(sentinel, true));
         }
         solver.pop();
 
