@@ -165,13 +165,13 @@ public class Z3ListCollection implements IStack {
     }
 
     // remove the first occurrence of the element
-    public BoolExpr remove(Expr var1, Expr element) {
+    public BoolExpr remove(Expr var1, Expr element) { // X
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
         return remove(listModel.get(), element, false);
     }
 
-    public BoolExpr removeAll(Expr var1, Expr var2) {
+    public BoolExpr removeAll(Expr var1, Expr var2) { // X
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
 
@@ -185,39 +185,15 @@ public class Z3ListCollection implements IStack {
         return found;
     }
 
-    public BoolExpr contains(Expr var1, Expr element) {
-        int hashCode = ihc(var1);
-        Optional<ListModel> listModel = stack.get(hashCode);
-        if (listModel.isEmpty()) return ctx.mkBool(false);
-        List<Expr> set = listModel.get().getArguments();
-        Expr[] expressions = new Expr[set.size()];
-        int i = 0;
-        for (Expr value : set) {
-            expressions[i] = ctx.mkEq(value, element);
-            i++;
-        }
-        return ctx.mkOr(expressions);
+    public BoolExpr contains(Expr var1, Expr element) { // X
+        return containsElements(var1, null, element);
     }
 
-    public BoolExpr containsAll(Expr var1, Expr var2) {
-        int hashCode = ihc(var1);
-        Optional<ListModel> listModel = stack.get(hashCode);
+    public BoolExpr containsAll(Expr var1, Expr var2) { // X
+        Optional<ListModel> listModel = getOptional(var2);
         if (listModel.isEmpty()) return ctx.mkBool(false);
-        List<Expr> set = listModel.get().getArguments();
-        List<Expr> elements = get(var2).getArguments();
-        Expr[] expressions = new Expr[elements.size()];
-        int i = 0;
-        for (Expr element : elements) {
-            Expr[] exps = new Expr[set.size()];
-            int j = 0;
-            for (Expr se : set) {
-                exps[j] = ctx.mkEq(se, element);
-                j++;
-            }
-            expressions[i] = ctx.mkOr(exps);
-            i++;
-        }
-        return ctx.mkAnd(expressions);
+        Expr[] expressions = getArguments(listModel.get());
+        return containsElements(var1, listModel.get().getSentinel(), expressions);
     }
 
     public BoolExpr retainAll(Expr var1, Expr var2) {
@@ -339,6 +315,45 @@ public class Z3ListCollection implements IStack {
 
         listModel.setExpr(array);
         return found;
+    }
+
+    private BoolExpr containsElements(Expr var1, Expr elementSentinel, Expr... elements) {
+        if (elements == null) return ctx.mkBool(false);
+
+        Optional<ListModel> listModel = getOptional(var1);
+        if (listModel.isEmpty()) return ctx.mkBool(false);
+
+        Expr sentinel = listModel.get().getSentinel();
+        ArrayExpr array = listModel.get().getExpr();
+        Expr count = ctx.mkInt(0);
+        for (int i = 0; i < listModel.get().getArguments().size(); i++) {
+            Expr currentValue = ctx.mkSelect(array, ctx.mkInt(i));
+            Expr isPresent = ctx.mkITE(ctx.mkEq(currentValue, sentinel),
+                    ctx.mkBool(false), ctx.mkBool(true));
+            BoolExpr isMatch = ctx.mkBool(false);
+            for (Expr element : elements) {
+                BoolExpr isMatch2 = ctx.mkEq(currentValue, element);
+                if (elementSentinel != null) {
+                    Expr isPresent2 = ctx.mkITE(ctx.mkEq(element, elementSentinel),
+                            ctx.mkBool(false), ctx.mkBool(true));
+                    isMatch2 = ctx.mkAnd(isPresent2, isMatch2);
+                }
+                isMatch = ctx.mkOr(isMatch, isMatch2);
+            }
+            isMatch = ctx.mkAnd(isPresent, isMatch);
+            count = ctx.mkAdd(count, ctx.mkITE(isMatch, ctx.mkInt(1), ctx.mkInt(0)));
+        }
+        return ctx.mkEq(count, ctx.mkInt(elements.length));
+    }
+
+    private Expr[] getArguments(ListModel listModel) {
+        Expr[] expressions = new Expr[listModel.getArguments().size()];
+        ArrayExpr array = listModel.getExpr();
+        for (int i = 0; i < listModel.getArguments().size(); i++) {
+            Expr currentValue = ctx.mkSelect(array, ctx.mkInt(i));
+            expressions[i] = currentValue;
+        }
+        return expressions;
     }
 
     private static int ihc(Object o) {
