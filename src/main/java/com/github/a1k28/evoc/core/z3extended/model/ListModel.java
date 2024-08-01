@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ListModel {
     private ArrayExpr expr;
-    private final Sort sort;
+    private Sort sort;
     private final List<Expr> arguments;
-    private final Expr sentinel;
+    private Expr sentinel;
 }
