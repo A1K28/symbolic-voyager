@@ -151,23 +151,6 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     private Sort getSort(List<Expr> exprs) {
-        return getSort(this, exprs);
-    }
-
-    public static Sort getSort(Context ctx, Expr expr) {
-        return getSort(ctx, List.of(expr));
-    }
-
-    public static Sort getSort(Context ctx, List<Expr> exprs) {
-        if (exprs == null || exprs.isEmpty())
-            return SortType.OBJECT.value(ctx);
-        Sort sort = exprs.get(0).getSort();
-        if (sort == null || "Unknown".equalsIgnoreCase(sort.toString()))
-            return SortType.OBJECT.value(ctx);
-        for (Expr expr : exprs) {
-            if (!sort.equals(expr.getSort()))
-                SortType.OBJECT.value(ctx);
-        }
-        return sort;
+        return Z3Helper.getSort(this, exprs);
     }
 }
