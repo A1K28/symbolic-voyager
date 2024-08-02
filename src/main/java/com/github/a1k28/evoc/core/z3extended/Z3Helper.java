@@ -5,11 +5,17 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Z3Helper {
     public static Sort getSort(Context ctx, Expr expr) {
         return getSort(ctx, List.of(expr));
+    }
+
+    public static Sort getSort(Context ctx, Expr[] expr) {
+        return getSort(ctx, Arrays.stream(expr).collect(Collectors.toList()));
     }
 
     public static Sort getSort(Context ctx, List<Expr> exprs) {

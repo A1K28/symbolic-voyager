@@ -1,6 +1,5 @@
 package com.github.a1k28.evoc.core.z3extended;
 
-import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SetCollection;
 import com.github.a1k28.evoc.model.common.IStack;
@@ -54,7 +53,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public Expr mkListLength(Expr var1) {
-        return z3ListCollection.sizeExpr(var1);
+        return z3ListCollection.size(var1);
     }
 
     public BoolExpr mkListIsEmpty(Expr var1) {
@@ -66,7 +65,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public BoolExpr mkListAdd(Expr var1, IntExpr index, Expr var2) {
-        return z3ListCollection.add(var1, parseInt(index), var2);
+        return z3ListCollection.add(var1, index, var2);
     }
 
     public BoolExpr mkListAddAll(Expr var1, Expr var2) {
@@ -74,7 +73,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public BoolExpr mkListAddAll(Expr var1, IntExpr index, Expr var2) {
-        return z3ListCollection.addAll(var1, parseInt(index), var2);
+        return z3ListCollection.addAll(var1, index, var2);
     }
 
     public BoolExpr mkListRemove(Expr var1, Expr element) {
@@ -82,7 +81,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public BoolExpr mkListRemove(Expr var1, IntExpr index) {
-        return z3ListCollection.remove(var1, parseInt(index));
+        return z3ListCollection.remove(var1, index);
     }
 
     public BoolExpr mkListRemoveAll(Expr var1, Expr var2) {
@@ -110,11 +109,11 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public Expr mkListGet(Expr var1, IntExpr index) {
-        return z3ListCollection.get(var1, parseInt(index));
+        return z3ListCollection.get(var1, index);
     }
 
     public Expr mkListSet(Expr var1, IntExpr index, Expr element) {
-        return z3ListCollection.set(var1, parseInt(index), element);
+        return z3ListCollection.set(var1, index, element);
     }
 
     public Expr mkListHashCode(Expr var1) {
@@ -122,7 +121,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     }
 
     public Expr mkListSublist(Expr var1, IntExpr fromIndex, IntExpr toIndex) {
-        return z3ListCollection.subList(var1, parseInt(fromIndex), parseInt(toIndex));
+        return z3ListCollection.subList(var1, fromIndex, toIndex);
     }
 
     public Expr mkListIndexOf(Expr var1, Expr element) {
