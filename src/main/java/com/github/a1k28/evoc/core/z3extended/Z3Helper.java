@@ -1,15 +1,29 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Sort;
+import com.microsoft.z3.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Z3Helper {
+    private static final Map<Sort, TupleSort> sortMap = new HashMap<>();
+
+    public static TupleSort mapSort(Context ctx, Sort sort) {
+        if (!sortMap.containsKey(sort)) {
+            TupleSort tupleSort = ctx.mkTupleSort(
+                    ctx.mkSymbol("nullable:"+sort),
+                    new Symbol[]{ctx.mkSymbol("value"), ctx.mkSymbol("isNull")},
+                    new Sort[]{sort, ctx.getBoolSort()}
+            );
+            sortMap.put(sort, tupleSort);
+        }
+        return sortMap.get(sort);
+    }
+
     public static Sort getSort(Context ctx, Expr expr) {
         return getSort(ctx, List.of(expr));
     }

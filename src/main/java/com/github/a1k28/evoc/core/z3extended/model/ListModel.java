@@ -1,8 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended.model;
 
-import com.microsoft.z3.ArrayExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Sort;
+import com.microsoft.z3.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,12 +10,12 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class ListModel {
     private ArrayExpr expr;
-    private Sort sort;
+    private TupleSort sort;
     private Expr sentinel;
     private int size;
     private int capacity;
 
-    public ListModel(ArrayExpr expr, Sort sort, Expr sentinel, Integer capacity) {
+    public ListModel(ArrayExpr expr, TupleSort sort, Expr sentinel, Integer capacity) {
         this.expr = expr;
         this.sort = sort;
         this.sentinel = sentinel;
@@ -27,5 +25,13 @@ public class ListModel {
 
     public void incrementSize() {
         this.size++;
+    }
+
+    public TupleSort getSortTuple() {
+        return this.sort;
+    }
+
+    public Sort getSort() {
+        return sort.getFieldDecls()[0].getRange();
     }
 }

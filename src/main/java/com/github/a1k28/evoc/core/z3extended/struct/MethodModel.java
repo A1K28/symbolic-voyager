@@ -141,8 +141,8 @@ public enum MethodModel {
 //            case SOOT_COMPARE -> ctx.mkInt(1);
 //            case SOOT_UNARY_OPERATOR_APPLY -> ctx.mkInt(0);
 
-            case INT_VALUE_OF -> args.get(0).isConst() ? args.get(0)
-                    : ctx.mkInt(String.valueOf(args.get(0)));
+            case INT_VALUE_OF -> args.get(0);
+//                    : ctx.mkInt(String.valueOf(args.get(0)));
 
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
             case STRING_LEN -> ctx.mkLength(args.get(0));
