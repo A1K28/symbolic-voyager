@@ -89,17 +89,16 @@ public class Z3ListCollection implements IStack {
         validateAndReplaceModelWithNewSort(var1, listModel, element);
 
         ArrayExpr array = listModel.getExpr();
-//        BoolExpr capacitySatisfied = ctx.mkGt(ctx.mkInt(listModel.getCapacity()), size(var1));
-//        Expr elem = ctx.mkITE(capacitySatisfied, element, listModel.getSentinel());
-//        array = ctx.mkStore(array, ctx.mkInt(listModel.getSize()), elem);
+        BoolExpr capacitySatisfied = ctx.mkGt(ctx.mkInt(listModel.getCapacity()), size(var1));
+        BoolExpr isNull = (BoolExpr) ctx.mkITE(capacitySatisfied,
+                ctx.mkBool(false), ctx.mkBool(true));
         Expr nullable = listModel.getSortTuple().mkDecl()
-                .apply(element, ctx.mkBool(false));
+                .apply(element, isNull);
         array = ctx.mkStore(array, ctx.mkInt(listModel.getSize()), nullable);
         listModel.setExpr(array);
 
         listModel.incrementSize();
-//        return capacitySatisfied;
-        return ctx.mkBool(true);
+        return capacitySatisfied;
     }
 
     public BoolExpr add(Expr var1, ArithExpr index, Expr var2) { // X
@@ -339,8 +338,6 @@ public class Z3ListCollection implements IStack {
     }
 
     private Expr mkSentinel(Sort sort) {
-//        if (!sentinels.containsKey(sort))
-//            sentinels.put(sort, ctx.mkConst("null", sort));
         if (!sentinels.containsKey(sort)) {
             Expr nullValue = mapSort(ctx, sort).mkDecl().apply(ctx.mkConst("null", sort), ctx.mkTrue());
             sentinels.put(sort, nullValue);
@@ -351,14 +348,10 @@ public class Z3ListCollection implements IStack {
     private Expr size(ListModel listModel) {
         ArithExpr newSize = ctx.mkInt(0);
         ArrayExpr array = listModel.getExpr();
-//        Expr sentinel = listModel.getSentinel();
         FuncDecl isNullAccessor = listModel.getSortTuple().getFieldDecls()[1];
         for (int i = 0; i < listModel.getSize(); i++) {
             Expr value = ctx.mkSelect(array, ctx.mkInt(i));
             BoolExpr isNull = (BoolExpr) isNullAccessor.apply(value);
-//            Expr isNull = ctx.mkEq(value.getArgs()[1], ctx.mkBool(true));
-//            Expr condition = ctx.mkBool("nullable".equals(value.getSort().getName().toString()));
-//            Expr condition = ctx.mkEq(value, sentinel);
             Expr thenExpr = ctx.mkInt(0);
             Expr elseExpr = ctx.mkInt(1);
             newSize = ctx.mkAdd(newSize, ctx.mkITE(isNull, thenExpr, elseExpr));
@@ -383,28 +376,13 @@ public class Z3ListCollection implements IStack {
 
     private void removeAllOccurrences(ListModel listModel, Expr element) {
         ArrayExpr array = listModel.getExpr();
-//        Expr[] exprs = new Expr[listModel.getSize()];
         for (int i = 0; i < listModel.getSize(); i++) {
             Expr currentValue = ctx.mkSelect(array, ctx.mkInt(i));
             BoolExpr isMatch = ctx.mkEq(currentValue, element);
             array = ctx.mkStore(array, ctx.mkInt(i),
                     ctx.mkITE(isMatch, listModel.getSentinel(), currentValue));
-//            exprs[i] = ctx.mkNot(ctx.mkEq(ctx.mkSelect(array, ctx.mkInt(i)), element));
         }
         listModel.setExpr(array);
-//        return ctx.mkAnd(exprs);
-//        BoolExpr allReplaced = ctx.mkForall(
-//                new Expr[]{ctx.mkIntConst("i")},
-//                ctx.mkImplies(
-//                        ctx.mkAnd(
-//                                ctx.mkLe(ctx.mkInt(0), ctx.mkIntConst("i")),
-//                                ctx.mkLt(ctx.mkIntConst("i"), ctx.mkInt(listModel.getSize()))
-//                        ),
-//                        ctx.mkNot(ctx.mkEq(ctx.mkSelect(array, ctx.mkIntConst("i")), element))
-//                ),
-//                1, null, null, null, null
-//        );
-//        return allReplaced;
     }
 
     private BoolExpr contains(Expr var1, Expr elementSentinel, Expr... elements) {
