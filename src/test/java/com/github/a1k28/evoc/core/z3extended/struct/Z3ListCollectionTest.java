@@ -1,18 +1,18 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.github.a1k28.evoc.core.z3extended.Z3Translator.close;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Z3ListCollectionTest {
     private SymbolicPathCarver symbolicPathCarver;
@@ -32,15 +32,33 @@ class Z3ListCollectionTest {
     }
 
     @Test
-    public void testSetConcatenation() throws ClassNotFoundException {
+    public void test_remove_all() throws ClassNotFoundException {
         SatisfiableResults sr = new SymbolicPathCarver(
-                classname, "test_list_methods").analyzeSymbolicPaths();
-        System.out.println(sr.getCoveredLines() + " / " + sr.getCoveredLines());
-        System.out.println(sr.getResults().size());
+                classname, "test_remove_all_1").analyzeSymbolicPaths();
 
-//        test_set_concatenation("", "ABCDEfGHIJK");
-//        test_set_concatenation("", "");
-//        test_set_concatenation("EFAGHBICJD", "");
+        Set<Integer> reachableCodes = new HashSet<>(List.of(0, 1));
+        for (SatisfiableResult res : sr.getResults()) {
+            List<Map.Entry<SVar, String>> vals = res.getSymbolicParameterValues().entrySet().stream().toList();
+            int expected = Integer.parseInt(res.getReturnValue().getName());
+            int actual = test_remove_all_1(Integer.parseInt(vals.get(0).getValue()));
+            assertEquals(expected, actual);
+            assertTrue(reachableCodes.remove(expected));
+        }
+        assertTrue(reachableCodes.isEmpty());
+    }
+
+    private int test_remove_all_1(int a) {
+        List<Integer> list = new ArrayList<>();
+        list.add(a+10);
+        list.add(1, 100);
+        if (list.removeAll(List.of(100))) {
+            if (list.isEmpty()) {
+                System.out.println("ADWAD");
+                return 0;
+            }
+            return 1;
+        }
+        return 2;
     }
 
     public void test_list_methods(int a) {
@@ -81,7 +99,9 @@ class Z3ListCollectionTest {
 //        list.isEmpty();
 //        list.add(a+"123");
 //        list.add("ASDF");
+//        list.add(null);
         list.add(a+10);
+        list.add(1, 100);
 //        list.add(100);
 //        if (list.get(0).equals("ASD_123")) {
 //            System.out.println("wdaw1er12r12rf");
