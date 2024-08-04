@@ -240,9 +240,9 @@ public class SymbolicPathCarver {
                 SVar returnValue = null;
                 if (node.getType() == SType.RETURN) {
                     JReturnStmt stmt = (JReturnStmt) node.getUnit();
-                    String key = z3t.getValueName(stmt.getOp());
-                    returnValue = symbolicVarStack.get(key).orElseThrow(
-                            () -> new RuntimeException("Could not resolve parameter: " + key));
+                    Expr expr = z3t.translateValue(stmt.getOp(), VarType.RETURN_VALUE);
+                    returnValue = new SVar(z3t.getValueName(stmt.getOp()),
+                            stmt.getOp(), expr, VarType.RETURN_VALUE, true);
                 }
                 handleSatisfiability(returnValue);
                 return Z3Status.SATISFIABLE_END;
