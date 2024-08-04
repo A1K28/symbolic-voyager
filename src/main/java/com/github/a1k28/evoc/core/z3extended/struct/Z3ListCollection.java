@@ -13,7 +13,6 @@ public class Z3ListCollection implements IStack {
 
     private final Context ctx;
     private final Z3Stack<Integer, ListModel> stack;
-    private final Map<Sort, Expr> sentinels;
 
     @Override
     public void push() {
@@ -28,7 +27,6 @@ public class Z3ListCollection implements IStack {
     public Z3ListCollection(Context context) {
         this.ctx = context;
         this.stack = new Z3Stack<>();
-        this.sentinels = new HashMap<>();
     }
 
     public Expr constructor(Expr var1) {
@@ -68,64 +66,77 @@ public class Z3ListCollection implements IStack {
                             Expr[] arguments) {
         TupleSort sort = mapSort(ctx, elementType);
         ArrayExpr arrayExpr = ctx.mkArrayConst("Array"+hashCode, ctx.mkIntSort(), sort);
-        stack.add(hashCode, new ListModel(arrayExpr, sort, mkSentinel(elementType), capacity));
+        stack.add(hashCode, new ListModel(arrayExpr, sort, mkSentinel(ctx, elementType), capacity));
         if (arguments != null)
             for (Expr argument : arguments)
                 add(arrayExpr, argument);
         return arrayExpr;
     }
 
-    public Expr size(Expr var1) { // X
+    public Expr size(Expr var1) {
         ListModel listModel = get(var1);
         return size(listModel);
     }
 
-    public BoolExpr isEmpty(Expr var1) { // X
+    public BoolExpr isEmpty(Expr var1) {
         return ctx.mkEq(size(var1), ctx.mkInt(0));
     }
 
-    public BoolExpr add(Expr var1, Expr element) { // X
+    public BoolExpr add(Expr var1, Expr element) {
         ListModel listModel = get(var1);
         validateAndReplaceModelWithNewSort(var1, listModel, element);
 
         ArrayExpr array = listModel.getExpr();
         BoolExpr capacitySatisfied = ctx.mkGt(ctx.mkInt(listModel.getCapacity()), size(var1));
-        BoolExpr isNull = (BoolExpr) ctx.mkITE(capacitySatisfied,
-                ctx.mkBool(false), ctx.mkBool(true));
-        Expr nullable = listModel.getSortTuple().mkDecl()
-                .apply(element, isNull);
-        array = ctx.mkStore(array, ctx.mkInt(listModel.getSize()), nullable);
+        BoolExpr isEmpty = ctx.mkNot(capacitySatisfied);
+        Expr optional = listModel.mkDecl(element, isEmpty);
+        array = ctx.mkStore(array, ctx.mkInt(listModel.getSize()), optional);
         listModel.setExpr(array);
 
         listModel.incrementSize();
         return capacitySatisfied;
     }
 
-    public BoolExpr add(Expr var1, ArithExpr index, Expr var2) { // X
+    public BoolExpr add(Expr var1, ArithExpr index, Expr var2) {
         ListModel listModel = get(var1);
         validateAndReplaceModelWithNewSort(var1, listModel, var2);
 
+        // verify index
+        Expr size = size(var1);
         Expr idx = translateIndex(listModel, index);
+        BoolExpr isInvalidIdx = ctx.mkGt(idx, size);
+        idx = ctx.mkITE(isInvalidIdx, size, idx);
+
+        // init vars
         ArrayExpr array = listModel.getExpr();
-        BoolExpr capacitySatisfied = ctx.mkGt(ctx.mkInt(listModel.getCapacity()), size(var1));
+        BoolExpr capacitySatisfied = ctx.mkGt(ctx.mkInt(listModel.getCapacity()), size);
+
+        // store empty element at the end
+        // the element will either be replaced, or stay intact
+        array = ctx.mkStore(array, size, listModel.getSentinel());
+
+        // shift elements to the right by 1
         for (int i = listModel.getSize(); i > 0; i--) {
             Expr ie = ctx.mkInt(i);
             Expr currentValue = ctx.mkSelect(array, ie);
             Expr previousValue = ctx.mkSelect(array, ctx.mkInt(i-1));
-            BoolExpr shouldShift = ctx.mkGt(ie, idx);
+            BoolExpr shouldShift = ctx.mkAnd(capacitySatisfied, ctx.mkGt(ie, idx));
             Expr shiftExpr = ctx.mkITE(shouldShift, previousValue, currentValue);
-            Expr elem = ctx.mkITE(capacitySatisfied, shiftExpr, listModel.getSentinel());
-            array = ctx.mkStore(array, ie, elem);
+            array = ctx.mkStore(array, ie, shiftExpr);
         }
 
-        Expr elem = ctx.mkITE(capacitySatisfied, var2, listModel.getSentinel());
+        // replace the element at index
+        var2 = listModel.mkDecl(var2, ctx.mkBool(false));
+        Expr elem = ctx.mkITE(capacitySatisfied, var2, ctx.mkSelect(array, idx));
         array = ctx.mkStore(array, idx, elem);
+
+        // update state & return
         listModel.setExpr(array);
         listModel.incrementSize();
-        return ctx.mkBool(true);
+        return capacitySatisfied;
     }
 
-    public BoolExpr addAll(Expr var1, Expr var2) { // X
+    public BoolExpr addAll(Expr var1, Expr var2) {
         Optional<ListModel> listModel = getOptional(var2);
         if (listModel.isEmpty() || listModel.get().getSize() == 0)
             return ctx.mkBool(false);
@@ -337,24 +348,15 @@ public class Z3ListCollection implements IStack {
         return hashCode;
     }
 
-    private Expr mkSentinel(Sort sort) {
-        if (!sentinels.containsKey(sort)) {
-            Expr nullValue = mapSort(ctx, sort).mkDecl().apply(ctx.mkConst("null", sort), ctx.mkTrue());
-            sentinels.put(sort, nullValue);
-        }
-        return sentinels.get(sort);
-    }
-
     private Expr size(ListModel listModel) {
         ArithExpr newSize = ctx.mkInt(0);
         ArrayExpr array = listModel.getExpr();
-        FuncDecl isNullAccessor = listModel.getSortTuple().getFieldDecls()[1];
         for (int i = 0; i < listModel.getSize(); i++) {
             Expr value = ctx.mkSelect(array, ctx.mkInt(i));
-            BoolExpr isNull = (BoolExpr) isNullAccessor.apply(value);
+            BoolExpr isEmpty = listModel.isEmpty(value);
             Expr thenExpr = ctx.mkInt(0);
             Expr elseExpr = ctx.mkInt(1);
-            newSize = ctx.mkAdd(newSize, ctx.mkITE(isNull, thenExpr, elseExpr));
+            newSize = ctx.mkAdd(newSize, ctx.mkITE(isEmpty, thenExpr, elseExpr));
         }
         return newSize;
     }
@@ -436,19 +438,18 @@ public class Z3ListCollection implements IStack {
                         ctx.mkSelect(listModel.getExpr(), ctx.mkInt(i)));
             listModel.setExpr(arrayExpr);
             listModel.setSort(sort);
-            listModel.setSentinel(mkSentinel(elementType));
+            listModel.setSentinel(mkSentinel(ctx, elementType));
         }
     }
 
     // translate index to consider removed elements
     private ArithExpr translateIndex(ListModel listModel, ArithExpr index) {
-        Expr sentinel = listModel.getSentinel();
         ArrayExpr array = listModel.getExpr();
         for (int i = 0; i < listModel.getSize(); i++) {
             Expr currElement = ctx.mkSelect(array, ctx.mkInt(i));
             BoolExpr shouldContinue = ctx.mkGe(index, ctx.mkInt(i));
-            BoolExpr wasRemoved = ctx.mkEq(currElement, sentinel);
-            ArithExpr idxExpr = (ArithExpr) ctx.mkITE(wasRemoved, ctx.mkAdd(index, ctx.mkInt(1)), index);
+            BoolExpr isEmpty = listModel.isEmpty(currElement);
+            ArithExpr idxExpr = (ArithExpr) ctx.mkITE(isEmpty, ctx.mkAdd(index, ctx.mkInt(1)), index);
             index = (ArithExpr) ctx.mkITE(shouldContinue, idxExpr, index);
         }
         return index;
