@@ -4,6 +4,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,8 +27,8 @@ class Z3ListCollectionTest {
 //                "com.github.a1k28.evoc.core.executor.SymbolicPathCarverTest");
     }
 
-    @AfterEach
-    public void closeContext() {
+    @AfterAll
+    public static void closeContext() {
         close();
     }
 
@@ -35,12 +36,32 @@ class Z3ListCollectionTest {
     public void test_remove_all() throws ClassNotFoundException {
         SatisfiableResults sr = new SymbolicPathCarver(
                 classname, "test_remove_all_1").analyzeSymbolicPaths();
-
         Set<Integer> reachableCodes = new HashSet<>(List.of(0, 1));
         for (SatisfiableResult res : sr.getResults()) {
-            List<Map.Entry<SVar, String>> vals = res.getSymbolicParameterValues().entrySet().stream().toList();
             int expected = Integer.parseInt(res.getReturnValue().getName());
-            int actual = test_remove_all_1(Integer.parseInt(vals.get(0).getValue()));
+            int actual = test_remove_all_1(Integer.parseInt(res.getParameter("a")));
+            assertEquals(expected, actual);
+            assertTrue(reachableCodes.remove(expected));
+        }
+        assertTrue(reachableCodes.isEmpty());
+
+        sr = new SymbolicPathCarver(
+                classname, "test_remove_all_2").analyzeSymbolicPaths();
+        reachableCodes = new HashSet<>(List.of(0, 2));
+        for (SatisfiableResult res : sr.getResults()) {
+            int expected = Integer.parseInt(res.getReturnValue().getName());
+            int actual = test_remove_all_2(Integer.parseInt(res.getParameter("a")));
+            assertEquals(expected, actual);
+            assertTrue(reachableCodes.remove(expected));
+        }
+        assertTrue(reachableCodes.isEmpty());
+
+        sr = new SymbolicPathCarver(
+                classname, "test_remove_all_3").analyzeSymbolicPaths();
+        reachableCodes = new HashSet<>(List.of(0, 1, 2));
+        for (SatisfiableResult res : sr.getResults()) {
+            int expected = Integer.parseInt(res.getReturnValue().getName());
+            int actual = test_remove_all_3(Integer.parseInt(res.getParameter("a")), Integer.parseInt(res.getParameter("b")));
             assertEquals(expected, actual);
             assertTrue(reachableCodes.remove(expected));
         }
@@ -51,6 +72,33 @@ class Z3ListCollectionTest {
         List<Integer> list = new ArrayList<>();
         list.add(a+10);
         list.add(1, 100);
+        if (list.removeAll(List.of(100))) {
+            if (list.isEmpty()) {
+                System.out.println("ADWAD");
+                return 0;
+            }
+            return 1;
+        }
+        return 2;
+    }
+
+    private int test_remove_all_2(int a) {
+        List<Integer> list = new ArrayList<>();
+        list.add(a+10);
+        if (list.removeAll(List.of(100))) {
+            if (list.isEmpty()) {
+                System.out.println("ADWAD");
+                return 0;
+            }
+            return 1;
+        }
+        return 2;
+    }
+
+    private int test_remove_all_3(int a, int b) {
+        List<Integer> list = new ArrayList<>();
+        list.add(a+10);
+        list.add(b);
         if (list.removeAll(List.of(100))) {
             if (list.isEmpty()) {
                 System.out.println("ADWAD");
