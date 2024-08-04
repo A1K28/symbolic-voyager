@@ -27,11 +27,19 @@ public class ListModel {
         this.size++;
     }
 
-    public TupleSort getSortTuple() {
-        return this.sort;
+    public Expr mkDecl(Expr element, BoolExpr isEmpty) {
+        return this.sort.mkDecl().apply(element, isEmpty);
     }
 
     public Sort getSort() {
         return sort.getFieldDecls()[0].getRange();
+    }
+
+    public Expr getValue(Expr value) {
+        return this.sort.getFieldDecls()[0].apply(value);
+    }
+
+    public BoolExpr isEmpty(Expr value) {
+        return (BoolExpr) this.sort.getFieldDecls()[1].apply(value);
     }
 }
