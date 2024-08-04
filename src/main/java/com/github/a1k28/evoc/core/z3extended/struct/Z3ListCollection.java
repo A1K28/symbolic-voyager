@@ -151,7 +151,7 @@ public class Z3ListCollection implements IStack {
         return ctx.mkGt(newSize, originalSize);
     }
 
-    public BoolExpr addAll(Expr var1, ArithExpr index, Expr var2) { // X
+    public BoolExpr addAll(Expr var1, ArithExpr index, Expr var2) {
         ListModel listModel = get(var2);
         ArrayExpr array = listModel.getExpr();
         Expr originalSize = size(listModel);
@@ -166,7 +166,7 @@ public class Z3ListCollection implements IStack {
         return ctx.mkGt(newSize, originalSize);
     }
 
-    public BoolExpr remove(Expr var1, IntExpr index) { // X
+    public BoolExpr remove(Expr var1, IntExpr index) {
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
 
@@ -189,13 +189,13 @@ public class Z3ListCollection implements IStack {
     }
 
     // remove the first occurrence of the element
-    public BoolExpr remove(Expr var1, Expr element) { // X
+    public BoolExpr remove(Expr var1, Expr element) {
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
         return remove(listModel.get(), element);
     }
 
-    public BoolExpr removeAll(Expr var1, Expr var2) { // X
+    public BoolExpr removeAll(Expr var1, Expr var2) {
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
 
@@ -207,35 +207,32 @@ public class Z3ListCollection implements IStack {
             removeAllOccurrences(listModel.get(), currentValue);
         }
         Expr newSize = size(listModel.get());
-//        return ctx.mkBool(false);
         return ctx.mkLt(newSize, originalSize);
-//        return ctx.mkAnd(exprs);
-//        return ctx.mkAnd(ctx.mkLt(newSize, originalSize), ctx.mkAnd(exprs));
     }
 
-    public BoolExpr contains(Expr var1, Expr element) { // X
-        return contains(var1, null, element);
+    public BoolExpr contains(Expr var1, Expr element) {
+        return containsElements(var1, element);
     }
 
-    public BoolExpr containsAll(Expr var1, Expr var2) { // X
+    public BoolExpr containsAll(Expr var1, Expr var2) {
         Optional<ListModel> listModel = getOptional(var2);
-        if (listModel.isEmpty()) return ctx.mkBool(false);
+        if (listModel.isEmpty()) return ctx.mkBool(true); // TODO: check ?
         Expr[] expressions = getArguments(listModel.get());
-        return contains(var1, listModel.get().getSentinel(), expressions);
+        return containsElements(var1, expressions);
     }
 
-    public BoolExpr retainAll(Expr var1, Expr var2) { // X
+    public BoolExpr retainAll(Expr var1, Expr var2) {
         ListModel lm1 = get(var1);
         ListModel lm2 = get(var2);
 
         Expr originalSize = size(lm1);
         Expr set = ctx.mkEmptySet(lm2.getSort());
         for (int i = 0; i < lm2.getSize(); i++)
-            set = ctx.mkSetAdd(set, ctx.mkSelect(lm2.getExpr(), ctx.mkInt(i)));
+            set = ctx.mkSetAdd(set, lm2.getValue(ctx.mkSelect(lm2.getExpr(), ctx.mkInt(i))));
 
         ArrayExpr array = lm1.getExpr();
         for (int i = 0; i < lm1.getSize(); i++) {
-            Expr currElement = ctx.mkSelect(array, ctx.mkInt(i));
+            Expr currElement = lm1.getValue(ctx.mkSelect(array, ctx.mkInt(i)));
             Expr expr = ctx.mkITE(ctx.mkSetMembership(currElement, set), currElement, lm1.getSentinel());
             array = ctx.mkStore(array, ctx.mkInt(i), expr);
         }
@@ -245,7 +242,7 @@ public class Z3ListCollection implements IStack {
         return ctx.mkNot(ctx.mkEq(originalSize, newSize));
     }
 
-    public Expr clear(Expr var1) { // X
+    public Expr clear(Expr var1) {
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return null;
         ArrayExpr array = listModel.get().getExpr();
@@ -255,7 +252,7 @@ public class Z3ListCollection implements IStack {
         return null;
     }
 
-    public BoolExpr equals(Expr var1, Expr var2) { // X
+    public BoolExpr equals(Expr var1, Expr var2) {
         ListModel lm1 = get(var1);
         ListModel lm2 = get(var2);
 
@@ -264,26 +261,35 @@ public class Z3ListCollection implements IStack {
 
         BoolExpr[] exprs = new BoolExpr[lm1.getSize()];
         for (int i = 0; i < lm1.getSize(); i++) {
-            Expr v1 = ctx.mkSelect(lm1.getExpr(), ctx.mkInt(i));
-            Expr v2 = ctx.mkSelect(lm2.getExpr(), ctx.mkInt(i));
-            exprs[i] = ctx.mkEq(v1, v2);
+            Expr element1 = ctx.mkSelect(lm1.getExpr(), ctx.mkInt(i));
+            Expr element2 = ctx.mkSelect(lm2.getExpr(), ctx.mkInt(i));
+
+            BoolExpr isEmpty1 = lm1.isEmpty(element1);
+            BoolExpr isEmpty2 = lm1.isEmpty(element2);
+
+            Expr value1 = lm1.getValue(element1);
+            Expr value2 = lm2.getValue(element2);
+
+            BoolExpr isEmpty = ctx.mkAnd(isEmpty1, isEmpty2);
+            BoolExpr isEqual = ctx.mkEq(value1, value2);
+            exprs[i] = ctx.mkOr(isEmpty, isEqual);
         }
         return ctx.mkAnd(exprs);
     }
 
-    public Expr get(Expr var1, IntExpr index) { // X
+    public Expr get(Expr var1, IntExpr index) {
         ListModel listModel = get(var1);
         Expr idx = translateIndex(listModel, index);
-        return ctx.mkSelect(listModel.getExpr(), idx);
+        return listModel.getValue(ctx.mkSelect(listModel.getExpr(), idx));
     }
 
-    public Expr set(Expr var1, IntExpr index, Expr element) { // X
+    public Expr set(Expr var1, IntExpr index, Expr element) {
         ListModel listModel = get(var1);
         validateAndReplaceModelWithNewSort(var1, listModel, element);
         Expr idx = translateIndex(listModel, index);
         ArrayExpr array = listModel.getExpr();
-        Expr prevElement = ctx.mkSelect(array, idx);
-        array = ctx.mkStore(array, idx, element);
+        Expr prevElement = listModel.getValue(ctx.mkSelect(array, idx));
+        array = ctx.mkStore(array, idx, listModel.mkDecl(element, ctx.mkBool(false)));
         listModel.setExpr(array);
         return prevElement;
     }
@@ -293,7 +299,7 @@ public class Z3ListCollection implements IStack {
         return ctx.mkInt(Arrays.stream(getArguments(get(var1))).toList().hashCode());
     }
 
-    public Expr subList(Expr var1, IntExpr fromIndex, IntExpr toIndex) { // X
+    public Expr subList(Expr var1, IntExpr fromIndex, IntExpr toIndex) {
         ListModel listModel = get(var1);
         Expr fromIdx = translateIndex(listModel, fromIndex);
         Expr toIdx = translateIndex(listModel, toIndex);
@@ -309,25 +315,27 @@ public class Z3ListCollection implements IStack {
         return constructor(getSort(ctx, expressions), expressions);
     }
 
-    public Expr indexOf(Expr var1, Expr element) { // X
+    public Expr indexOf(Expr var1, Expr element) {
         Expr sentinel = ctx.mkInt(-1);
         ListModel listModel = get(var1);
         Expr[] expressions = getArguments(listModel);
         Expr foundElement = sentinel;
-        for (int i = expressions.length-1; i >= 0; i--)
-            foundElement = ctx.mkITE(ctx.mkEq(expressions[i], element),
-                    translateIndex(listModel, ctx.mkInt(i)), sentinel);
+        for (int i = expressions.length-1; i >= 0; i--) {
+            BoolExpr equals = ctx.mkEq(listModel.getValue(expressions[i]), element);
+            foundElement = ctx.mkITE(equals, translateIndexInverted(listModel, i), sentinel);
+        }
         return foundElement;
     }
 
-    public Expr lastIndexOf(Expr var1, Expr element) { // X
+    public Expr lastIndexOf(Expr var1, Expr element) {
         Expr sentinel = ctx.mkInt(-1);
         ListModel listModel = get(var1);
         Expr[] expressions = getArguments(listModel);
         Expr foundElement = sentinel;
-        for (int i = 0; i < expressions.length; i++)
-            foundElement = ctx.mkITE(ctx.mkEq(expressions[i], element),
-                    translateIndex(listModel, ctx.mkInt(i)), sentinel);
+        for (int i = 0; i < expressions.length; i++) {
+            BoolExpr equals = ctx.mkEq(listModel.getValue(expressions[i]), element);
+            foundElement = ctx.mkITE(equals, translateIndexInverted(listModel, i), sentinel);
+        }
         return foundElement;
     }
 
@@ -387,27 +395,22 @@ public class Z3ListCollection implements IStack {
         listModel.setExpr(array);
     }
 
-    private BoolExpr contains(Expr var1, Expr elementSentinel, Expr... elements) {
+    private BoolExpr containsElements(Expr var1, Expr... elements) {
         if (elements == null) return ctx.mkBool(false);
 
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
 
-        Expr sentinel = listModel.get().getSentinel();
         ArrayExpr array = listModel.get().getExpr();
         Expr count = ctx.mkInt(0);
         for (int i = 0; i < listModel.get().getSize(); i++) {
             Expr currentValue = ctx.mkSelect(array, ctx.mkInt(i));
-            Expr isPresent = ctx.mkITE(ctx.mkEq(currentValue, sentinel),
-                    ctx.mkBool(false), ctx.mkBool(true));
+            Expr isPresent = ctx.mkNot(listModel.get().isEmpty(currentValue));
             BoolExpr isMatch = ctx.mkBool(false);
             for (Expr element : elements) {
                 BoolExpr isMatch2 = ctx.mkEq(currentValue, element);
-                if (elementSentinel != null) {
-                    Expr isPresent2 = ctx.mkITE(ctx.mkEq(element, elementSentinel),
-                            ctx.mkBool(false), ctx.mkBool(true));
-                    isMatch2 = ctx.mkAnd(isPresent2, isMatch2);
-                }
+                Expr isPresent2 = ctx.mkNot(listModel.get().isEmpty(element));
+                isMatch2 = ctx.mkAnd(isPresent2, isMatch2);
                 isMatch = ctx.mkOr(isMatch, isMatch2);
             }
             isMatch = ctx.mkAnd(isPresent, isMatch);
@@ -453,6 +456,17 @@ public class Z3ListCollection implements IStack {
             index = (ArithExpr) ctx.mkITE(shouldContinue, idxExpr, index);
         }
         return index;
+    }
+
+    private ArithExpr translateIndexInverted(ListModel listModel, int index) {
+        ArrayExpr array = listModel.getExpr();
+        ArithExpr idx = ctx.mkInt(index);
+        for (int i = 0; i < index; i++) {
+            Expr currElement = ctx.mkSelect(array, ctx.mkInt(i));
+            BoolExpr isEmpty = listModel.isEmpty(currElement);
+            idx = (ArithExpr) ctx.mkITE(isEmpty, ctx.mkSub(idx, ctx.mkInt(1)), idx);
+        }
+        return idx;
     }
 
     private static int ihc(Object o) {
