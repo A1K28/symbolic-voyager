@@ -27,4 +27,11 @@ public class SatisfiableResult {
         this.continuable = continuable;
         this.symbolicParameterValues = symbolicParameterValues;
     }
+
+    public <T> T getParameter(String name) {
+        return symbolicParameterValues.entrySet().stream()
+                .filter(e -> name.equals(e.getKey().getName()))
+                .map(e -> (T) e.getValue())
+                .findFirst().get();
+    }
 }
