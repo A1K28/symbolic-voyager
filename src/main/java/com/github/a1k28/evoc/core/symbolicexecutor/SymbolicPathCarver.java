@@ -256,7 +256,7 @@ public class SymbolicPathCarver {
         log.info("Path is satisfiable");
         Model model = solver.getModel();
 
-        Map<SVar, String> res = new HashMap<>();
+        Map<SVar, String> res = new LinkedHashMap<>();
         for (SVar var : symbolicVarStack.getAll()) {
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER

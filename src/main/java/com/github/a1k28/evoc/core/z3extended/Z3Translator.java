@@ -4,6 +4,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
+import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
@@ -23,6 +24,7 @@ public class Z3Translator {
     private static Solver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
+    private static final Logger log = Logger.getInstance(Z3Translator.class);
 
     public Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
         initZ3();
@@ -46,12 +48,14 @@ public class Z3Translator {
         // Initialize Z3
         if (ctx == null) {
             ctx = new Z3ExtendedContext();
+            log.info("Successfully initialized Z3 context");
         }
     }
 
     public static synchronized void close() {
         ctx.close();
         ctx = null;
+        log.info("Successfully closed Z3 context");
     }
 
     public Expr mkEq(Expr expr, boolean val) {
