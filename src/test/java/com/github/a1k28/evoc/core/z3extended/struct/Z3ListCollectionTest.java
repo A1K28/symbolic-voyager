@@ -7,15 +7,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Z3ListCollectionTest {
-    private final String classname = "com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollectionTest";
+    @SymbolicTest({0,1})
+    @DisplayName("List: test_remove_by_idx_1")
+    public int test_remove_by_idx_1(String a) {
+        List<String> list = new ArrayList<>();
+        list.add(a+10);
+        if (list.remove(0).equals("TEST PARAM10")) {
+            return 0;
+        }
+        return 1;
+    }
 
     @SymbolicTest({0,1})
     @DisplayName("List: test_remove_1")
     public int test_remove_1(String a) {
         List<String> list = new ArrayList<>();
         list.add(a+10);
-        System.out.println("asdasdawawdasdaw: " + a);
         if (list.remove("ASD10")) {
+            return 0;
+        }
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("List: test_remove_2")
+    public int test_remove_2(Integer a, Integer b) {
+        List<Integer> list = new ArrayList<>();
+        list.add(a+b+100);
+        Integer k = 300;
+        if (list.remove(k)) {
             return 0;
         }
         return 1;

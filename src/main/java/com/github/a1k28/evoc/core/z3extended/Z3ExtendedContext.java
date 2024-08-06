@@ -80,7 +80,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3ListCollection.remove(var1, element);
     }
 
-    public BoolExpr mkListRemove(Expr var1, IntExpr index) {
+    public Expr mkListRemove(Expr var1, IntExpr index) {
         return z3ListCollection.remove(var1, index);
     }
 

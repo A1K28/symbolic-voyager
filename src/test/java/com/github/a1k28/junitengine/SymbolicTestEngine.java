@@ -3,6 +3,7 @@ package com.github.a1k28.junitengine;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
@@ -103,6 +104,9 @@ public class SymbolicTestEngine implements TestEngine {
                 paramNames = new String[paramTypes.length];
                 int j = 0;
                 for (SVar key : res.getSymbolicParameterValues().keySet()) {
+                    // TODO: handle mocked params
+                    if (key.getType() != VarType.PARAMETER)
+                        throw new RuntimeException("MOCKED METHOD INBOUND");
                     paramNames[j] = key.getName();
                     j++;
                 }

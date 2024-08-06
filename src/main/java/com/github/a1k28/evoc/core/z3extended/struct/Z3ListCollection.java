@@ -166,26 +166,27 @@ public class Z3ListCollection implements IStack {
         return ctx.mkGt(newSize, originalSize);
     }
 
-    public BoolExpr remove(Expr var1, IntExpr index) {
+    public Expr remove(Expr var1, IntExpr index) {
         Optional<ListModel> listModel = getOptional(var1);
         if (listModel.isEmpty()) return ctx.mkBool(false);
 
         Expr idx = translateIndex(listModel.get(), index);
         Expr sentinel = listModel.get().getSentinel();
         ArrayExpr array = listModel.get().getExpr();
-        BoolExpr found = ctx.mkBool(false);
+        Expr val = sentinel;
         for (int i = 0; i < listModel.get().getSize(); i++) {
             Expr ie = ctx.mkInt(i);
             Expr currentValue = ctx.mkSelect(array, ie);
             BoolExpr isMatch = ctx.mkEq(idx, ie);
 
+            val = ctx.mkITE(isMatch, currentValue, sentinel);
+
             array = ctx.mkStore(array, ie,
                     ctx.mkITE(isMatch, sentinel, currentValue));
-            found = ctx.mkOr(found, isMatch);
         }
 
         listModel.get().setExpr(array);
-        return found;
+        return listModel.get().getValue(val);
     }
 
     // remove the first occurrence of the element
