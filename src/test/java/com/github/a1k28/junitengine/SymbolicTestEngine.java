@@ -78,14 +78,10 @@ public class SymbolicTestEngine implements TestEngine {
     private void executeMethod(TestMethodTestDescriptor methodDescriptor, EngineExecutionListener listener) {
         try {
             UniqueId uniqueId = methodDescriptor.getUniqueId();
-            Set<Integer> rcs = reachableCodes.get(uniqueId);
-
-//            Object instance = methodDescriptor.getTestClass().getDeclaredConstructor().newInstance();
-//            Object result = methodDescriptor.getTestMethod().invoke(instance, "asd");
             assertMethodCorrectness(
                     methodDescriptor.getTestClass(),
                     methodDescriptor.getTestMethod(),
-                    rcs);
+                    reachableCodes.get(uniqueId));
             // Handle the result as needed
         } catch (Exception e) {
             listener.executionFinished(methodDescriptor, TestExecutionResult.failed(e));
