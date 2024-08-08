@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Z3ListCollectionTest {
     @SymbolicTest({0,1})
-    @DisplayName("List: test_remove_by_idx_1")
+    @DisplayName("test_remove_by_idx_1")
     public int test_remove_by_idx_1(String a) {
         List<String> list = new ArrayList<>();
         list.add(a+10);
@@ -19,7 +19,7 @@ public class Z3ListCollectionTest {
     }
 
     @SymbolicTest({0,1})
-    @DisplayName("List: test_remove_1")
+    @DisplayName("test_remove_1")
     public int test_remove_1(String a) {
         List<String> list = new ArrayList<>();
         list.add(a+10);
@@ -30,7 +30,7 @@ public class Z3ListCollectionTest {
     }
 
     @SymbolicTest({0,1})
-    @DisplayName("List: test_remove_2")
+    @DisplayName("test_remove_2")
     public int test_remove_2(Integer a, Integer b) {
         List<Integer> list = new ArrayList<>();
         list.add(a+b+100);
@@ -42,7 +42,7 @@ public class Z3ListCollectionTest {
     }
 
     @SymbolicTest({0,1})
-    @DisplayName("List: test_remove_all_1")
+    @DisplayName("test_remove_all_1")
     public int test_remove_all_1(int a) {
         List<Integer> list = new ArrayList<>();
         list.add(a+10);
@@ -58,7 +58,7 @@ public class Z3ListCollectionTest {
     }
 
     @SymbolicTest({0,2})
-    @DisplayName("List: test_remove_all_2")
+    @DisplayName("test_remove_all_2")
     public int test_remove_all_2(int a) {
         List<Integer> list = new ArrayList<>();
         list.add(a+10);
@@ -73,7 +73,7 @@ public class Z3ListCollectionTest {
     }
 
     @SymbolicTest({0,1,2})
-    @DisplayName("List: test_remove_all_3")
+    @DisplayName("test_remove_all_3")
     public int test_remove_all_3(int a, int b) {
         List<Integer> list = new ArrayList<>();
         list.add(a+10);
