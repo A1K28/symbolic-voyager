@@ -32,6 +32,7 @@ public class Z3MapCollection implements IStack {
         ArraySort arraySort = ctx.mkArraySort(ctx.mkIntSort(), sort);
         ArrayExpr array = (ArrayExpr) ctx.mkFreshConst("Map"+hashCode, arraySort);
         ArithExpr size = ctx.mkInt(0);
+//        ArithExpr size = (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort());
 
         MapModel mapModel = new MapModel(
                 array, size, sort, mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
@@ -84,13 +85,11 @@ public class Z3MapCollection implements IStack {
     }
 
     public BoolExpr containsKey(Expr var1, Expr key) {
-        MapModel mapModel = getModel(var1);
-        return ctx.mkNot(mapModel.isEmpty(getEntry(var1, key, false)));
+        return contains(var1, key, false);
     }
 
     public BoolExpr containsValue(Expr var1, Expr value) {
-        MapModel mapModel = getModel(var1);
-        return ctx.mkNot(mapModel.isEmpty(getEntry(var1, value, true)));
+        return contains(var1, value, true);
     }
 
     public Expr remove(Expr var1, Expr key) {
@@ -348,9 +347,25 @@ public class Z3MapCollection implements IStack {
         BoolExpr exists = ctx.mkExists(new Expr[]{i}, body, 1,
                 null, null, null, null);
 
-        return ctx.mkITE(exists,
+        Expr e = ctx.mkITE(exists,
                 ctx.mkSelect(model.getArray(), i),
                 model.getSentinel());
+        return e;
+    }
+
+    private BoolExpr contains(Expr var1, Expr expr, boolean valueComparison) {
+        MapModel model = getModel(var1);
+
+        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+        BoolExpr body = ctx.mkAnd(
+                ctx.mkLe(ctx.mkInt(0), i),
+                ctx.mkLt(i, model.getSize()),
+                ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
+                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), i), valueComparison), expr)
+        );
+
+        return ctx.mkExists(new Expr[]{i}, body, 1,
+                null, null, null, null);
     }
 
     private Expr put(Expr var1, Expr key, Expr value, BoolExpr shouldBeAbsent) {
