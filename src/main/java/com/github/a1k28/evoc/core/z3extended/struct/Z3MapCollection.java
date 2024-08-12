@@ -26,13 +26,20 @@ public class Z3MapCollection implements IStack {
     }
 
     public Expr constructor(Expr var1) {
+        return constructor(var1, ctx.mkInt(0));
+    }
+
+    public void asd(Expr var1) {
+        MapModel model = stack.get(ihc(var1)).orElseThrow();
+        System.out.println("ASD");
+    }
+
+    private Expr constructor(Expr var1, ArithExpr size) {
         int hashCode = ihc(var1);
 //        TupleSort sort = mapSort(ctx, SortType.OBJECT.value(ctx), SortType.OBJECT.value(ctx));
         TupleSort sort = mkMapSort(ctx, ctx.mkStringSort(), ctx.mkStringSort());
         ArraySort arraySort = ctx.mkArraySort(ctx.mkIntSort(), sort);
         ArrayExpr array = (ArrayExpr) ctx.mkFreshConst("Map"+hashCode, arraySort);
-        ArithExpr size = ctx.mkInt(0);
-//        ArithExpr size = (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort());
 
         MapModel mapModel = new MapModel(
                 array, size, sort, mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
@@ -520,15 +527,12 @@ public class Z3MapCollection implements IStack {
     }
 
     private MapModel getModel(Expr var1) {
-        int hashCode = initMap(var1);
-        return stack.get(hashCode).orElseThrow();
-    }
-
-    private int initMap(Expr var1) {
         int hashCode = ihc(var1);
-        if (stack.get(hashCode).isEmpty())
-            constructor(var1);
-        return hashCode;
+        if (stack.get(hashCode).isEmpty()) {
+            ArithExpr size = (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort());
+            constructor(var1, size);
+        }
+        return stack.get(hashCode).orElseThrow();
     }
 
     public static int ihc(Object o) {

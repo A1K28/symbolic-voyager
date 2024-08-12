@@ -134,6 +134,10 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.constructor(var1);
     }
 
+    public void asd(Expr var1) {
+        z3MapCollection.asd(var1);
+    }
+
     public Expr mkMapGet(Expr var1, Expr key) {
         return z3MapCollection.get(var1, key);
     }

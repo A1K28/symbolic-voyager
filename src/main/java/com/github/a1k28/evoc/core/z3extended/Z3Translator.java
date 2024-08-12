@@ -21,7 +21,7 @@ import java.util.*;
 
 public class Z3Translator {
     private static Z3ExtendedContext ctx = null;
-    private static Solver solver;
+    private static Z3ExtendedSolver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
     private static final Logger log = Logger.getInstance(Z3Translator.class);
@@ -33,9 +33,10 @@ public class Z3Translator {
         this.symbolicVarStack = symbolicVarStack;
     }
 
-    public static synchronized Solver makeSolver() {
+    public static synchronized Z3ExtendedSolver makeSolver() {
         if (solver == null) {
-            solver = ctx.mkSolver();
+            Solver slvr = ctx.mkSolver();
+            solver = new Z3ExtendedSolver(ctx, slvr);
         }
         return solver;
     }
@@ -430,6 +431,8 @@ public class Z3Translator {
             return ctx.mkSetSort(SortType.OBJECT.value(ctx));
         if (List.class.isAssignableFrom(clazz))
             return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
+        if (Map.class.isAssignableFrom(clazz))
+            return SortType.MAP.value(ctx);
 
         // TODO: handle sets & maps correctly
 
