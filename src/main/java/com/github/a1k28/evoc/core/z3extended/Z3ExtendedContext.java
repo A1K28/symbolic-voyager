@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollection;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3MapCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SetCollection;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
@@ -10,11 +11,13 @@ import java.util.List;
 public class Z3ExtendedContext extends Context implements IStack {
     private final Z3SetCollection z3SetCollection;
     private final Z3ListCollection z3ListCollection;
+    private final Z3MapCollection z3MapCollection;
 
     public Z3ExtendedContext() {
         super();
-        this.z3SetCollection = new Z3SetCollection(this);
         this.z3ListCollection = new Z3ListCollection(this);
+        this.z3MapCollection = new Z3MapCollection(this);
+        this.z3SetCollection = new Z3SetCollection(this);
     }
 
     @Override
@@ -29,13 +32,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.z3ListCollection.push();
     }
 
-    // sets
-    @Override
-    public <D extends Sort> ArrayExpr<D, BoolSort> mkSetAdd(Expr<ArraySort<D, BoolSort>> var1, Expr<D> var2) {
-        z3SetCollection.add(System.identityHashCode(var1), var2);
-        return super.mkSetAdd(var1, var2);
-    }
-
+    // lists
     public Expr mkList(Expr var1) {
         return z3ListCollection.constructor(var1);
     }
@@ -130,6 +127,54 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public Expr mkListLastIndexOf(Expr var1, Expr element) {
         return z3ListCollection.lastIndexOf(var1, element);
+    }
+
+    // maps
+    public Expr mkMapInit(Expr var1) {
+        return z3MapCollection.constructor(var1);
+    }
+
+    public Expr mkMapGet(Expr var1, Expr key) {
+        return z3MapCollection.get(var1, key);
+    }
+
+    public Expr mkMapPut(Expr var1, Expr key, Expr value) {
+        return z3MapCollection.put(var1, key, value);
+    }
+
+    public Expr mkMapLength(Expr var1) {
+        return z3MapCollection.size(var1);
+    }
+
+    public BoolExpr mkMapIsEmpty(Expr var1) {
+        return z3MapCollection.isEmpty(var1);
+    }
+
+    public BoolExpr mkMapContainsKey(Expr var1, Expr key) {
+        return z3MapCollection.containsKey(var1, key);
+    }
+
+    public BoolExpr mkMapContainsValue(Expr var1, Expr value) {
+        return z3MapCollection.containsValue(var1, value);
+    }
+
+    public Expr mkMapRemove(Expr var1, Expr key) {
+        return z3MapCollection.remove(var1, key);
+    }
+
+    public Expr mkMapPutAll(Expr var1, Expr var2) {
+        return z3MapCollection.putAll(var1, var2);
+    }
+
+    public Expr mkMapPutIfAbsent(Expr var1, Expr key, Expr value) {
+        return z3MapCollection.putIfAbsent(var1, key, value);
+    }
+
+    // sets
+    @Override
+    public <D extends Sort> ArrayExpr<D, BoolSort> mkSetAdd(Expr<ArraySort<D, BoolSort>> var1, Expr<D> var2) {
+        z3SetCollection.add(System.identityHashCode(var1), var2);
+        return super.mkSetAdd(var1, var2);
     }
 
     public Expr mkSetLength(Expr expr) {

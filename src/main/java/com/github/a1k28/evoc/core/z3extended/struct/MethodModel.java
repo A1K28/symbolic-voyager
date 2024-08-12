@@ -71,18 +71,18 @@ public enum MethodModel {
     SET_ADD(Set.class,"boolean add(java.lang.Object)",true),
     SET_LEN(Set.class,"int size()",true),
     SET_CONTAINS(Set.class,"boolean contains(java.lang.Object)",true),
-    SET_REMOVE(Set.class,"boolean remove(java.lang.Object)", true);
+    SET_REMOVE(Set.class,"boolean remove(java.lang.Object)", true),
 
     // maps
-//    MAP_INIT(Map.class,"void <init>()>", true),
-//    MAP_GET(Map.class, "java.lang.Object get(java.lang.Object)", true),
-//    MAP_PUT(Map.class, "java.lang.Object put(java.lang.Object,java.lang.Object)", true),
-//    MAP_SIZE(Map.class, "int size()", true),
-//    MAP_IS_EMPTY(Map.class, "boolean isEmpty()", true),
-//    MAP_CONTAINS_KEY(Map.class, "boolean containsKey(java.lang.Object)", true),
-//    MAP_CONTAINS_VALUE(Map.class, "boolean containsValue(java.lang.Object)", true),
-//    MAP_REMOVE(Map.class, "java.lang.Object remove(java.lang.Object)", true),
-//    MAP_PUT_ALL(Map.class, "void putAll(java.util.Map)", true),
+    MAP_INIT(Map.class,"void <init>()", true),
+    MAP_GET(Map.class, "java.lang.Object get(java.lang.Object)", true),
+    MAP_PUT(Map.class, "java.lang.Object put(java.lang.Object,java.lang.Object)", true),
+    MAP_SIZE(Map.class, "int size()", true),
+    MAP_IS_EMPTY(Map.class, "boolean isEmpty()", true),
+    MAP_CONTAINS_KEY(Map.class, "boolean containsKey(java.lang.Object)", true),
+    MAP_CONTAINS_VALUE(Map.class, "boolean containsValue(java.lang.Object)", true),
+    MAP_REMOVE(Map.class, "java.lang.Object remove(java.lang.Object)", true),
+    MAP_PUT_ALL(Map.class, "void putAll(java.util.Map)", true),
 //    MAP_CLEAR(Map.class, "void clear()", true),
 //    MAP_KEY_SET(Map.class, "java.util.Set keySet()", true),
 //    MAP_VALUES(Map.class, "java.util.Collection values()", true),
@@ -92,7 +92,7 @@ public enum MethodModel {
 //    MAP_EQUALS(Map.class, "boolean equals(java.lang.Object)", true),
 //    MAP_HASH_CODE(Map.class, "int hashCode()", true),
 //    MAP_GET_OR_DEFAULT(Map.class, "java.lang.Object getOrDefault(java.lang.Object,java.lang.Object)", true),
-//    MAP_PUT_IF_ABSENT(Map.class, "java.lang.Object putIfAbsent(java.lang.Object,java.lang.Object)", true),
+    MAP_PUT_IF_ABSENT(Map.class, "java.lang.Object putIfAbsent(java.lang.Object,java.lang.Object)", true);
 //    MAP_REMOVE_BY_KEY_AND_VALUE(Map.class, "boolean remove(java.lang.Object,java.lang.Object)", true),
 //    MAP_REPLACE_BY_KEY_AND_VALUE(Map.class, "boolean replace(java.lang.Object,java.lang.Object,java.lang.Object)", true),
 //    MAP_REPLACE(Map.class, "java.lang.Object replace(java.lang.Object,java.lang.Object)", true),
@@ -176,15 +176,15 @@ public enum MethodModel {
                     LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
                     -> ctx.mkListWithCollection(args);
 
-//            case MAP_INIT ->
-//            case MAP_GET ->
-//            case MAP_PUT ->
-//            case MAP_SIZE ->
-//            case MAP_IS_EMPTY ->
-//            case MAP_CONTAINS_KEY ->
-//            case MAP_CONTAINS_VALUE ->
-//            case MAP_REMOVE ->
-//            case MAP_PUT_ALL ->
+            case MAP_INIT -> ctx.mkMapInit(args.get(0));
+            case MAP_GET -> ctx.mkMapGet(args.get(0), args.get(1));
+            case MAP_PUT -> ctx.mkMapPut(args.get(0), args.get(1), args.get(2));
+            case MAP_SIZE -> ctx.mkMapLength(args.get(0));
+            case MAP_IS_EMPTY -> ctx.mkMapIsEmpty(args.get(0));
+            case MAP_CONTAINS_KEY -> ctx.mkMapContainsKey(args.get(0), args.get(1));
+            case MAP_CONTAINS_VALUE -> ctx.mkMapContainsValue(args.get(0), args.get(1));
+            case MAP_REMOVE -> ctx.mkMapRemove(args.get(0), args.get(1));
+            case MAP_PUT_ALL -> ctx.mkMapPutAll(args.get(0), args.get(1));
 //            case MAP_CLEAR ->
 //            case MAP_KEY_SET ->
 //            case MAP_VALUES ->
@@ -193,7 +193,7 @@ public enum MethodModel {
 //            case MAP_EQUALS ->
 //            case MAP_HASH_CODE ->
 //            case MAP_GET_OR_DEFAULT ->
-//            case MAP_PUT_IF_ABSENT ->
+            case MAP_PUT_IF_ABSENT -> ctx.mkMapPutIfAbsent(args.get(0), args.get(1), args.get(2));
 //            case MAP_REMOVE_BY_KEY_AND_VALUE ->
 //            case MAP_REPLACE_BY_KEY_AND_VALUE ->
 //            case MAP_REPLACE ->

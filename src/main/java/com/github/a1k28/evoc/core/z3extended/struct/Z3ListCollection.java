@@ -64,9 +64,9 @@ public class Z3ListCollection implements IStack {
                             Integer capacity,
                             Sort elementType,
                             Expr[] arguments) {
-        TupleSort sort = mapSort(ctx, elementType);
+        TupleSort sort = mkListSort(ctx, elementType);
         ArrayExpr arrayExpr = ctx.mkArrayConst("Array"+hashCode, ctx.mkIntSort(), sort);
-        stack.add(hashCode, new ListModel(arrayExpr, sort, mkSentinel(ctx, elementType), capacity));
+        stack.add(hashCode, new ListModel(arrayExpr, sort, mkListSentinel(ctx, elementType), capacity));
         if (arguments != null)
             for (Expr argument : arguments)
                 add(arrayExpr, argument);
@@ -447,7 +447,7 @@ public class Z3ListCollection implements IStack {
     private void validateAndReplaceModelWithNewSort(Expr var1, ListModel listModel, Expr element) {
         Sort elementType = getSort(ctx, element);
         if (!listModel.getSort().equals(elementType)) {
-            TupleSort sort = mapSort(ctx, elementType);
+            TupleSort sort = mkListSort(ctx, elementType);
             ArrayExpr arrayExpr = ctx.mkArrayConst("Array"+ihc(var1),
                     ctx.mkIntSort(), sort);
             for (int i = 0; i < listModel.getSize(); i++)
@@ -455,7 +455,7 @@ public class Z3ListCollection implements IStack {
                         ctx.mkSelect(listModel.getExpr(), ctx.mkInt(i)));
             listModel.setExpr(arrayExpr);
             listModel.setSort(sort);
-            listModel.setSentinel(mkSentinel(ctx, elementType));
+            listModel.setSentinel(mkListSentinel(ctx, elementType));
         }
     }
 
@@ -484,12 +484,10 @@ public class Z3ListCollection implements IStack {
     }
 
     private static int ihc(Object o) {
-        if (o instanceof Expr) {
-            if (o.toString().contains("Array")) {
-                try {
-                    return Integer.parseInt(o.toString().replace("Array", ""));
-                } catch (NumberFormatException ignored) {}
-            }
+        if (o instanceof Expr && o.toString().contains("Array")) {
+            try {
+                return Integer.parseInt(o.toString().replace("Array", ""));
+            } catch (NumberFormatException ignored) {}
         }
         return System.identityHashCode(o);
     }
