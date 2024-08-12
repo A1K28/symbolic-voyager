@@ -4,6 +4,8 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
+import java.util.Optional;
+
 import static com.github.a1k28.evoc.core.z3extended.Z3Helper.*;
 
 public class Z3MapCollection implements IStack {
@@ -29,9 +31,8 @@ public class Z3MapCollection implements IStack {
         return constructor(var1, ctx.mkInt(0));
     }
 
-    public void asd(Expr var1) {
-        MapModel model = stack.get(ihc(var1)).orElseThrow();
-        System.out.println("ASD");
+    public Optional<MapModel> getMap(Expr var1) {
+        return stack.get(ihc(var1));
     }
 
     private Expr constructor(Expr var1, ArithExpr size) {

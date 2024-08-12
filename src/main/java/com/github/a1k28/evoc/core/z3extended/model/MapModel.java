@@ -12,10 +12,6 @@ import lombok.Setter;
 public class MapModel {
     private ArrayExpr array;
     private ArithExpr size;
-
-//    private ArrayExpr unknownList;
-//    private ArithExpr unknownSize;
-
     private TupleSort sort;
     private Expr sentinel;
 

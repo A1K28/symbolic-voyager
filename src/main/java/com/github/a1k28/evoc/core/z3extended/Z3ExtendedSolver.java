@@ -32,7 +32,7 @@ public class Z3ExtendedSolver {
         return solver.getModel();
     }
 
-    public int minimize(IntExpr x) {
+    public int minimize(Expr x) {
         // Binary search for the minimum value of x
         int low = 0;
         int high = Integer.MAX_VALUE;

@@ -2,7 +2,10 @@ package com.github.a1k28.evoc.core.symbolicexecutor;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.core.z3extended.model.MapModel;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
 import com.microsoft.z3.*;
@@ -24,7 +27,7 @@ import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class SymbolicPathCarver {
     private static final Logger log = Logger.getInstance(SymbolicPathCarver.class);
-    private static Solver solver = null;
+    private static Z3ExtendedSolver solver = null;
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
     private final SMethodPath sMethodPath;
@@ -256,15 +259,32 @@ public class SymbolicPathCarver {
         log.info("Path is satisfiable");
         Model model = solver.getModel();
 
-        Map<SVar, String> res = new LinkedHashMap<>();
+        Map<SVar, Object> res = new LinkedHashMap<>();
         for (SVar var : symbolicVarStack.getAll()) {
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER
                     && var.getType() != VarType.FIELD
                     && var.getType() != VarType.METHOD_MOCK) continue;
             Object evaluated = model.eval(var.getExpr(), true);
-            res.put(var, evaluated.toString());
-            log.debug(evaluated + " " + var);
+            log.debug(evaluated + " - " + var.getName());
+            if (SortType.MAP.equals(var.getExpr().getSort())) {
+                MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
+                int size = solver.minimize(mapModel.getSize());
+                for (int i = 0; i < size; i++) {
+                    Expr expr = z3t.mkSelect(mapModel.getArray(), z3t.mkInt(i));
+                    Expr isEmpty = mapModel.isEmpty(expr);
+                    Map<String, String> map = new HashMap<>();
+                    if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
+                        String key = model.eval(mapModel.getKey(expr), true).toString();
+                        String value = model.eval(mapModel.getKey(expr), true).toString();
+                        map.put(key, value);
+                        log.info("Key:Value " + key + ":" + value);
+                    }
+                    res.put(var, map);
+                }
+            } else {
+                res.put(var, evaluated.toString());
+            }
         }
 
         // TODO: handle throw clause

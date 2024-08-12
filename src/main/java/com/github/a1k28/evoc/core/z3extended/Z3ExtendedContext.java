@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ListCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3MapCollection;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SetCollection;
@@ -7,6 +8,7 @@ import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
 import java.util.List;
+import java.util.Optional;
 
 public class Z3ExtendedContext extends Context implements IStack {
     private final Z3SetCollection z3SetCollection;
@@ -134,8 +136,8 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.constructor(var1);
     }
 
-    public void asd(Expr var1) {
-        z3MapCollection.asd(var1);
+    public Optional<MapModel> getMap(Expr var1) {
+        return z3MapCollection.getMap(var1);
     }
 
     public Expr mkMapGet(Expr var1, Expr key) {

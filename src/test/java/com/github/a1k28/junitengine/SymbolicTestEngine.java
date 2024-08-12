@@ -11,7 +11,6 @@ import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
 
-import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -83,7 +82,7 @@ public class SymbolicTestEngine implements TestEngine {
                     methodDescriptor.getTestMethod(),
                     reachableCodes.get(uniqueId));
             // Handle the result as needed
-        } catch (Exception e) {
+        } catch (Throwable e) {
             listener.executionFinished(methodDescriptor, TestExecutionResult.failed(e));
         }
     }
@@ -121,15 +120,35 @@ public class SymbolicTestEngine implements TestEngine {
         assertTrue(reachableCodes.isEmpty());
     }
 
-    private <T> Serializable parse(String value, Class<T> type) {
+    private <T> T parse(Object value, Class<T> type) {
         if (type == Integer.class || type == int.class)
-            return Integer.parseInt(value);
+            return (T) Integer.valueOf(value.toString());
 
         if (type == String.class) {
-            if (value == null || value.isBlank() || value.length() < 2) return value;
-            return value.substring(1, value.length()-1);
+            String v = value.toString();
+            if (value == null || value.toString().isBlank() || value.toString().length() < 2)
+                return (T) value;
+            return (T) value.toString().substring(1, value.toString().length()-1);
+        }
+
+        if (type == Map.class) {
+            if (value == null) return (T) new HashMap<>();
+            Map<?,?> map = (Map<?,?>) value;
+            Map newMap = new HashMap<>();
+            for (Map.Entry<?,?> entry : map.entrySet()) {
+                newMap.put(parseString(entry.getKey()), parseString(entry.getValue()));
+            }
+            return (T) newMap;
         }
 
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
+    }
+
+    private <T> T parseString(Object s) {
+        if (s instanceof String v && v.length() >= 2) {
+            if (v.startsWith("\"") && v.endsWith("\""))
+                return (T) v.substring(1, v.length()-1);
+        }
+        return (T) s;
     }
 }

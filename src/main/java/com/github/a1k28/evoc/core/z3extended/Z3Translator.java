@@ -73,7 +73,15 @@ public class Z3Translator {
     }
 
     public Expr mkExpr(String name, Sort sort) {
-        return ctx.mkConst(name, sort);
+        return ctx.mkFreshConst(name, sort);
+    }
+
+    public IntExpr mkInt(int i) {
+        return ctx.mkInt(i);
+    }
+
+    public Expr mkSelect(ArrayExpr array, IntExpr i) {
+        return ctx.mkSelect(array, i);
     }
 
     public SExpr translateAndWrapValue(Value value, VarType varType) {
@@ -220,11 +228,11 @@ public class Z3Translator {
         }
         if (value instanceof JNewExpr ||
                 value instanceof JNewMultiArrayExpr) {
-            return ctx.mkConst(value.toString(), translateType(value.getType()));
+            return ctx.mkFreshConst(value.toString(), translateType(value.getType()));
         }
         // TODO: handle arrays
         if (value instanceof JNewArrayExpr) {
-            return ctx.mkConst(value.toString(), translateType(value.getType()));
+            return ctx.mkFreshConst(value.toString(), translateType(value.getType()));
         }
         if (value instanceof JArrayRef) {
             // Create an integer sort for array indices
@@ -339,7 +347,7 @@ public class Z3Translator {
             return methodModel.apply(ctx, args);
         } else {
             Sort sort = translateType(invoke.getType());
-            return ctx.mkConst(invoke.toString(), sort);
+            return ctx.mkFreshConst(invoke.toString(), sort);
 //            return handleUnknownMethod(invoke, args);
         }
     }

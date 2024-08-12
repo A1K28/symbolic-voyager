@@ -27,13 +27,6 @@ public class Z3MapCollectionTest {
     public int test_put_with_input_1(Map<String, String> map) {
         if (map.containsKey("ASD"))
             return 0;
-//        Map<String, String> map = new HashMap<>();
-//        map.put("123", "ASD");
-//        map.put(a, "ASD");
-//        if (map.containsKey("TEEEST")) {
-//            System.out.println("123123123");
-//            return 0;
-//        }
         return 1;
     }
 }
