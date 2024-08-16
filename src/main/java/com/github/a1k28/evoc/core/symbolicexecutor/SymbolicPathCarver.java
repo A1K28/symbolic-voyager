@@ -268,21 +268,9 @@ public class SymbolicPathCarver {
                     && var.getType() != VarType.METHOD_MOCK) continue;
             Object evaluated = model.eval(var.getExpr(), true);
             log.debug(evaluated + " - " + var.getName());
+
             if (SortType.MAP.equals(var.getExpr().getSort())) {
-                MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
-                int size = solver.minimize(mapModel.getSize());
-                Map<String, String> map = new HashMap<>();
-                for (int i = 0; i < size; i++) {
-                    Expr expr = z3t.mkSelect(mapModel.getArray(), z3t.mkInt(i));
-                    Expr isEmpty = mapModel.isEmpty(expr);
-                    if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
-                        String key = model.eval(mapModel.getKey(expr), true).toString();
-                        String value = model.eval(mapModel.getKey(expr), true).toString();
-                        map.put(key, value);
-                        log.info("Key:Value " + key + ":" + value);
-                    }
-                }
-                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, map);
+                SVarEvaluated sVarEvaluated = handleMapSatisfiability(model, var);
                 res.add(sVarEvaluated);
             } else {
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated.toString());
@@ -301,6 +289,23 @@ public class SymbolicPathCarver {
 
         satisfiableResults.getResults().add(satisfiableResult);
         log.empty();
+    }
+
+    private SVarEvaluated handleMapSatisfiability(Model model, SVar var) {
+        MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
+        int size = solver.minimize(mapModel.getSize());
+        Map<String, String> map = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            Expr expr = z3t.mkSelect(mapModel.getArray(), z3t.mkInt(i));
+            Expr isEmpty = mapModel.isEmpty(expr);
+            if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
+                String key = model.eval(mapModel.getKey(expr), true).toString();
+                String value = model.eval(mapModel.getKey(expr), true).toString();
+                map.put(key, value);
+                log.info("Key:Value " + key + ":" + value);
+            }
+        }
+        return new SVarEvaluated(var, map);
     }
 
     private void saveParameter(Stmt unit) {
