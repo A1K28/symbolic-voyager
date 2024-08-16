@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
@@ -89,6 +90,7 @@ public class SymbolicTestEngine implements TestEngine {
 
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+        Set<Integer> reachedCodes = new HashSet<>();
         SatisfiableResults sr = new SymbolicPathCarver(
                 testClass.getName(), testMethod.getName()).analyzeSymbolicPaths();
         Class<?>[] paramTypes = null;
@@ -98,11 +100,11 @@ public class SymbolicTestEngine implements TestEngine {
                 paramTypes = testMethod.getParameterTypes();
                 paramNames = new String[paramTypes.length];
                 int j = 0;
-                for (SVar key : res.getSymbolicParameterValues().keySet()) {
+                for (SVarEvaluated key : res.getSymbolicParameterValues()) {
                     // TODO: handle mocked params
-                    if (key.getType() != VarType.PARAMETER)
+                    if (key.getSvar().getType() != VarType.PARAMETER)
                         throw new RuntimeException("MOCKED METHOD INBOUND");
-                    paramNames[j] = key.getName();
+                    paramNames[j] = key.getSvar().getName();
                     j++;
                 }
             }
@@ -110,13 +112,15 @@ public class SymbolicTestEngine implements TestEngine {
             for (int j = 0; j < paramNames.length; j++)
                 parameters[j] = parse(res.getParameter(paramNames[j]), paramTypes[j]);
 
-            int expected = Integer.parseInt(res.getReturnValue().getName());
+            int expected = parse(res.getReturnValue().getEvaluated(), Integer.class);
             int actual = (int) testMethod.invoke(
                     testClass.getDeclaredConstructor().newInstance(), parameters);
 
             assertEquals(expected, actual);
-            assertTrue(reachableCodes.remove(expected));
+            assertTrue(reachableCodes.contains(expected));
+            reachedCodes.add(expected);
         }
+        reachableCodes.removeAll(reachedCodes);
         assertTrue(reachableCodes.isEmpty());
     }
 

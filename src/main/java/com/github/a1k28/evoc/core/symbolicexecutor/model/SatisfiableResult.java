@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.microsoft.z3.BoolExpr;
 import lombok.Getter;
 
@@ -12,15 +13,15 @@ import java.util.Map;
 public class SatisfiableResult {
     private final List<BoolExpr> z3Assertions;
     private final List<SVar> fields;
-    private final SVar returnValue;
+    private final SVarEvaluated returnValue;
     private final boolean continuable;
-    private final Map<SVar, Object> symbolicParameterValues;
+    private final List<SVarEvaluated> symbolicParameterValues;
 
     public SatisfiableResult(BoolExpr[] z3Assertions,
                              List<SVar> fields,
-                             SVar returnValue,
+                             SVarEvaluated returnValue,
                              boolean continuable,
-                             Map<SVar, Object> symbolicParameterValues) {
+                             List<SVarEvaluated> symbolicParameterValues) {
         this.z3Assertions = Arrays.asList(z3Assertions);
         this.fields = fields;
         this.returnValue = returnValue;
@@ -28,10 +29,10 @@ public class SatisfiableResult {
         this.symbolicParameterValues = symbolicParameterValues;
     }
 
-    public <T> T getParameter(String name) {
-        return symbolicParameterValues.entrySet().stream()
-                .filter(e -> name.equals(e.getKey().getName()))
-                .map(e -> (T) e.getValue())
+    public Object getParameter(String name) {
+        return symbolicParameterValues.stream()
+                .filter(e -> name.equals(e.getSvar().getName()))
+                .map(SVarEvaluated::getEvaluated)
                 .findFirst().orElse(null);
     }
 }

@@ -23,9 +23,17 @@ public class Z3MapCollectionTest {
     }
 
     @SymbolicTest({0,1})
-    @DisplayName("test_put_with_input_1")
-    public int test_put_with_input_1(Map<String, String> map) {
+    @DisplayName("test_contains_key_with_input_1")
+    public int test_contains_key_with_input_1(Map<String, String> map) {
         if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_with_input_2")
+    public int test_contains_key_with_input_2(Map<String, String> map) {
+        if (map.containsKey("KEY1") && map.containsKey("KEY2"))
             return 0;
         return 1;
     }

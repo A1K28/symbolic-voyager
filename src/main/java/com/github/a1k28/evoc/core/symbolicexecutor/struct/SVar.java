@@ -3,9 +3,11 @@ package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.microsoft.z3.Expr;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import sootup.core.jimple.basic.Value;
 
+@Setter
 @Getter
 @ToString
 public class SVar {

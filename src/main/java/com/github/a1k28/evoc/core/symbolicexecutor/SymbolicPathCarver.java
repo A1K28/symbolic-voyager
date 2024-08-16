@@ -192,7 +192,7 @@ public class SymbolicPathCarver {
 
             // add return val
             if (leftOp != null)
-                z3t.updateSymbolicVariable(leftOp, result.getReturnValue().getExpr(), varType);
+                z3t.updateSymbolicVariable(leftOp, result.getReturnValue().getSvar().getExpr(), varType);
 
             // add assertions
             Set<BoolExpr> existingAssertions = Set.of(solver.getAssertions());
@@ -240,12 +240,13 @@ public class SymbolicPathCarver {
         } else if (SType.INVOKE != type) {
             if (node.getChildren().isEmpty()) {
                 // if tail
-                SVar returnValue = null;
+                SVarEvaluated returnValue = null;
                 if (node.getType() == SType.RETURN) {
                     JReturnStmt stmt = (JReturnStmt) node.getUnit();
                     Expr expr = z3t.translateValue(stmt.getOp(), VarType.RETURN_VALUE);
-                    returnValue = new SVar(z3t.getValueName(stmt.getOp()),
+                    SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
                             stmt.getOp(), expr, VarType.RETURN_VALUE, true);
+                    returnValue = new SVarEvaluated(svar, solver.getModel().eval(expr, true).toString());
                 }
                 handleSatisfiability(returnValue);
                 return Z3Status.SATISFIABLE_END;
@@ -255,11 +256,11 @@ public class SymbolicPathCarver {
         return Z3Status.SATISFIABLE;
     }
 
-    private void handleSatisfiability(SVar returnValue) {
+    private void handleSatisfiability(SVarEvaluated returnValue) {
         log.info("Path is satisfiable");
         Model model = solver.getModel();
 
-        Map<SVar, Object> res = new LinkedHashMap<>();
+        List<SVarEvaluated> res = new ArrayList<>();
         for (SVar var : symbolicVarStack.getAll()) {
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER
@@ -270,20 +271,22 @@ public class SymbolicPathCarver {
             if (SortType.MAP.equals(var.getExpr().getSort())) {
                 MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
                 int size = solver.minimize(mapModel.getSize());
+                Map<String, String> map = new HashMap<>();
                 for (int i = 0; i < size; i++) {
                     Expr expr = z3t.mkSelect(mapModel.getArray(), z3t.mkInt(i));
                     Expr isEmpty = mapModel.isEmpty(expr);
-                    Map<String, String> map = new HashMap<>();
                     if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
                         String key = model.eval(mapModel.getKey(expr), true).toString();
                         String value = model.eval(mapModel.getKey(expr), true).toString();
                         map.put(key, value);
                         log.info("Key:Value " + key + ":" + value);
                     }
-                    res.put(var, map);
                 }
+                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, map);
+                res.add(sVarEvaluated);
             } else {
-                res.put(var, evaluated.toString());
+                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated.toString());
+                res.add(sVarEvaluated);
             }
         }
 
