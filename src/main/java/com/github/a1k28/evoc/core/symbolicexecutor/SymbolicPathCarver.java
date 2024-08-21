@@ -300,7 +300,7 @@ public class SymbolicPathCarver {
             Expr isEmpty = mapModel.isEmpty(expr);
             if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
                 String key = model.eval(mapModel.getKey(expr), true).toString();
-                String value = model.eval(mapModel.getKey(expr), true).toString();
+                String value = model.eval(mapModel.getValue(expr), true).toString();
                 map.put(key, value);
                 log.info("Key:Value " + key + ":" + value);
             }

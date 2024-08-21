@@ -83,33 +83,33 @@ public enum MethodModel {
     MAP_CONTAINS_VALUE(Map.class, "boolean containsValue(java.lang.Object)", true),
     MAP_REMOVE(Map.class, "java.lang.Object remove(java.lang.Object)", true),
     MAP_PUT_ALL(Map.class, "void putAll(java.util.Map)", true),
-//    MAP_CLEAR(Map.class, "void clear()", true),
+    MAP_CLEAR(Map.class, "void clear()", true),
 //    MAP_KEY_SET(Map.class, "java.util.Set keySet()", true),
 //    MAP_VALUES(Map.class, "java.util.Collection values()", true),
 //    MAP_ENTRY_SET(Map.class, "java.util.Set entrySet()", true),
-////    MAP_PUT(Object.class, "<sootup.dummy.InvokeDynamic: java.util.function.Consumer accept()>", true),
+//    MAP_PUT(Object.class, "<sootup.dummy.InvokeDynamic: java.util.function.Consumer accept()>", true),
 //    MAP_FOR_EACH(Map.class, "void forEach(java.util.function.Consumer)", true),
-//    MAP_EQUALS(Map.class, "boolean equals(java.lang.Object)", true),
+    MAP_EQUALS(Map.class, "boolean equals(java.lang.Object)", true),
 //    MAP_HASH_CODE(Map.class, "int hashCode()", true),
-//    MAP_GET_OR_DEFAULT(Map.class, "java.lang.Object getOrDefault(java.lang.Object,java.lang.Object)", true),
-    MAP_PUT_IF_ABSENT(Map.class, "java.lang.Object putIfAbsent(java.lang.Object,java.lang.Object)", true);
-//    MAP_REMOVE_BY_KEY_AND_VALUE(Map.class, "boolean remove(java.lang.Object,java.lang.Object)", true),
-//    MAP_REPLACE_BY_KEY_AND_VALUE(Map.class, "boolean replace(java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    MAP_REPLACE(Map.class, "java.lang.Object replace(java.lang.Object,java.lang.Object)", true),
+    MAP_GET_OR_DEFAULT(Map.class, "java.lang.Object getOrDefault(java.lang.Object,java.lang.Object)", true),
+    MAP_PUT_IF_ABSENT(Map.class, "java.lang.Object putIfAbsent(java.lang.Object,java.lang.Object)", true),
+    MAP_REMOVE_BY_KEY_AND_VALUE(Map.class, "boolean remove(java.lang.Object,java.lang.Object)", true),
+    MAP_REPLACE_BY_KEY_AND_VALUE(Map.class, "boolean replace(java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    MAP_REPLACE(Map.class, "java.lang.Object replace(java.lang.Object,java.lang.Object)", true),
 //    MAP_OF_ENTRIES(Map.class, "java.util.Map ofEntries(java.util.Map$Entry[])", false),
 //    MAP_ENTRY(Map.class, "java.util.Map$Entry entry(java.lang.Object,java.lang.Object)", false),
-//    MAP_COPY_OF(Map.class, "java.util.Map copyOf(java.util.Map)", false),
-//    MAP_OF(Map.class, "java.util.Map of()", false),
-//    MAP_OF_1(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object)", false),
-//    MAP_OF_2(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
-//    MAP_OF_3(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
-//    MAP_OF_4(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_5(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_6(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_7(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_8(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_9(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
-//    MAP_OF_10(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false);
+    MAP_COPY_OF(Map.class, "java.util.Map copyOf(java.util.Map)", false),
+    MAP_OF(Map.class, "java.util.Map of()", false),
+    MAP_OF_1(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object)", false),
+    MAP_OF_2(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    MAP_OF_3(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    MAP_OF_4(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_5(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_6(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_7(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_8(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_9(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false),
+    MAP_OF_10(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object),java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object", false);
 
     // computeIfAbsent
     // computeIfPresent
@@ -176,6 +176,12 @@ public enum MethodModel {
                     LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
                     -> ctx.mkListWithCollection(args);
 
+            case SET_RETAIN_ALL -> ctx.mkSetIntersection(args.get(0), args.get(1));
+            case SET_ADD -> ctx.mkSetAdd(args.get(0), args.get(1));
+            case SET_LEN -> ctx.mkSetLength(args.get(0));
+            case SET_CONTAINS -> ctx.mkSetContains(args.get(0), args.get(1));
+            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
+
             case MAP_INIT -> ctx.mkMapInit(args.get(0));
             case MAP_GET -> ctx.mkMapGet(args.get(0), args.get(1));
             case MAP_PUT -> ctx.mkMapPut(args.get(0), args.get(1), args.get(2));
@@ -185,28 +191,17 @@ public enum MethodModel {
             case MAP_CONTAINS_VALUE -> ctx.mkMapContainsValue(args.get(0), args.get(1));
             case MAP_REMOVE -> ctx.mkMapRemove(args.get(0), args.get(1));
             case MAP_PUT_ALL -> ctx.mkMapPutAll(args.get(0), args.get(1));
-//            case MAP_CLEAR ->
-//            case MAP_KEY_SET ->
-//            case MAP_VALUES ->
-//            case MAP_ENTRY_SET ->
-//            case MAP_FOR_EACH ->
-//            case MAP_EQUALS ->
-//            case MAP_HASH_CODE ->
-//            case MAP_GET_OR_DEFAULT ->
+            case MAP_CLEAR -> ctx.mkMapClear(args.get(0));
+            case MAP_EQUALS -> ctx.mkMapEquals(args.get(0), args.get(1));
+            case MAP_GET_OR_DEFAULT -> ctx.mkMapGetOrDefault(args.get(0), args.get(1), args.get(2));
             case MAP_PUT_IF_ABSENT -> ctx.mkMapPutIfAbsent(args.get(0), args.get(1), args.get(2));
-//            case MAP_REMOVE_BY_KEY_AND_VALUE ->
-//            case MAP_REPLACE_BY_KEY_AND_VALUE ->
-//            case MAP_REPLACE ->
-//            case MAP_OF_ENTRIES ->
-//            case MAP_ENTRY ->
-//            case MAP_COPY_OF ->
-//            case MAP_OF, MAP_OF_1, MAP_OF_2, MAP_OF_3, MAP_OF_4, MAP_OF_5, MAP_OF_6, MAP_OF_7, MAP_OF_8, MAP_OF_9, MAP_OF_10 ->
-
-            case SET_RETAIN_ALL -> ctx.mkSetIntersection(args.get(0), args.get(1));
-            case SET_ADD -> ctx.mkSetAdd(args.get(0), args.get(1));
-            case SET_LEN -> ctx.mkSetLength(args.get(0));
-            case SET_CONTAINS -> ctx.mkSetContains(args.get(0), args.get(1));
-            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
+            case MAP_REMOVE_BY_KEY_AND_VALUE -> ctx.mkMapRemove(args.get(0), args.get(1), args.get(2));
+            case MAP_REPLACE_BY_KEY_AND_VALUE -> ctx.mkMapReplace(args.get(0), args.get(1), args.get(2), args.get(3));
+            case MAP_REPLACE -> ctx.mkMapReplace(args.get(0), args.get(1), args.get(2));
+            case MAP_COPY_OF -> ctx.mkMapCopyOf(args.get(0));
+            case MAP_OF, MAP_OF_1, MAP_OF_2, MAP_OF_3, MAP_OF_4, MAP_OF_5,
+                    MAP_OF_6, MAP_OF_7, MAP_OF_8, MAP_OF_9, MAP_OF_10
+                    -> ctx.mkMapOf(args);
         };
     }
 

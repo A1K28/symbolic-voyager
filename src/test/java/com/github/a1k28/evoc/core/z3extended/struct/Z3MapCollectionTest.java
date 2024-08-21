@@ -9,9 +9,59 @@ import java.util.List;
 import java.util.Map;
 
 public class Z3MapCollectionTest {
+    @SymbolicTest({0})
+    @DisplayName("test_get_1")
+    public int test_get_1(String a) {
+        Map<String, String> map = new HashMap<>();
+        map.put(a, "ASD");
+
+        if (map.get(a).equals("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0})
+    @DisplayName("test_put_overwrite_1")
+    public int test_put_overwrite_1(String a) {
+        Map<String, String> map = new HashMap<>();
+        map.put(a, "ASD");
+        map.put(a, "123");
+
+        if (map.get(a).equals("123"))
+            return 0;
+        if (map.get(a).equals("ASD"))
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0})
+    @DisplayName("test_size_1")
+    public int test_size_1(String a, String b) {
+        Map<String, String> map = new HashMap<>();
+        map.put(a, "ASD");
+        map.put(b, "123");
+
+        if (map.size() == 2)
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0, 1})
+    @DisplayName("test_size_2")
+    public int test_size_2(String a, String b) {
+        Map<String, String> map = new HashMap<>();
+        map.put(a, "ASD");
+        if (a.equals("RANDOM TEXT"))
+            map.put(b, "123");
+
+        if (map.size() == 2)
+            return 0;
+        return 1;
+    }
+
     @SymbolicTest({0,1})
-    @DisplayName("test_put_1")
-    public int test_put_1(String a) {
+    @DisplayName("test_contains_key_1")
+    public int test_contains_key_1(String a) {
         Map<String, String> map = new HashMap<>();
         map.put("123", "ASD");
         map.put(a, "ASD");

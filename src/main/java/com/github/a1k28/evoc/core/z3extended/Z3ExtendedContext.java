@@ -172,8 +172,40 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.putAll(var1, var2);
     }
 
+    public Expr mkMapClear(Expr var1) {
+        return z3MapCollection.clear(var1);
+    }
+
+    public Expr mkMapEquals(Expr var1, Expr var2) {
+        return z3MapCollection.equals(var1, var2);
+    }
+
+    public Expr mkMapGetOrDefault(Expr var1, Expr key, Expr def) {
+        return z3MapCollection.getOrDefault(var1, key, def);
+    }
+
     public Expr mkMapPutIfAbsent(Expr var1, Expr key, Expr value) {
         return z3MapCollection.putIfAbsent(var1, key, value);
+    }
+
+    public Expr mkMapRemove(Expr var1, Expr key, Expr value) {
+        return z3MapCollection.removeByKeyAndValue(var1, key, value);
+    }
+
+    public Expr mkMapReplace(Expr var1, Expr key, Expr value) {
+        return z3MapCollection.replace(var1, key, value);
+    }
+
+    public Expr mkMapReplace(Expr var1, Expr key, Expr oldValue, Expr newValue) {
+        return z3MapCollection.replaceByKeyAndValue(var1, key, oldValue, newValue);
+    }
+
+    public Expr mkMapCopyOf(Expr var1) {
+        return z3MapCollection.copyOf(var1);
+    }
+
+    public Expr mkMapOf(List<Expr> vars) {
+        return z3MapCollection.of(vars.toArray(new Expr[0]));
     }
 
     // sets
