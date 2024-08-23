@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,11 +18,31 @@ public class Z3MapCollection implements IStack {
     @Override
     public void push() {
         stack.push();
+
+//        List<MapModel> all = stack.getAll();
+//        for (MapModel model : all) {
+//            int hashCode = ihc(model.getArray());
+//            constructor(hashCode, model.getSize());
+//            MapModel newModel = stack.get(hashCode).orElseThrow();
+//            ArrayExpr arrayCopy = ctx.mkStore(
+//                    model.getArray(),
+//                    ctx.mkInt(0),
+//                    ctx.mkSelect(model.getArray(), ctx.mkInt(0)));
+//            newModel.setArray(arrayCopy);
+//            newModel.setSize(model.getSize());
+//        }
     }
 
     @Override
     public void pop() {
         stack.pop();
+
+//        // pop individual elements from all maps that have gone past the available stack
+//        List<MapModel> all = stack.getAll();
+//        IntExpr stackLowerBound = ctx.mkInt(stack.getIndex());
+//        for (MapModel model : all) {
+//            popEntriesFromStack(model, stackLowerBound);
+//        }
     }
 
     public Z3MapCollection(Context context) {
@@ -42,7 +63,8 @@ public class Z3MapCollection implements IStack {
         ArrayExpr array = arrayConstructor(hashCode);
 
         MapModel mapModel = new MapModel(
-                array, size, sort, mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
+                hashCode, array, size, sort,
+                mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
         stack.add(hashCode, mapModel);
 
         return array;
@@ -66,11 +88,11 @@ public class Z3MapCollection implements IStack {
     }
 
     public Expr put(Expr var1, Expr key, Expr value) {
-        return put(var1, key, value, ctx.mkBool(false));
+        return put(var1, key, value, false);
     }
 
     public Expr putIfAbsent(Expr var1, Expr key, Expr value) {
-        return put(var1, key, value, ctx.mkBool(true));
+        return put(var1, key, value, true);
     }
 
     public Expr size(Expr var1) {
@@ -167,7 +189,7 @@ public class Z3MapCollection implements IStack {
                         put(target,
                                 source.getKey(ctx.mkSelect(source.getArray(), i)),
                                 source.getValue(ctx.mkSelect(source.getArray(), i)),
-                                ctx.mkBool(false)
+                                false
                         )
                 ),
                 1, null, null, null, null
@@ -198,10 +220,10 @@ public class Z3MapCollection implements IStack {
                 new Expr[]{i},
                 ctx.mkImplies(condition, action),
                 1,
-                null,           // quantifier ID
-                null,           // skolem ID
-                null,           // patterns
-                null            // no-patterns
+                null,
+                null,
+                null,
+                null
         );
 
         Z3Translator.makeSolver().add(rule);
@@ -310,59 +332,14 @@ public class Z3MapCollection implements IStack {
 
     public Expr copyOf(Expr var1) {
         MapModel model = getModel(ihc(var1), ctx.mkInt(0));
-        MapModel newModel = getModel(UUID.randomUUID().toString().hashCode(), model.getSize());
-
-        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
-
-        BoolExpr condition = ctx.mkAnd(
-                ctx.mkLe(ctx.mkInt(0), i),
-                ctx.mkLt(i, model.getSize())
-        );
-        BoolExpr action = ctx.mkEq(
-                ctx.mkSelect(model.getArray(), i),
-                ctx.mkSelect(newModel.getArray(), i)
-        );
-
-        BoolExpr rule = ctx.mkForall(
-                new Expr[]{i},
-                ctx.mkImplies(condition, action),
-                1,
-                null,           // quantifier ID
-                null,           // skolem ID
-                null,           // patterns
-                null            // no-patterns
-        );
-
-        Z3Translator.makeSolver().add(rule);
-
-        return newModel.getArray();
+        return copyOf(model, UUID.randomUUID().toString().hashCode()).getArray();
     }
 
     public Expr of(Expr... vars) {
         MapModel model = getModel(UUID.randomUUID().toString().hashCode(), ctx.mkInt(0));
         for (int i = 0; i < vars.length; i+=2)
-            put(model, vars[i], vars[i+1], ctx.mkBool(false));
+            put(model, vars[i], vars[i+1], false);
         return model.getArray();
-    }
-
-    private Expr getEntry(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
-        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
-        BoolExpr body = ctx.mkAnd(
-                ctx.mkLe(ctx.mkInt(0), i),
-                ctx.mkLt(i, model.getSize()),
-                ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
-                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), i), valueComparison), expr)
-        );
-
-        BoolExpr exists = ctx.mkExists(new Expr[]{i}, body, 1,
-                null, null, null, null);
-
-        BoolExpr constraint = ctx.mkImplies(exists, body);
-        Z3Translator.makeSolver().add(constraint);
-
-        return ctx.mkITE(exists,
-                ctx.mkSelect(model.getArray(), i),
-                defaultValue);
     }
 
     private BoolExpr contains(Expr var1, Expr expr, boolean valueComparison) {
@@ -380,19 +357,43 @@ public class Z3MapCollection implements IStack {
                 null, null, null, null);
     }
 
-    private Expr put(Expr var1, Expr key, Expr value, BoolExpr shouldBeAbsent) {
-        MapModel model = getModel(var1);
-        return put(model, key, value, shouldBeAbsent);
+    private MapModel copyOf(MapModel model, int hashCode) {
+//        MapModel newModel = getModel(hashCode, model.getSize());
+        constructor(hashCode, model.getSize());
+        MapModel newModel = stack.get(hashCode).orElseThrow();
+
+        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+
+        BoolExpr condition = ctx.mkAnd(
+                ctx.mkLe(ctx.mkInt(0), i),
+                ctx.mkLt(i, model.getSize())
+        );
+        BoolExpr action = ctx.mkEq(
+                ctx.mkSelect(model.getArray(), i),
+                ctx.mkSelect(newModel.getArray(), i)
+        );
+
+        BoolExpr rule = ctx.mkForall(
+                new Expr[]{i},
+                ctx.mkImplies(condition, action),
+                1, null, null, null, null
+        );
+
+        Z3Translator.makeSolver().add(rule);
+
+        return newModel;
     }
 
-    private Expr put(MapModel model, Expr key, Expr value, BoolExpr shouldBeAbsent) {
-        // check for existence (same as getEntry method)
+    private Expr getEntry(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
         IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+//        IntExpr stackSize = ctx.mkInt(stack.getIndex());
+
         BoolExpr body = ctx.mkAnd(
                 ctx.mkLe(ctx.mkInt(0), i),
                 ctx.mkLt(i, model.getSize()),
                 ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
-                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), i), false), key)
+                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), i), valueComparison), expr)
+//                ctx.mkGe(stackSize, model.getStackIndex(ctx.mkSelect(model.getArray(), i)))
         );
 
         BoolExpr exists = ctx.mkExists(new Expr[]{i}, body, 1,
@@ -401,20 +402,159 @@ public class Z3MapCollection implements IStack {
         BoolExpr constraint = ctx.mkImplies(exists, body);
         Z3Translator.makeSolver().add(constraint);
 
-        Expr previousValue = ctx.mkITE(exists,
+        return ctx.mkITE(exists,
                 ctx.mkSelect(model.getArray(), i),
-                model.getSentinel());
+                defaultValue);
+    }
 
-        BoolExpr isAbsent = ctx.mkNot(exists);
-        BoolExpr absenceSatisfiability = (BoolExpr) ctx.mkITE(shouldBeAbsent,
+    public Expr getEntry2(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
+        IntExpr i = ctx.mkIntConst("i");
+        IntExpr j = ctx.mkIntConst("j");
+//        IntExpr stackSize = ctx.mkInt(stack.getIndex());
+
+        // Function to check if an element matches the key
+        BoolExpr isMatchI = ctx.mkAnd(
+                ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
+                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), i), valueComparison), expr)
+//                ctx.mkGe(stackSize, model.getStackIndex(ctx.mkSelect(model.getArray(), i)))
+        );
+        BoolExpr isMatchJ = ctx.mkAnd(
+                ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), j))),
+                ctx.mkEq(getKeyOrValue(model, ctx.mkSelect(model.getArray(), j), valueComparison), expr)
+//                ctx.mkGe(stackSize, model.getStackIndex(ctx.mkSelect(model.getArray(), j)))
+        );
+
+        // Condition: i is the index of the last matching element
+        BoolExpr lastMatchCondition = ctx.mkAnd(
+                ctx.mkGe(i, ctx.mkInt(0)),
+                ctx.mkLt(i, model.getSize()),
+                isMatchI,
+                ctx.mkForall(new Expr[]{j},
+                        ctx.mkImplies(
+                                ctx.mkAnd(
+                                        ctx.mkGt(j, i),
+                                        ctx.mkLt(j, model.getSize())
+                                ),
+                                ctx.mkNot(isMatchJ)
+                        ),
+                        1, null, null, null, null
+                )
+        );
+
+        // If a matching element exists, result is the element at index i
+        // Otherwise, result is a default value (you can change this as needed)
+        BoolExpr exists = ctx.mkExists(new Expr[]{i}, lastMatchCondition, 1,
+                null, null, null, null);
+
+        BoolExpr constraint = ctx.mkImplies(exists, lastMatchCondition);
+        Z3Translator.makeSolver().add(constraint);
+
+        return ctx.mkITE(
+                exists,
+                ctx.mkSelect(model.getArray(), i),
+                defaultValue
+        );
+    }
+
+    private Expr getKeyOrValue(MapModel model, Expr expr, boolean valueComparison) {
+        return valueComparison ? model.getValue(expr) : model.getKey(expr);
+    }
+
+    private Expr put(Expr var1, Expr key, Expr value, boolean shouldBeAbsent) {
+        MapModel model = getModel(var1);
+        return put(model, key, value, shouldBeAbsent);
+    }
+
+    private Expr put(MapModel model, Expr key, Expr value, boolean shouldBeAbsent) {
+        // copy inside stack
+        model = copyModel(model);
+
+        // Create a boolean variable to represent whether the index is valid
+        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+//        BoolExpr exists = (BoolExpr) ctx.mkFreshConst("exists", ctx.mkBoolSort());
+
+        // Create the updated array
+        ArrayExpr updatedArray = arrayConstructor(model.getHashCode());
+
+        // If the index is valid, update the array at that index. Otherwise, keep the original array.
+//        ArrayExpr updatedArray = (ArrayExpr) ctx.mkITE(exists,
+//                ctx.mkStore(model.getArray(), i, model.getSentinel()),
+//                model.getArray());
+
+        // Add constraints to define when an index is valid (you may need to adjust this based on your specific requirements)
+        BoolExpr existenceCondition = ctx.mkAnd(
+                ctx.mkLe(ctx.mkInt(0), i),
+                ctx.mkLt(i, model.getSize()),
+                ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
+                ctx.mkEq(model.getKey(ctx.mkSelect(model.getArray(), i)), key)
+        );
+        BoolExpr exists = ctx.mkExists(new Expr[]{i}, existenceCondition, 1,
+                null, null, null, null);
+
+        BoolExpr updateCondition = (BoolExpr) ctx.mkITE(exists,
+                ctx.mkEq(updatedArray, ctx.mkStore(model.getArray(), i, model.getSentinel())),
+                ctx.mkEq(updatedArray, model.getArray()));
+
+//        ArrayExpr updatedArray = (ArrayExpr) ctx.mkITE(exists,
+//                ctx.mkStore(model.getArray(), i, model.getSentinel()),
+//                model.getArray());
+
+        updatedArray = ctx.mkStore(updatedArray, model.getSize(),
+                model.mkDecl(key, value, ctx.mkBool(false), ctx.mkInt(stack.getIndex())));
+
+        // Add constraints to the solver
+        Z3Translator.makeSolver().add(ctx.mkImplies(exists, existenceCondition));
+        Z3Translator.makeSolver().add(updateCondition);
+
+        ArithExpr newSize = increment(ctx, model.getSize());
+
+        model.setArray(updatedArray);
+        model.setSize(newSize);
+
+        return model.getValue(model.getSentinel());
+    }
+
+    private Expr put2(MapModel model, Expr key, Expr value, boolean shouldBeAbsent) {
+        // copy inside stack
+        model = copyModel(model);
+
+        boolean shouldCheckForExisting = true;
+
+        Expr previousValue = model.getSentinel();
+        BoolExpr isAbsent = ctx.mkBool(true);
+
+        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+        if (shouldCheckForExisting) {
+            BoolExpr body = ctx.mkAnd(
+                    ctx.mkLe(ctx.mkInt(0), i),
+                    ctx.mkLt(i, model.getSize()),
+                    ctx.mkNot(model.isEmpty(ctx.mkSelect(model.getArray(), i))),
+                    ctx.mkEq(model.getKey(ctx.mkSelect(model.getArray(), i)), key)
+            );
+
+            BoolExpr exists = ctx.mkExists(new Expr[]{i}, body, 1,
+                    null, null, null, null);
+
+            BoolExpr constraint = ctx.mkImplies(exists, body);
+            Z3Translator.makeSolver().add(constraint);
+
+            previousValue = ctx.mkITE(exists,
+                    ctx.mkSelect(model.getArray(), i),
+                    previousValue);
+            isAbsent = ctx.mkNot(exists);
+        }
+
+        // check for existence (same as getEntry method)
+
+        BoolExpr absenceSatisfiability = (BoolExpr) ctx.mkITE(ctx.mkBool(shouldBeAbsent),
                 isAbsent, ctx.mkBool(true));
 
         // replace element
         ArrayExpr array = model.getArray();
 
-        i = (IntExpr) ctx.mkITE(isAbsent, model.getSize(), i);
+        IntExpr index = (IntExpr) ctx.mkITE(isAbsent, model.getSize(), i);
         array = (ArrayExpr) ctx.mkITE(absenceSatisfiability,
-                ctx.mkStore(array, i, model.mkDecl(key, value, ctx.mkBool(false))),
+                ctx.mkStore(array, index, model.mkDecl(key, value, ctx.mkBool(false), ctx.mkInt(stack.getIndex()))),
                 array);
 
         ArithExpr newSize = (ArithExpr) ctx.mkITE(isAbsent,
@@ -427,39 +567,99 @@ public class Z3MapCollection implements IStack {
         return model.getValue(previousValue);
     }
 
-    private Expr getKeyOrValue(MapModel model, Expr expr, boolean valueComparison) {
-        return valueComparison ? model.getValue(expr) : model.getKey(expr);
-    }
-
     private ArithExpr sizeReduced(MapModel model) {
         ArrayExpr array = model.getArray();
         ArithExpr size = model.getSize();
+//        IntExpr stackSize = ctx.mkInt(stack.getIndex());
 
-        IntExpr count = ctx.mkIntConst("count");
-        IntExpr index = ctx.mkIntConst("index");
+        IntExpr count = (IntExpr) ctx.mkFreshConst("count", ctx.mkIntSort());
+        IntExpr index = (IntExpr) ctx.mkFreshConst("index", ctx.mkIntSort());
 
-        // Create a quantified formula to count matches
-        BoolExpr body = ctx.mkAnd(
-                ctx.mkLe(ctx.mkInt(0), index),
-                ctx.mkLt(index, size),
-                ctx.mkNot(model.isEmpty(ctx.mkSelect(array, index)))
-        );
+        // Create a function to represent the count at each index
+        FuncDecl<IntSort> countFunc = ctx.mkFuncDecl("countFunc", ctx.getIntSort(), ctx.getIntSort());
 
-        BoolExpr quantifier = ctx.mkForall(
-                new Expr[]{index},
-                ctx.mkITE(body,
-                        ctx.mkEq(count, ctx.mkAdd(count, ctx.mkInt(1))),
-                        ctx.mkEq(count, count)),
+        // Base case: count is 0 at index -1
+        BoolExpr base = ctx.mkEq(ctx.mkApp(countFunc, ctx.mkInt(-1)), ctx.mkInt(0));
+
+        // Recursive case: count at current index depends on previous index
+        BoolExpr recursive = ctx.mkForall(new Expr[]{index},
+                ctx.mkImplies(
+                        ctx.mkAnd(
+                                ctx.mkGe(index, ctx.mkInt(0)),
+                                ctx.mkLt(index, size)
+//                                ctx.mkGe(stackSize, model.getStackIndex(ctx.mkSelect(model.getArray(), index)))
+                        ),
+                        ctx.mkEq(
+                                ctx.mkApp(countFunc, index),
+                                ctx.mkITE(
+                                        model.isEmpty(ctx.mkSelect(array, index)),
+                                        ctx.mkApp(countFunc, ctx.mkSub(index, ctx.mkInt(1))),
+                                        ctx.mkAdd(ctx.mkApp(countFunc, ctx.mkSub(index, ctx.mkInt(1))), ctx.mkInt(1))
+                                )
+                        )
+                ),
                 1, null, null, null, null
         );
 
-        // Create assertions
-        BoolExpr assertions = ctx.mkAnd(
-                ctx.mkEq(count, ctx.mkInt(0)),  // Initialize count to 0
-                quantifier
+        // The final count is the count at the last index (size - 1)
+        BoolExpr finalCount = ctx.mkEq(count, ctx.mkApp(countFunc, ctx.mkSub(size, ctx.mkInt(1))));
+
+        // Combine all constraints
+        BoolExpr constraints = ctx.mkAnd(base, recursive, finalCount);
+        Z3Translator.makeSolver().add(constraints);
+
+        return count;
+    }
+
+    private void popEntriesFromStack(MapModel model, IntExpr stackLowerBound) {
+        ArrayExpr updatedArray = arrayConstructor(ihc(model.getArray()));
+
+        IntExpr i = (IntExpr) ctx.mkFreshConst("i", ctx.getIntSort());
+
+        BoolExpr condition = ctx.mkAnd(
+                ctx.mkLe(ctx.mkInt(0), i),
+                ctx.mkLt(i, model.getSize()),
+                ctx.mkLt(stackLowerBound, model.getStackIndex(ctx.mkSelect(model.getArray(), i)))
         );
 
-        return (ArithExpr) ctx.mkITE(assertions, count, ctx.mkInt(0));
+        BoolExpr action = ctx.mkEq(
+                ctx.mkSelect(updatedArray, i),
+                model.getSentinel()
+        );
+
+        BoolExpr rule = ctx.mkForall(
+                new Expr[]{i},
+                ctx.mkImplies(condition, action),
+                1,
+                null,           // quantifier ID
+                null,           // skolem ID
+                null,           // patterns
+                null            // no-patterns
+        );
+
+        Z3Translator.makeSolver().add(rule);
+
+        model.setArray(updatedArray);
+    }
+
+    private MapModel copyModel(MapModel model) {
+        MapModel newModel = new MapModel(model);
+        stack.add(newModel.getHashCode(), newModel);
+        return newModel;
+
+        // TODO: only copy model iff stack index has been passed
+//        constructor(model.getHashCode(), model.getSize());
+//        MapModel newModel = stack.get(model.getHashCode()).orElseThrow();
+//        ArrayExpr array = model.getArray();
+//        ArrayExpr newArray = newModel.getArray();
+//        Z3Translator.makeSolver().add(ctx.mkEq(array, newArray));
+////        ArrayExpr arrayCopy = ctx.mkStore(
+////                model.getArray(),
+////                ctx.mkInt(0),
+////                ctx.mkSelect(array, ctx.mkInt(0)));
+//        newModel.setArray(newArray);
+//        newModel.setSize(model.getSize());
+//        return newModel ;
     }
 
     private MapModel getModel(Expr var1) {
@@ -473,9 +673,9 @@ public class Z3MapCollection implements IStack {
         }
         return stack.get(hashCode).orElseThrow();
     }
-
+// gremlin niko
     public static int ihc(Object o) {
-        if (o instanceof Expr && o.toString().contains("Map")) {
+        if (o instanceof Expr && o.toString().startsWith("Map")) {
             try {
                 return Integer.parseInt(o.toString().replace("Map", ""));
             } catch (NumberFormatException ignored) {}
