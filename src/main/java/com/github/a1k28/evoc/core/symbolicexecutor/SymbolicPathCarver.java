@@ -293,10 +293,11 @@ public class SymbolicPathCarver {
 
     private SVarEvaluated handleMapSatisfiability(Model model, SVar var) {
         MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
-        int size = solver.minimize(mapModel.getSize());
+//        Expr sizeExpr = Z3Translator.getContext().mkMapLength(var.getExpr());
+//        int size = solver.minimize(sizeExpr);
         Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < size; i++) {
-            Expr expr = z3t.mkSelect(mapModel.getArray(), z3t.mkInt(i));
+        for (Expr keyExpr :  mapModel.getKeys()) {
+            Expr expr = z3t.mkSelect(mapModel.getArray(), keyExpr);
             Expr isEmpty = mapModel.isEmpty(expr);
             if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
                 String key = model.eval(mapModel.getKey(expr), true).toString();
@@ -344,109 +345,9 @@ public class SymbolicPathCarver {
 
     public static void main(String[] args) throws ClassNotFoundException {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-//        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-//        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
-//                .analyzeSymbolicPaths();
-
-        Z3Translator.initZ3();
-
-        Context ctx = new Context();
-        ArrayExpr array = ctx.mkArrayConst("arr", ctx.getIntSort(), ctx.getIntSort());
-
-// Create a variable to be "removed"
-        IntExpr variableToRemove = ctx.mkInt(400);
-        IntExpr varrr = ctx.mkIntConst("x");
-
-// Store some constants in the array
-        array = ctx.mkStore(array, ctx.mkInt(0), ctx.mkInt(42));
-        array = ctx.mkStore(array, ctx.mkInt(1), varrr);
-        array = ctx.mkStore(array, ctx.mkInt(2), ctx.mkInt(7));
-        array = ctx.mkStore(array, ctx.mkInt(3), ctx.mkInt(142));
-
-// Assume the original size is 3
-//        IntExpr originalSize = ctx.mkInt(3);
-
-// Create a new array with the variable "removed"
-        Expr<IntSort> sentinel = ctx.mkConst("null", ctx.mkIntSort()); // Use -1 as a sentinel value
-//        Expr<IntSort> sentinel = ctx.mkInt("99999999999999999999");
-//        Expr<IntSort> sentinel = ctx.mkInt(-1); // Use -1 as a sentinel value
-
-// Create a function to "remove" the variable from each index
-        BoolExpr condition = ctx.mkEq(variableToRemove, ctx.mkSelect(array, ctx.mkIntConst("i")));
-        Expr<IntSort> thenExpr = sentinel;
-        Expr<IntSort> elseExpr = ctx.mkSelect(array, ctx.mkIntConst("i"));
-        Expr<IntSort> removalFunction = ctx.mkITE(condition, thenExpr, elseExpr);
-
-// Apply the removal function to the entire array
-        ArrayExpr newArray = ctx.mkLambda(new Expr[]{ctx.mkIntConst("i")}, removalFunction);
-
-        ArithExpr newSize = ctx.mkInt(0);
-        ArithExpr originalSize = ctx.mkInt(4);
-        for (int i = 0; i < 4; i++) {
-            Expr condition1 = ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), sentinel);
-            Expr thenExpr1 = ctx.mkInt(0);
-            Expr elseExpr1 = ctx.mkInt(1);
-            newSize = ctx.mkAdd(newSize, ctx.mkITE(condition1, thenExpr1, elseExpr1));
-
-//            newSize = ctx.mkAdd(newSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(0), ctx.mkInt(1)));
-//            originalSize = ctx.mkAdd(originalSize, ctx.mkITE(ctx.mkEq(ctx.mkSelect(newArray, ctx.mkInt(i)), defaultValue), ctx.mkInt(1), ctx.mkInt(1)));
-        }
-
-// Create a function to count non-default values
-//        FuncDecl<IntSort> countFunc = ctx.mkFuncDecl("countFunc", ctx.getIntSort(), ctx.getIntSort());
-//        ctx.mkForall(
-//                new Expr[]{ctx.mkIntConst("i")},
-//                ctx.mkEq(
-//                        ctx.mkApp(countFunc, ctx.mkIntConst("i")),
-//                        ctx.mkITE(
-//                                ctx.mkEq(ctx.mkSelect(newArray, ctx.mkIntConst("i")), defaultValue),
-//                                ctx.mkInt(0),
-//                                ctx.mkInt(1)
-//                        )
-//                ),
-//                1,
-//                null,
-//                null,
-//                null,
-//                null
-//        );
-//
-//// Sum up the count for all indices up to the original size
-//        for (int i = 0; i < 3; i++) {
-//            newSize = ctx.mkAdd(newSize, (ArithExpr) ctx.mkApp(countFunc, ctx.mkInt(i)));
-//        }
-
-// Now newSize represents the size of the new array after removal
-
-// We can use the solver to reason about the new size
-        Solver solver = ctx.mkSolver();
-
-// Check if the new size is less than the original size
-        BoolExpr sizeReduced = ctx.mkLt(newSize, originalSize);
-//        solver.push();
-        solver.add(ctx.mkEq(sizeReduced, ctx.mkBool(true)));
-
-//        if (solver.check() == Status.SATISFIABLE) {
-//            System.out.println("The size of the array may have been reduced");
-//            Model model = solver.getModel();
-//            System.out.println("Possible new size: " + model.eval(newSize, true));
-//            System.out.println("Possible value of x that was removed: " + model.eval(varrr, true));
-//        } else {
-//            System.out.println("The size of the array was not reduced");
-//        }
-
-// We can also check for specific size values
-        solver.push();
-//        solver.add(ctx.mkEq(newSize, ctx.mkInt(2)));
-
-        if (solver.check() == Status.SATISFIABLE) {
-            Model model = solver.getModel();
-            System.out.println("The new size could be: " + model.eval(newSize, true));
-            System.out.println("A value of x that makes this true: " + model.eval(varrr, true));
-            System.out.println("A value of sentinel that makes this true: " + model.eval(sentinel, true));
-        }
-        solver.pop();
-
+        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
+        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
+                .analyzeSymbolicPaths();
         close();
     }
 }

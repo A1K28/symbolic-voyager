@@ -26,12 +26,14 @@ public class Z3ExtendedContext extends Context implements IStack {
     public void push() {
         this.z3SetCollection.push();
         this.z3ListCollection.push();
+        this.z3MapCollection.push();
     }
 
     @Override
     public void pop() {
-        this.z3SetCollection.push();
-        this.z3ListCollection.push();
+        this.z3SetCollection.pop();
+        this.z3ListCollection.pop();
+        this.z3MapCollection.pop();
     }
 
     // lists

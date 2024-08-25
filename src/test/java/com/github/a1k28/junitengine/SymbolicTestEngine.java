@@ -4,9 +4,9 @@ import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.helper.Logger;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SymbolicTestEngine implements TestEngine {
+    private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
 
     static {
@@ -115,6 +116,10 @@ public class SymbolicTestEngine implements TestEngine {
             int expected = parse(res.getReturnValue().getEvaluated(), Integer.class);
             int actual = (int) testMethod.invoke(
                     testClass.getDeclaredConstructor().newInstance(), parameters);
+
+            log.debug(String.format("Trying to assert parameters: %s" +
+                            " with expected: %s & actual: %s codes",
+                    Arrays.toString(parameters), expected, actual));
 
             assertEquals(expected, actual);
             assertTrue(reachableCodes.contains(expected));

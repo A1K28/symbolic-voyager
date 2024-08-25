@@ -88,7 +88,9 @@ public class Z3Helper {
             );
             // TODO: fix this
             Expr sentinel = tupleSort.mkDecl().apply(
-                    ctx.mkConst("sentinelKey", key), ctx.mkConst("sentinelValue", value), ctx.mkTrue());
+                    ctx.mkConst("sentinelKey", key),
+                    ctx.mkConst("sentinelValue", value),
+                    ctx.mkTrue());
 //                    ctx.mkString("sentinelKey"), ctx.mkString("sentinelValue"), ctx.mkTrue());
             SortContainer container = new SortContainer(tupleSort, sentinel);
             mapSorts.get(keyName).put(valueName, container);

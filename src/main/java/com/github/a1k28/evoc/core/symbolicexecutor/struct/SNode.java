@@ -42,8 +42,11 @@ public class SNode {
 
     public void print(int level) {
         for (int i = 1; i < level; i++) System.out.print("\t");
+        if (this.getType() == SType.BRANCH_FALSE || this.getType() == SType.BRANCH_TRUE)
+            level++;
         System.out.println(this);
-        for (SNode child : getChildren()) child.print(level + 1);
+        for (SNode child : getChildren())
+            child.print(level);
     }
 
     @Override

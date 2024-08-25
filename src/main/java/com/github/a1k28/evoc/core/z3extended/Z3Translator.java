@@ -54,9 +54,11 @@ public class Z3Translator {
     }
 
     public static synchronized void close() {
-        ctx.close();
-        ctx = null;
-        log.info("Successfully closed Z3 context");
+        if (ctx != null) {
+            ctx.close();
+            ctx = null;
+            log.info("Successfully closed Z3 context");
+        }
     }
 
     public Expr mkEq(Expr expr, boolean val) {
@@ -80,7 +82,7 @@ public class Z3Translator {
         return ctx.mkInt(i);
     }
 
-    public Expr mkSelect(ArrayExpr array, IntExpr i) {
+    public Expr mkSelect(ArrayExpr array, Expr i) {
         return ctx.mkSelect(array, i);
     }
 

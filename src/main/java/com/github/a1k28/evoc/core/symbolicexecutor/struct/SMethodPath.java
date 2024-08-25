@@ -37,7 +37,7 @@ public class SMethodPath {
     }
 
     public void print() {
-        this.root.print(1);
+        this.root.print(2);
         log.empty();
     }
 

@@ -6,23 +6,36 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @EqualsAndHashCode
 public class MapModel {
+    private int hashCode;
     private ArrayExpr array;
-    private ArithExpr size;
     private TupleSort sort;
     private Expr sentinel;
+    private List<Expr> keys; // discovered keys
 
-    public MapModel(ArrayExpr array,
-                    ArithExpr size,
+    public MapModel(int hashCode,
+                    ArrayExpr array,
                     TupleSort sort,
                     Expr sentinel) {
+        this.hashCode = hashCode;
         this.array = array;
-        this.size = size;
         this.sort = sort;
         this.sentinel = sentinel;
+        this.keys = new ArrayList<>();
+    }
+
+    public MapModel(MapModel model) {
+        this.hashCode = model.hashCode;
+        this.array = model.array;
+        this.sort = model.sort;
+        this.sentinel = model.sentinel;
+        this.keys = new ArrayList<>(model.keys);
     }
 
     @Getter
@@ -37,8 +50,12 @@ public class MapModel {
         return this.sort.mkDecl().apply(key, element, isEmpty);
     }
 
-    public Sort getSort() {
+    public Sort getKeySort() {
         return sort.getFieldDecls()[0].getRange();
+    }
+
+    public Sort getValueSort() {
+        return sort.getFieldDecls()[0].getDomain()[0];
     }
 
     public Expr getKey(Expr value) {
