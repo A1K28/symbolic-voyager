@@ -47,13 +47,15 @@ public class Z3MapCollection implements IStack {
         TupleSort sort = mkMapSort(ctx, keySort, valueSort);
         ArrayExpr array = arrayConstructor(hashCode, keySort, valueSort);
 
+        SeqExpr seqExpr = (SeqExpr) ctx.mkFreshConst("Seq"+hashCode, ctx.mkSeqSort(keySort));
+
         MapModel mapModel = new MapModel(
-                hashCode, array, sort,
+                hashCode, array, size, sort, seqExpr,
                 mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
         stack.add(hashCode, mapModel);
 
-//        BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
-//        Z3Translator.makeSolver().add(sizeAssertion);
+        BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
+        Z3Translator.makeSolver().add(sizeAssertion);
 
         return array;
     }
@@ -84,7 +86,27 @@ public class Z3MapCollection implements IStack {
 
     public Expr size(Expr var1) {
         MapModel model = getModel(var1);
-        return sizeReduced(model);
+        // TODO: store size to reduce computation?
+        IntExpr size = ctx.mkInt(0);
+        ArrayExpr emptySet = ctx.mkEmptySet(model.getKeySort());
+        for (Expr key : model.getKeys()) {
+            Expr retrieved = ctx.mkSelect(model.getArray(), key);
+            BoolExpr exists = existsByKey(model, retrieved, key);
+            BoolExpr isAccounted = ctx.mkSetMembership(key, emptySet);
+            size = (IntExpr) ctx.mkITE(ctx.mkAnd(ctx.mkNot(isAccounted), exists),
+                    ctx.mkAdd(size, ctx.mkInt(1)), size);
+            emptySet = ctx.mkSetAdd(emptySet, key);
+        }
+//        return size;
+        Z3Translator.makeSolver().check();
+        System.out.println("SOLVED: " + Z3Translator.makeSolver().getModel().eval(ctx.mkAdd(size, model.getSize()), true));
+//        System.out.println("SOLVED: " + Z3Translator.makeSolver().minimize(ctx.mkAdd(size, model.getSize())));
+        return ctx.mkAdd(size, model.getSize());
+    }
+
+    public Expr unresolvedSize(Expr var1) {
+        MapModel model = getModel(var1);
+        return model.getSize();
     }
 
     public BoolExpr isEmpty(Expr var1) {
@@ -140,6 +162,7 @@ public class Z3MapCollection implements IStack {
         }
 
         source.setArray(map);
+        source.setSize(ctx.mkAdd(target.getSize(), source.getSize()));
         return null;
     }
 
@@ -250,37 +273,23 @@ public class Z3MapCollection implements IStack {
         model = copyModel(model);
         ArrayExpr map = model.getArray();
 
-        Expr previous = ctx.mkSelect(map, key);
-
+        Expr previous = getByKey(model, key);
         BoolExpr isAbsent = model.isEmpty(previous);
         if (shouldBeAbsent) {
-//            BoolExpr isAbsent = isAbsent(model, key, previous);
             value = ctx.mkITE(isAbsent, value, model.getValue(previous));
         }
 
         Expr newValue = model.mkDecl(key, value, ctx.mkBool(false));
         ArrayExpr newMap = ctx.mkStore(map, key, newValue);
 
-        model.getKeys().add(key);
-        model.setArray(newMap);
-        return ctx.mkITE(isAbsent,
-                model.getValue(model.getSentinel()),
-                model.getValue(previous));
-    }
+//        ArithExpr size = (ArithExpr) ctx.mkITE(isAbsent,
+//                ctx.mkAdd(model.getSize(), ctx.mkInt(1)),
+//                model.getSize());
 
-    private ArithExpr sizeReduced(MapModel model) {
-        // TODO: store size to reduce computation?
-        IntExpr size = ctx.mkInt(0);
-        ArrayExpr emptySet = ctx.mkEmptySet(model.getKeySort());
-        for (Expr key : model.getKeys()) {
-            Expr retrieved = ctx.mkSelect(model.getArray(), key);
-            BoolExpr exists = existsByKey(model, retrieved, key);
-            BoolExpr isAccounted = ctx.mkSetMembership(key, emptySet);
-            size = (IntExpr) ctx.mkITE(ctx.mkAnd(exists, ctx.mkNot(isAccounted)),
-                    increment(ctx, size), size);
-            emptySet = ctx.mkSetAdd(emptySet, key);
-        }
-        return size;
+        model.setArray(newMap);
+//        model.setSize(size);
+
+        return model.getValue(previous);
     }
 
     private BoolExpr equalsValues(MapModel m1, MapModel m2, Expr index) {

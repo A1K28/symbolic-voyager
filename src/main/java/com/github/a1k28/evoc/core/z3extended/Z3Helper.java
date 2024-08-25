@@ -51,10 +51,6 @@ public class Z3Helper {
         return sort;
     }
 
-    public static ArithExpr increment(Context ctx, ArithExpr expr) {
-        return ctx.mkAdd(expr, ctx.mkInt(1));
-    }
-
     private static SortContainer getListSort(Context ctx, Sort sort) {
         String name = sort.getName().toString();
         if (!listSorts.containsKey(name)) {

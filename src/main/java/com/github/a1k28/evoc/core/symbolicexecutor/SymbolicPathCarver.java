@@ -293,10 +293,10 @@ public class SymbolicPathCarver {
 
     private SVarEvaluated handleMapSatisfiability(Model model, SVar var) {
         MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
-//        Expr sizeExpr = Z3Translator.getContext().mkMapLength(var.getExpr());
-//        int size = solver.minimize(sizeExpr);
+        Expr size = Z3Translator.getContext().mkMapLength(var.getExpr());
         Map<String, String> map = new HashMap<>();
-        for (Expr keyExpr :  mapModel.getKeys()) {
+
+        for (Expr keyExpr : solver.getMapKeys(mapModel, size)) {
             Expr expr = z3t.mkSelect(mapModel.getArray(), keyExpr);
             Expr isEmpty = mapModel.isEmpty(expr);
             if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
@@ -306,6 +306,17 @@ public class SymbolicPathCarver {
                 log.info("Key:Value " + key + ":" + value);
             }
         }
+
+//        Expr sizeExpr = Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr());
+//        int unresolvedSize = solver.minimize(sizeExpr);
+//        for (int i = 0; i < unresolvedSize - map.size(); i++) {
+//            // generate unique keys
+//            String key = UUID.randomUUID().toString()+i;
+//            String value = key+i;
+//            map.put(key, value);
+//            log.info("[unresolved] Key:Value " + key + ":" + value);
+//        }
+
         return new SVarEvaluated(var, map);
     }
 

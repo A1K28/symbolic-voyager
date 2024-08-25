@@ -1,7 +1,11 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class Z3ExtendedSolver {
@@ -52,5 +56,51 @@ public class Z3ExtendedSolver {
             solver.pop();
         }
         return result;
+    }
+
+    public List<Expr> getMapKeys(MapModel mapModel, Expr sizeExpr) {
+        int size = minimize(sizeExpr);
+        ArrayExpr map = mapModel.getArray();
+        List<Expr> matchingKeys = new ArrayList<>();
+        SeqSort stringSort = ctx.getStringSort();
+
+        // Create a symbolic key
+        Expr<SeqSort> symbolicKey = ctx.mkConst("symbolicKey", stringSort);
+
+        // Create a constraint: there exists a key where map[key] == targetValue
+        BoolExpr existsMatch = ctx.mkExists(
+                new Expr[]{symbolicKey},
+                ctx.mkAnd(
+                        ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, symbolicKey))),
+                        ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), symbolicKey)
+                ),
+                1, null, null, null, null
+        );
+
+        // Add the constraint to the solver
+        solver.push();
+        solver.add(existsMatch);
+
+        int i = 0;
+        while (solver.check() == Status.SATISFIABLE && i < size) {
+            i++;
+            Model model = solver.getModel();
+
+            // Evaluate the symbolicKey in the current model
+            Expr<SeqSort> keyValue = model.eval(symbolicKey, false);
+
+            // Convert the key to a string and add it to our list
+//            String keyString = keyValue.toString();
+//            keyString = keyString.substring(1, keyString.length()-1); // remove quotes
+//            keyString = keyString.replaceAll("\"", ""); // Remove quotes if present
+            matchingKeys.add(keyValue);
+
+            // Add a constraint to exclude this key in the next iteration
+            solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, keyValue)));
+        }
+
+        solver.pop();
+
+        return matchingKeys;
     }
 }
