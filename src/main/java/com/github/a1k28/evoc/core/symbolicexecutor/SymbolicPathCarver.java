@@ -18,6 +18,7 @@ import sootup.core.model.SootClassMember;
 import sootup.core.model.SootMethod;
 import sootup.java.core.JavaSootClassSource;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,15 +34,15 @@ public class SymbolicPathCarver {
     private final SMethodPath sMethodPath;
     private final SatisfiableResults satisfiableResults;
 
-    public SymbolicPathCarver(String classname, String methodName) throws ClassNotFoundException {
-        this(classname, methodName, new SParamList());
+    public SymbolicPathCarver(Class<?> clazz, Method method) throws ClassNotFoundException {
+        this(clazz, method, new SParamList());
     }
 
-    public SymbolicPathCarver(String classname, String methodName, SParamList paramList)
+    public SymbolicPathCarver(Class<?> clazz, Method method, SParamList paramList)
             throws ClassNotFoundException {
-        this.sMethodPath = createMethodPath(classname, methodName, paramList);
+        this.sMethodPath = createMethodPath(clazz, method, paramList);
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
-        this.satisfiableResults = new SatisfiableResults(sMethodPath.getTotalLines(), new ArrayList<>());
+        this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
     }
 
     public SatisfiableResults analyzeSymbolicPaths()
@@ -51,14 +52,14 @@ public class SymbolicPathCarver {
         return satisfiableResults;
     }
 
-    private SMethodPath createMethodPath(String classname, String methodName, SParamList paramList)
+    private SMethodPath createMethodPath(Class<?> clazz, Method method, SParamList paramList)
             throws ClassNotFoundException {
         // Find all paths
-        SMethodPath sMethodPath = new SMethodPath(classname, methodName, paramList);
+        SMethodPath sMethodPath = new SMethodPath(clazz, paramList);
         SootClass<JavaSootClassSource> sootClass = getSootClass(sMethodPath.getClassname());
 
-        SootMethod method = getSootMethod(sootClass, methodName);
-        Body body = method.getBody();
+        SootMethod sootMethod = getSootMethod(sootClass, method);
+        Body body = sootMethod.getBody();
 
         List<String> fields = SootHelper.getFields(sootClass).stream()
                 .map(SootClassMember::toString).toList();
@@ -66,7 +67,7 @@ public class SymbolicPathCarver {
 
         createFlowDiagram(sMethodPath, body);
 
-        log.debug("Printing method: " + methodName);
+        log.debug("Printing method: " + method.getName());
         sMethodPath.print();
         return sMethodPath;
     }
@@ -76,7 +77,6 @@ public class SymbolicPathCarver {
         symbolicVarStack.push();
 
         SType type = null;
-        satisfiableResults.incrementCoveredLines();
 
         // handle node types
         if (node.getType() == SType.PARAMETER) {
@@ -229,7 +229,8 @@ public class SymbolicPathCarver {
         List<Expr> exprArgs = args.stream()
                 .map(e -> z3t.translateValue(e, getVarType(e)))
                 .collect(Collectors.toList());
-        return new SymbolicPathCarver(sMethodPath.getClassname(), sig, new SParamList(exprArgs))
+        // TODO: fix this
+        return new SymbolicPathCarver(sMethodPath.getClazz(), null, new SParamList(exprArgs))
                 .analyzeSymbolicPaths();
     }
 
@@ -292,19 +293,22 @@ public class SymbolicPathCarver {
     }
 
     private SVarEvaluated handleMapSatisfiability(Model model, SVar var) {
-        MapModel mapModel = Z3Translator.getContext().getMap(var.getExpr()).orElseThrow();
-        Expr size = Z3Translator.getContext().mkMapLength(var.getExpr());
+        MapModel mapModel = Z3Translator.getContext().getMapFirst(var.getExpr()).orElseThrow();
+        Expr size = Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr());
         Map<String, String> map = new HashMap<>();
 
         for (Expr keyExpr : solver.getMapKeys(mapModel, size)) {
-            Expr expr = z3t.mkSelect(mapModel.getArray(), keyExpr);
-            Expr isEmpty = mapModel.isEmpty(expr);
-            if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
-                String key = model.eval(mapModel.getKey(expr), true).toString();
-                String value = model.eval(mapModel.getValue(expr), true).toString();
-                map.put(key, value);
-                log.info("Key:Value " + key + ":" + value);
-            }
+//            Expr retrieved = Z3Translator.getContext().mkMapGetEntry(var.getExpr(), keyExpr);
+            Expr retrieved = z3t.mkSelect(mapModel.getArray(), keyExpr);
+//            Expr expr = z3t.mkSelect(mapModel.getArray(), keyExpr);
+//            Expr isEmpty = mapModel.isEmpty(retrieved);
+//            if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
+//            }
+//            String key = model.eval(mapModel.getKey(retrieved), true).toString();
+            String key = keyExpr.toString();
+            String value = model.eval(mapModel.getValue(retrieved), true).toString();
+            map.put(key, value);
+            log.info("Key:Value " + key + ":" + value);
         }
 
 //        Expr sizeExpr = Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr());
@@ -355,10 +359,10 @@ public class SymbolicPathCarver {
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
-                .analyzeSymbolicPaths();
-        close();
+//        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
+//        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
+//        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
+//                .analyzeSymbolicPaths();
+//        close();
     }
 }

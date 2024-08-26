@@ -13,6 +13,7 @@ import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.ClassType;
+import sootup.core.types.Type;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.core.JavaProject;
@@ -24,6 +25,7 @@ import sootup.java.core.language.JavaLanguage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,11 +50,23 @@ public class SootHelper {
         return (SootClass<JavaSootClassSource>) view.getClass(classType).get();
     }
 
-    public static SootMethod getSootMethod(SootClass<JavaSootClassSource> sootClass, String methodName) {
+    public static SootMethod getSootMethod(SootClass<JavaSootClassSource> sootClass, Method method) {
         // Get the method
-        return sootClass.getMethods().stream()
-                .filter(e -> e.getSignature().getSubSignature().toString().equals(methodName)
-                        || e.getName().equals(methodName)).findFirst().get();
+        outer: for (SootMethod sootMethod : sootClass.getMethods()) {
+            if (!method.getName().equals(sootMethod.getName())) continue;
+            List<Type> sootTypes = sootMethod.getParameterTypes();
+            Class<?>[] types = method.getParameterTypes();
+            if (types.length != sootTypes.size()) continue;
+            for (int i = 0; i < types.length; i++)
+                if (!types[i].getName().equals(sootTypes.get(i).toString()))
+                    continue outer;
+            return sootMethod;
+        }
+        throw new IllegalStateException("Could not match method: " + method);
+    }
+
+    public static Method getMethod() {
+        return null;
     }
 
     public static int getJavaVersion(Class<?> clazz) {

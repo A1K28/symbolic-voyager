@@ -1,6 +1,8 @@
 package com.github.a1k28.junitengine;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.EvaluatedResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
@@ -92,28 +94,11 @@ public class SymbolicTestEngine implements TestEngine {
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
-        SatisfiableResults sr = new SymbolicPathCarver(
-                testClass.getName(), testMethod.getName()).analyzeSymbolicPaths();
-        Class<?>[] paramTypes = null;
-        String[] paramNames = null;
+        SatisfiableResults sr = new SymbolicPathCarver(testClass, testMethod).analyzeSymbolicPaths();
+        Map<SatisfiableResult, EvaluatedResult> evalMap = SymbolTranslator.translate(sr);
         for (SatisfiableResult res : sr.getResults()) {
-            if (paramTypes == null) {
-                paramTypes = testMethod.getParameterTypes();
-                paramNames = new String[paramTypes.length];
-                int j = 0;
-                for (SVarEvaluated key : res.getSymbolicParameterValues()) {
-                    // TODO: handle mocked params
-                    if (key.getSvar().getType() != VarType.PARAMETER)
-                        throw new RuntimeException("MOCKED METHOD INBOUND");
-                    paramNames[j] = key.getSvar().getName();
-                    j++;
-                }
-            }
-            Object[] parameters = new Object[paramNames.length];
-            for (int j = 0; j < paramNames.length; j++)
-                parameters[j] = parse(res.getParameter(paramNames[j]), paramTypes[j]);
-
-            int expected = parse(res.getReturnValue().getEvaluated(), Integer.class);
+            Object[] parameters = evalMap.get(res).getEvaluatedParameters();
+            int expected = (int) evalMap.get(res).getReturnValue();
             int actual = (int) testMethod.invoke(
                     testClass.getDeclaredConstructor().newInstance(), parameters);
 
@@ -127,37 +112,5 @@ public class SymbolicTestEngine implements TestEngine {
         }
         reachableCodes.removeAll(reachedCodes);
         assertTrue(reachableCodes.isEmpty());
-    }
-
-    private <T> T parse(Object value, Class<T> type) {
-        if (type == Integer.class || type == int.class)
-            return (T) Integer.valueOf(value.toString());
-
-        if (type == String.class) {
-            String v = value.toString();
-            if (value == null || value.toString().isBlank() || value.toString().length() < 2)
-                return (T) value;
-            return (T) value.toString().substring(1, value.toString().length()-1);
-        }
-
-        if (type == Map.class) {
-            if (value == null) return (T) new HashMap<>();
-            Map<?,?> map = (Map<?,?>) value;
-            Map newMap = new HashMap<>();
-            for (Map.Entry<?,?> entry : map.entrySet()) {
-                newMap.put(parseString(entry.getKey()), parseString(entry.getValue()));
-            }
-            return (T) newMap;
-        }
-
-        throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
-    }
-
-    private <T> T parseString(Object s) {
-        if (s instanceof String v && v.length() >= 2) {
-            if (v.startsWith("\"") && v.endsWith("\""))
-                return (T) v.substring(1, v.length()-1);
-        }
-        return (T) s;
     }
 }
