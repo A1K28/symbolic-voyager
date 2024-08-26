@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Z3MapCollectionTest {
-    //@SymbolicTest({0})
+    @SymbolicTest({0})
     @DisplayName("test_get_1")
     public int test_get_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -20,7 +20,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_put_overwrite_1")
     public int test_put_overwrite_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -96,7 +96,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_1")
     public int test_size_1(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -108,7 +108,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_2")
     public int test_size_2(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -121,7 +121,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({6,7})
+    @SymbolicTest({6,7})
     @DisplayName("test_size_3")
     public int test_size_3(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -192,7 +192,7 @@ public class Z3MapCollectionTest {
         return 7;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_with_input_1")
     public int test_size_with_input_1(Map<String, String> map) {
         if (map.size() == 3)
@@ -200,20 +200,22 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    @SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_size_with_input_2")
     public int test_size_with_input_2(Map<String, String> map, String a) {
         if (map.size() == 1) {
             map.put(a, "ASD");
             if (a.equals("ASDFGH123"))
                 return 0;
-            if (map.size() == 2)
+            if (map.size() == 1)
                 return 1;
+            if (map.size() == 2)
+                return 2;
         }
-        return 2;
+        return 3;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_1")
     public int test_contains_key_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -226,7 +228,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_with_input_1")
     public int test_contains_key_with_input_1(Map<String, String> map) {
         if (map.containsKey("ASD"))
@@ -234,7 +236,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_with_input_2")
     public int test_contains_key_with_input_2(Map<String, String> map) {
         if (map.containsKey("KEY1") && map.containsKey("KEY2"))

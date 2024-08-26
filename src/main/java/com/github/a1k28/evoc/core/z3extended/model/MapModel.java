@@ -19,29 +19,29 @@ public class MapModel {
     private Expr sentinel;
     private List<Expr> keys; // discovered keys
     private ArithExpr size;
-    private SeqExpr keySeq;
+    private boolean isSizeUnknown;
 
     public MapModel(int hashCode,
                     ArrayExpr array,
                     ArithExpr size,
+                    boolean isSizeUnknown,
                     TupleSort sort,
-                    SeqExpr keySeq,
                     Expr sentinel) {
         this.hashCode = hashCode;
         this.array = array;
         this.size = size;
         this.sort = sort;
-        this.keySeq = keySeq;
         this.sentinel = sentinel;
         this.keys = new ArrayList<>();
+        this.isSizeUnknown = isSizeUnknown;
     }
 
     public MapModel(MapModel model) {
         this.hashCode = model.hashCode;
         this.array = model.array;
         this.size = model.size;
+        this.isSizeUnknown = model.isSizeUnknown;
         this.sort = model.sort;
-        this.keySeq = model.keySeq;
         this.sentinel = model.sentinel;
         this.keys = new ArrayList<>(model.keys);
     }

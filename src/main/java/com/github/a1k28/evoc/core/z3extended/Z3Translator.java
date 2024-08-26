@@ -20,8 +20,8 @@ import sootup.core.types.*;
 import java.util.*;
 
 public class Z3Translator {
-    private static Z3ExtendedContext ctx = null;
-    private static Z3ExtendedSolver solver;
+    private static volatile Z3ExtendedContext ctx;
+    private static volatile Z3ExtendedSolver solver;
     private final SMethodPath sMethodPath;
     private final SStack symbolicVarStack;
     private static final Logger log = Logger.getInstance(Z3Translator.class);
@@ -33,32 +33,47 @@ public class Z3Translator {
         this.symbolicVarStack = symbolicVarStack;
     }
 
-    public static synchronized Z3ExtendedSolver makeSolver() {
-        if (solver == null) {
-            Solver slvr = ctx.mkSolver();
-            solver = new Z3ExtendedSolver(ctx, slvr);
+    public static void initZ3() {
+        // Initialize Z3
+        // TODO: change the initialization
+        solver = null;
+        ctx = null;
+        if (ctx == null) {
+            synchronized (Z3Translator.class) {
+                if (ctx == null) {
+                    ctx = new Z3ExtendedContext();
+                    log.info("Successfully initialized Z3 context");
+                }
+            }
         }
-        return solver;
+    }
+
+    public static void close() {
+        if (ctx != null) {
+            synchronized (Z3Translator.class) {
+                if (ctx != null) {
+                    ctx.close();
+                    ctx = null;
+                    log.info("Successfully closed Z3 context");
+                }
+            }
+        }
     }
 
     public static Z3ExtendedContext getContext() {
         return ctx;
     }
 
-    public static synchronized void initZ3() {
-        // Initialize Z3
-        if (ctx == null) {
-            ctx = new Z3ExtendedContext();
-            log.info("Successfully initialized Z3 context");
+    public static Z3ExtendedSolver makeSolver() {
+        if (solver == null) {
+            synchronized (Z3Translator.class) {
+                if (solver == null) {
+                    Solver slvr = ctx.mkSolver();
+                    solver = new Z3ExtendedSolver(ctx, slvr);
+                }
+            }
         }
-    }
-
-    public static synchronized void close() {
-        if (ctx != null) {
-            ctx.close();
-            ctx = null;
-            log.info("Successfully closed Z3 context");
-        }
+        return solver;
     }
 
     public Expr mkEq(Expr expr, boolean val) {
@@ -76,10 +91,6 @@ public class Z3Translator {
 
     public Expr mkExpr(String name, Sort sort) {
         return ctx.mkFreshConst(name, sort);
-    }
-
-    public IntExpr mkInt(int i) {
-        return ctx.mkInt(i);
     }
 
     public Expr mkSelect(ArrayExpr array, Expr i) {

@@ -8,7 +8,10 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Expr;
+import com.microsoft.z3.Model;
+import com.microsoft.z3.Status;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.stmt.*;
@@ -305,6 +308,9 @@ public class SymbolicPathCarver {
 //            if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
 //            }
 //            String key = model.eval(mapModel.getKey(retrieved), true).toString();
+
+            // it's okay to assume that keys are equal and values are nonempty,
+            // since we used getMapKeys method, which contains the above assertions.
             String key = keyExpr.toString();
             String value = model.eval(mapModel.getValue(retrieved), true).toString();
             map.put(key, value);

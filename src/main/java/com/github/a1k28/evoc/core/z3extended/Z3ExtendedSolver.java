@@ -87,7 +87,7 @@ public class Z3ExtendedSolver {
             Model model = solver.getModel();
 
             // Evaluate the symbolicKey in the current model
-            Expr<SeqSort> keyValue = model.eval(symbolicKey, false);
+            Expr<SeqSort> keyValue = model.eval(symbolicKey, true);
 
             // Convert the key to a string and add it to our list
 //            String keyString = keyValue.toString();

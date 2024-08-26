@@ -10,35 +10,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Z3Helper {
-    private static final Map<String, SortContainer> listSorts = new HashMap<>();
-    private static final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
+public class Z3SortState {
+    private final Map<String, SortContainer> listSorts = new HashMap<>();
+    private final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
 
-    public static TupleSort mkMapSort(Context ctx, Sort key, Sort value) {
+    public TupleSort mkMapSort(Context ctx, Sort key, Sort value) {
         return getMapSort(ctx, key, value).getSort();
     }
 
-    public static Expr mkMapSentinel(Context ctx, Sort key, Sort value) {
+    public Expr mkMapSentinel(Context ctx, Sort key, Sort value) {
         return getMapSort(ctx, key, value).getSentinel();
     }
 
-    public static TupleSort mkListSort(Context ctx, Sort sort) {
+    public TupleSort mkListSort(Context ctx, Sort sort) {
         return getListSort(ctx, sort).getSort();
     }
 
-    public static Expr mkListSentinel(Context ctx, Sort sort) {
+    public Expr mkListSentinel(Context ctx, Sort sort) {
         return getListSort(ctx, sort).getSentinel();
     }
 
-    public static Sort getSort(Context ctx, Expr expr) {
+    public Sort getSort(Context ctx, Expr expr) {
         return getSort(ctx, List.of(expr));
     }
 
-    public static Sort getSort(Context ctx, Expr[] expr) {
+    public Sort getSort(Context ctx, Expr[] expr) {
         return getSort(ctx, Arrays.stream(expr).collect(Collectors.toList()));
     }
 
-    public static Sort getSort(Context ctx, List<Expr> exprs) {
+    public Sort getSort(Context ctx, List<Expr> exprs) {
         if (exprs == null || exprs.isEmpty())
             return SortType.OBJECT.value(ctx);
         Sort sort = exprs.get(0).getSort();
@@ -51,7 +51,7 @@ public class Z3Helper {
         return sort;
     }
 
-    private static SortContainer getListSort(Context ctx, Sort sort) {
+    private SortContainer getListSort(Context ctx, Sort sort) {
         String name = sort.getName().toString();
         if (!listSorts.containsKey(name)) {
             TupleSort tupleSort = ctx.mkTupleSort(
@@ -69,7 +69,7 @@ public class Z3Helper {
         return listSorts.get(name);
     }
 
-    private static SortContainer getMapSort(Context ctx, Sort key, Sort value) {
+    private SortContainer getMapSort(Context ctx, Sort key, Sort value) {
         String keyName = key.getName().toString();
         String valueName = value.getName().toString();
         if (!mapSorts.containsKey(keyName)) mapSorts.put(keyName, new HashMap<>());
