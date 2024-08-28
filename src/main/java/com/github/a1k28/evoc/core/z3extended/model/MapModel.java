@@ -58,6 +58,11 @@ public class MapModel {
         return this.sort.mkDecl().apply(key, element, isEmpty);
     }
 
+    public void addDiscoveredKey(Expr key) {
+        if (!this.discoveredKeys.contains(key))
+            this.discoveredKeys.add(key);
+    }
+
     public Sort getKeySort() {
         return sort.getFieldDecls()[0].getRange();
     }

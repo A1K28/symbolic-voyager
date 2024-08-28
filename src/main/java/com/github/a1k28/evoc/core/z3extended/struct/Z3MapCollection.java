@@ -103,7 +103,6 @@ public class Z3MapCollection implements IStack {
         if (model.isSizeUnknown())
             return model.getSize();
 
-        // TODO: store size to reduce computation?
         IntExpr size = ctx.mkInt(0);
         ArrayExpr emptySet = ctx.mkEmptySet(model.getKeySort());
         for (Expr key : model.getDiscoveredKeys()) {
