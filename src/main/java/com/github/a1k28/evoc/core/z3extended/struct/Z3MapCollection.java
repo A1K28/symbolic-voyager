@@ -38,7 +38,7 @@ public class Z3MapCollection implements IStack {
         return stack.get(ihc(var1));
     }
 
-    public Optional<MapModel> getMapFirst(Expr var1) {
+    public Optional<MapModel> getInitialMap(Expr var1) {
         return stack.getFirst(ihc(var1));
     }
 
@@ -114,29 +114,6 @@ public class Z3MapCollection implements IStack {
             emptySet = ctx.mkSetAdd(emptySet, key);
         }
         return size;
-    }
-
-    public Expr unresolvedSize(Expr var1) {
-//        MapModel model = getModel(var1);
-
-        MapModel model = stack.getFirst(ihc(var1)).orElseThrow();
-        return model.getSize();
-
-//        IntExpr size = ctx.mkInt(0);
-//        ArrayExpr emptySet = ctx.mkEmptySet(model.getKeySort());
-//        for (Expr key : model.getKeys()) {
-//            Expr retrieved = ctx.mkSelect(model.getArray(), key);
-//            BoolExpr exists = existsByKey(model, retrieved, key);
-//            BoolExpr isAccounted = ctx.mkSetMembership(key, emptySet);
-//            size = (IntExpr) ctx.mkITE(ctx.mkAnd(ctx.mkNot(isAccounted), exists),
-//                    ctx.mkAdd(size, ctx.mkInt(1)), size);
-//            emptySet = ctx.mkSetAdd(emptySet, key);
-//        }
-////        return size;
-//        Z3Translator.makeSolver().check();
-//        System.out.println("SOLVED: " + Z3Translator.makeSolver().getModel().eval(ctx.mkAdd(size, model.getSize()), true));
-////        System.out.println("SOLVED: " + Z3Translator.makeSolver().minimize(ctx.mkAdd(size, model.getSize())));
-//        return ctx.mkAdd(size, model.getSize());
     }
 
     public BoolExpr isEmpty(Expr var1) {

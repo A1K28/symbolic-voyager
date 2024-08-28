@@ -142,8 +142,8 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.getMap(var1);
     }
 
-    public Optional<MapModel> getMapFirst(Expr var1) {
-        return z3MapCollection.getMapFirst(var1);
+    public Optional<MapModel> getInitialMap(Expr var1) {
+        return z3MapCollection.getInitialMap(var1);
     }
 
     public Expr mkMapGet(Expr var1, Expr key) {
@@ -160,10 +160,6 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public Expr mkMapLength(Expr var1) {
         return z3MapCollection.size(var1);
-    }
-
-    public Expr mkMapUnresolvedLength(Expr var1) {
-        return z3MapCollection.unresolvedSize(var1);
     }
 
     public BoolExpr mkMapIsEmpty(Expr var1) {
