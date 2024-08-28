@@ -303,10 +303,14 @@ public class Z3MapCollection implements IStack {
 
     private Expr put(MapModel model, Expr key, Expr value, boolean shouldBeAbsent) {
         model = copyModel(model);
+        model.addDiscoveredKey(key);
+
         ArrayExpr map = model.getArray();
 
-        Expr previous = getByKey(model, key);
-        BoolExpr exists = existsByKey(model, key);
+        Expr retrieved = ctx.mkSelect(map, key);
+        BoolExpr exists = existsByKey(model, retrieved, key);
+        Expr previous = ctx.mkITE(exists, retrieved, model.getSentinel());
+
         if (shouldBeAbsent)
             value = ctx.mkITE(exists, model.getValue(previous), value);
 
