@@ -141,11 +141,11 @@ public class Z3MapCollection implements IStack {
     }
 
     public BoolExpr containsKey(Expr var1, Expr key) {
-        return contains(var1, key, false);
+        return contains(getModel(var1), key, false);
     }
 
     public BoolExpr containsValue(Expr var1, Expr value) {
-        return contains(var1, value, true);
+        return contains(getModel(var1), value, true);
     }
 
     public Expr remove(Expr var1, Expr key) {
@@ -271,22 +271,18 @@ public class Z3MapCollection implements IStack {
         for (int i = 0; i < vars.length; i+=2) {
             Expr value = model.mkDecl(vars[i], vars[i+1], ctx.mkBool(false));
             map = ctx.mkStore(map, vars[i], value);
-            model.getDiscoveredKeys().add(vars[i]);
+            model.addDiscoveredKey(vars[i]);
         }
         model.setArray(map);
         return model.getArray();
     }
 
-    private BoolExpr contains(Expr var1, Expr expr, boolean valueComparison) {
-        MapModel model = getModel(var1);
-//        BoolExpr isPresent = valueComparison ?
-//                existsByValue(model, expr) : existsByKey(model, expr);
-
+    private BoolExpr contains(MapModel model, Expr expr, boolean valueComparison) {
         Expr value = valueComparison ?
                 getByValue(model, expr) : getByKey(model, expr);
         BoolExpr isPresent = ctx.mkNot(model.isEmpty(value));
 
-        model.getDiscoveredKeys().add(
+        model.addDiscoveredKey(
                 valueComparison ? model.getKey(value) : expr
         );
 
@@ -310,20 +306,15 @@ public class Z3MapCollection implements IStack {
         ArrayExpr map = model.getArray();
 
         Expr previous = getByKey(model, key);
-        BoolExpr isAbsent = model.isEmpty(previous);
+        BoolExpr exists = existsByKey(model, key);
         if (shouldBeAbsent)
-            value = ctx.mkITE(isAbsent, value, model.getValue(previous));
+            value = ctx.mkITE(exists, model.getValue(previous), value);
 
         Expr newValue = model.mkDecl(key, value, ctx.mkBool(false));
         ArrayExpr newMap = ctx.mkStore(map, key, newValue);
 
-        if (model.isSizeUnknown()) {
-            ArithExpr size = (ArithExpr) ctx.mkITE(isAbsent,
-                    ctx.mkAdd(model.getSize(), ctx.mkInt(1)),
-                    model.getSize());
-            model.setSize(size);
-        }
-
+        if (model.isSizeUnknown())
+            model.setSize(incrementSizeIfExists(model.getSize(), exists));
         model.setArray(newMap);
 
         return model.getValue(previous);
@@ -347,20 +338,20 @@ public class Z3MapCollection implements IStack {
     }
 
     private BoolExpr existsByKey(MapModel model, Expr key) {
-        model.getDiscoveredKeys().add(key);
+        model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         return existsByKey(model, retrieved, key);
     }
 
     private BoolExpr existsByValue(MapModel model, Expr value) {
         Expr key = ctx.mkFreshConst("unknown", model.getKeySort());
-        model.getDiscoveredKeys().add(key);
+        model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         return existsByKeyAndValue(model, retrieved, key, value);
     }
 
     private Expr getByKey(MapModel model, Expr key) {
-        model.getDiscoveredKeys().add(key);
+        model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKey(model, retrieved, key);
         return ctx.mkITE(exists, retrieved, model.getSentinel());
@@ -368,14 +359,14 @@ public class Z3MapCollection implements IStack {
 
     private Expr getByValue(MapModel model, Expr value) {
         Expr key = ctx.mkFreshConst("unknown", model.getKeySort());
-        model.getDiscoveredKeys().add(key);
+        model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyAndValue(model, retrieved, key, value);
         return ctx.mkITE(exists, retrieved, model.getSentinel());
     }
 
     private Expr getByKeyAndValue(MapModel model, Expr key, Expr value) {
-        model.getDiscoveredKeys().add(key);
+        model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyAndValue(model, retrieved, key, value);
         return ctx.mkITE(exists, retrieved, model.getSentinel());
@@ -394,6 +385,10 @@ public class Z3MapCollection implements IStack {
                 ctx.mkEq(model.getKey(retrieved), key),
                 ctx.mkEq(model.getValue(retrieved), value)
         );
+    }
+
+    private ArithExpr incrementSizeIfExists(ArithExpr size, BoolExpr exists) {
+        return (ArithExpr) ctx.mkITE(exists, size, ctx.mkAdd(size, ctx.mkInt(1)));
     }
 
     private MapModel copyModel(MapModel model) {

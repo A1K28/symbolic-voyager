@@ -62,9 +62,6 @@ public class Z3ExtendedSolver {
     }
 
     public Map createInitialMap(MapModel mapModel, int size) {
-        if (solver.check() != Status.SATISFIABLE)
-            throw new IllegalStateException("Invalid solver status");
-
         Map target = new HashMap<>();
         ArrayExpr map = mapModel.getArray();
         for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
