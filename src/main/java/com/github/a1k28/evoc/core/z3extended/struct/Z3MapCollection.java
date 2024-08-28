@@ -43,10 +43,10 @@ public class Z3MapCollection implements IStack {
     }
 
     private ArrayExpr constructor(int hashCode, boolean isSizeUnknown) {
-        // TODO: handle this?
         ArithExpr size = isSizeUnknown ?
                 (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort()) : ctx.mkInt(0);
 
+        // TODO: handle sorts?
         Sort keySort = ctx.mkStringSort();
         Sort valueSort = ctx.mkStringSort();
 
@@ -58,8 +58,12 @@ public class Z3MapCollection implements IStack {
                 sortState.mkMapSentinel(ctx, ctx.mkStringSort(), ctx.mkStringSort()));
         stack.add(hashCode, mapModel);
 
+        // size assertion
         BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
         Z3Translator.makeSolver().add(sizeAssertion);
+
+        // element assertion
+        if (!isSizeUnknown) clear(mapModel, array);
 
         return array;
     }
@@ -152,15 +156,16 @@ public class Z3MapCollection implements IStack {
         MapModel model = getModel(var1);
         ArrayExpr map = model.getArray();
 
-        Expr previousValue = getByKey(model, key);
-        Expr val = model.mkDecl(key, model.getValue(previousValue), ctx.mkBool(true));
-        BoolExpr isEmpty = model.isEmpty(previousValue);
-        val = ctx.mkITE(isEmpty, model.getSentinel(), val);
+        Expr retrieved = ctx.mkSelect(map, key);
+        BoolExpr exists = existsByKey(model, retrieved, key);
+        Expr previous = ctx.mkITE(exists, retrieved, model.getSentinel());
+        Expr previousValue = model.getValue(previous);
 
-        map = ctx.mkStore(map, key, val);
+        Expr value = model.mkDecl(key, previousValue, ctx.mkBool(true));
+        map = ctx.mkStore(map, key, value);
         model.setArray(map);
 
-        return model.getValue(previousValue);
+        return previousValue;
     }
 
     public BoolExpr removeByKeyAndValue(Expr var1, Expr key, Expr value) {
@@ -195,22 +200,9 @@ public class Z3MapCollection implements IStack {
 
     public Expr clear(Expr var1) {
         MapModel model = getModel(var1);
-
-        ArrayExpr updatedArray = arrayConstructor(model.getHashCode(), model.getKeySort(), model.getValueSort());
-
-        // Create a symbolic index
-        Expr index = ctx.mkFreshConst("index", model.getKeySort());
-
-        // Assert that for all indices, the values in both arrays are equal
-        BoolExpr rule = ctx.mkForall(
-                new Expr[]{index},
-                model.isEmpty(ctx.mkSelect(updatedArray, index)),
-                1, null, null, null, null
-        );
-
-        Z3Translator.makeSolver().add(rule);
-
-        model.setArray(updatedArray);
+        ArrayExpr updatedArray = arrayConstructor(
+                model.getHashCode(), model.getKeySort(), model.getValueSort());
+        clear(model, updatedArray);
         return null;
     }
 
@@ -277,16 +269,35 @@ public class Z3MapCollection implements IStack {
         return model.getArray();
     }
 
+    private Expr clear(MapModel model, ArrayExpr array) {
+        // Create a symbolic index
+        Expr index = ctx.mkFreshConst("index", model.getKeySort());
+
+        // Assert that for all indices, the values in both arrays are equal
+        BoolExpr rule = ctx.mkForall(
+                new Expr[]{index},
+                model.isEmpty(ctx.mkSelect(array, index)),
+                1, null, null, null, null
+        );
+
+        Z3Translator.makeSolver().add(rule);
+
+        model.setArray(array);
+        return null;
+    }
+
     private BoolExpr contains(MapModel model, Expr expr, boolean valueComparison) {
         Expr value = valueComparison ?
                 getByValue(model, expr) : getByKey(model, expr);
-        BoolExpr isPresent = ctx.mkNot(model.isEmpty(value));
+        BoolExpr exists = valueComparison ?
+                existsByValue(model, expr) : existsByKey(model, expr);
+//        BoolExpr isPresent = ctx.mkNot(model.isEmpty(value));
 
         model.addDiscoveredKey(
                 valueComparison ? model.getKey(value) : expr
         );
 
-        return isPresent;
+        return exists;
     }
 
     private Expr getEntry(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
