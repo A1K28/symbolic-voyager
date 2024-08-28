@@ -25,7 +25,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.a1k28.evoc.core.z3extended.Z3Translator.close;
 import static com.github.a1k28.evoc.core.z3extended.Z3Translator.makeSolver;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
@@ -153,12 +152,12 @@ public class SymbolicPathCarver {
                 return returnPermutations(methodExpr);
             } else {
                 Expr expr = z3t.callProverMethod(holder.asMethod(), rightOpVarType);
-                z3t.updateSymbolicVariable(leftOp, expr, leftOpVarType);
+                z3t.updateSymbolicVar(leftOp, expr, leftOpVarType);
             }
         } else {
             // if method cannot be invoked, then mock it.
             if (rightOpVarType == VarType.METHOD) leftOpVarType = VarType.METHOD_MOCK;
-            z3t.updateSymbolicVariable(leftOp, holder.getExpr(), leftOpVarType);
+            z3t.updateSymbolicVar(leftOp, holder.getExpr(), leftOpVarType);
         }
         return null;
     }
@@ -191,11 +190,11 @@ public class SymbolicPathCarver {
 
             // add fields
             for (SVar field : result.getFields())
-                z3t.updateSymbolicVariable(field.getValue(), field.getExpr(), VarType.FIELD);
+                z3t.updateSymbolicVar(field.getValue(), field.getExpr(), VarType.FIELD);
 
             // add return val
             if (leftOp != null)
-                z3t.updateSymbolicVariable(leftOp, result.getReturnValue().getSvar().getExpr(), varType);
+                z3t.updateSymbolicVar(leftOp, result.getReturnValue().getSvar().getExpr(), varType);
 
             // add assertions
             Set<BoolExpr> existingAssertions = Set.of(solver.getAssertions());
@@ -274,7 +273,7 @@ public class SymbolicPathCarver {
             log.debug(evaluated + " - " + var.getName());
 
             if (SortType.MAP.equals(var.getExpr().getSort())) {
-                SVarEvaluated sVarEvaluated = handleMapSatisfiability(model, var);
+                SVarEvaluated sVarEvaluated = handleMapSatisfiability(var);
                 res.add(sVarEvaluated);
             } else {
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated.toString());
@@ -295,38 +294,10 @@ public class SymbolicPathCarver {
         log.empty();
     }
 
-    private SVarEvaluated handleMapSatisfiability(Model model, SVar var) {
+    private SVarEvaluated handleMapSatisfiability(SVar var) {
         MapModel mapModel = Z3Translator.getContext().getMapFirst(var.getExpr()).orElseThrow();
-        Expr size = Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr());
-        Map<String, String> map = new HashMap<>();
-
-        for (Expr keyExpr : solver.getMapKeys(mapModel, size)) {
-//            Expr retrieved = Z3Translator.getContext().mkMapGetEntry(var.getExpr(), keyExpr);
-            Expr retrieved = z3t.mkSelect(mapModel.getArray(), keyExpr);
-//            Expr expr = z3t.mkSelect(mapModel.getArray(), keyExpr);
-//            Expr isEmpty = mapModel.isEmpty(retrieved);
-//            if (!Boolean.parseBoolean(model.eval(isEmpty, true).toString())) {
-//            }
-//            String key = model.eval(mapModel.getKey(retrieved), true).toString();
-
-            // it's okay to assume that keys are equal and values are nonempty,
-            // since we used getMapKeys method, which contains the above assertions.
-            String key = keyExpr.toString();
-            String value = model.eval(mapModel.getValue(retrieved), true).toString();
-            map.put(key, value);
-            log.info("Key:Value " + key + ":" + value);
-        }
-
-//        Expr sizeExpr = Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr());
-//        int unresolvedSize = solver.minimize(sizeExpr);
-//        for (int i = 0; i < unresolvedSize - map.size(); i++) {
-//            // generate unique keys
-//            String key = UUID.randomUUID().toString()+i;
-//            String value = key+i;
-//            map.put(key, value);
-//            log.info("[unresolved] Key:Value " + key + ":" + value);
-//        }
-
+        int size = solver.minimize(Z3Translator.getContext().mkMapUnresolvedLength(var.getExpr()));
+        Map map = solver.createInitialMap(mapModel, size);
         return new SVarEvaluated(var, map);
     }
 
@@ -337,8 +308,7 @@ public class SymbolicPathCarver {
 
     private void saveParameter(Stmt unit, Expr expr) {
         Local ref = ((JIdentityStmt<?>) unit).getLeftOp();
-        z3t.updateSymbolicVariable(ref, expr, getVarType(unit));
-//        z3t.saveSymbolicVar(ref, ref.getType(), getVarType(unit));
+        z3t.updateSymbolicVar(ref, expr, getVarType(unit));
     }
 
     private SVar copyReturnValue(SNode node) {

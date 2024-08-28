@@ -200,9 +200,18 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    @SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_with_input_2")
     public int test_size_with_input_2(Map<String, String> map, String a) {
+        map.put(a, "ASD");
+        if (map.size() == 3)
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1,2,3})
+    @DisplayName("test_size_with_input_3")
+    public int test_size_with_input_3(Map<String, String> map, String a) {
         if (map.size() == 1) {
             map.put(a, "ASD");
             if (a.equals("ASDFGH123"))
@@ -239,7 +248,26 @@ public class Z3MapCollectionTest {
     @SymbolicTest({0,1})
     @DisplayName("test_contains_key_with_input_2")
     public int test_contains_key_with_input_2(Map<String, String> map) {
+        map.containsKey("AWDAD");
         if (map.containsKey("KEY1") && map.containsKey("KEY2"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_with_input_3")
+    public int test_contains_key_with_input_3(Map<String, String> map) {
+        map.put("123", "adwawdd");
+        if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_with_input_4")
+    public int test_contains_key_with_input_4(Map<String, String> map, String a) {
+        map.put(a, "adwawdd");
+        if (map.containsKey("ASD"))
             return 0;
         return 1;
     }

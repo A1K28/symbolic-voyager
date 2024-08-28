@@ -17,7 +17,7 @@ public class MapModel {
     private ArrayExpr array;
     private TupleSort sort;
     private Expr sentinel;
-    private List<Expr> keys; // discovered keys
+    private List<Expr> discoveredKeys;
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -32,7 +32,7 @@ public class MapModel {
         this.size = size;
         this.sort = sort;
         this.sentinel = sentinel;
-        this.keys = new ArrayList<>();
+        this.discoveredKeys = new ArrayList<>();
         this.isSizeUnknown = isSizeUnknown;
     }
 
@@ -43,7 +43,7 @@ public class MapModel {
         this.isSizeUnknown = model.isSizeUnknown;
         this.sort = model.sort;
         this.sentinel = model.sentinel;
-        this.keys = new ArrayList<>(model.keys);
+        this.discoveredKeys = new ArrayList<>(model.discoveredKeys);
     }
 
     @Getter

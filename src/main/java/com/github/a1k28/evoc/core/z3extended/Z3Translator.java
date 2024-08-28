@@ -472,13 +472,13 @@ public class Z3Translator {
         String name = getValueName(value);
         if (type == null) type = value.getType();
         Expr expr = mkExpr(name, type);
-        return updateSymbolicVariable(value, expr, varType);
+        return updateSymbolicVar(value, expr, varType);
     }
 
     public SVar saveSymbolicVar(Value value, Sort sort, VarType varType) {
         String name = getValueName(value);
         Expr expr = mkExpr(name, sort);
-        return updateSymbolicVariable(value, expr, varType);
+        return updateSymbolicVar(value, expr, varType);
     }
 
     public String getValueName(Value value) {
@@ -487,7 +487,7 @@ public class Z3Translator {
         return res;
     }
 
-    public SVar updateSymbolicVariable(Value variable, Expr expression, VarType varType) {
+    public SVar updateSymbolicVar(Value variable, Expr expression, VarType varType) {
         if (variable != null && expression != null) {
             String name = getValueName(variable);
             if (sMethodPath.getFields().contains(name)) varType = VarType.FIELD;

@@ -1,14 +1,17 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
+import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class Z3ExtendedSolver {
+    private static final Logger log = Logger.getInstance(Z3ExtendedSolver.class);
+
     private final Context ctx;
     private final Solver solver;
 
@@ -58,28 +61,72 @@ public class Z3ExtendedSolver {
         return result;
     }
 
-    public List<Expr> getMapKeys(MapModel mapModel, Expr sizeExpr) {
-        int size = minimize(sizeExpr);
+    public Map createInitialMap(MapModel mapModel, int size) {
+        if (solver.check() != Status.SATISFIABLE)
+            throw new IllegalStateException("Invalid solver status");
+
+        Map target = new HashMap<>();
         ArrayExpr map = mapModel.getArray();
-        List<Expr> matchingKeys = new ArrayList<>();
+        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
+            Expr keyValue = mapModel.getDiscoveredKeys().get(i);
+            BoolExpr condition = ctx.mkAnd(
+                    ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, keyValue)), keyValue))
+            );
+
+            solver.push();
+            solver.add(condition);
+
+            Status status = solver.check();
+            solver.pop();
+
+            if (status != Status.UNSATISFIABLE) continue;
+            solver.check(); // mandatory check before calling getModel()
+            Model model = solver.getModel();
+
+            Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyValue);
+            String key = model.eval(keyValue, true).toString();
+            String value = model.eval(mapModel.getValue(retrieved), true).toString();
+            target.put(key, value);
+            log.debug("(filled) Key:Value " + key + ":" + value);
+        }
+
+        if (target.size() < size)
+            fillUnknownMapKeys(target, mapModel, size-target.size());
+
+        return target;
+    }
+
+    private void fillUnknownMapKeys(Map target, MapModel mapModel, int size) {
+        ArrayExpr map = mapModel.getArray();
         SeqSort stringSort = ctx.getStringSort();
 
         // Create a symbolic key
         Expr<SeqSort> symbolicKey = ctx.mkConst("symbolicKey", stringSort);
 
         // Create a constraint: there exists a key where map[key] == targetValue
+        Expr<BoolSort>[] boolExprs = new BoolExpr[mapModel.getDiscoveredKeys().size()];
+        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
+            Expr unknownKey = mapModel.getDiscoveredKeys().get(i);
+            BoolExpr c = ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), unknownKey));
+            boolExprs[i] = c;
+        }
+
+        BoolExpr condition = ctx.mkAnd(
+                ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, symbolicKey))),
+                ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), symbolicKey),
+                ctx.mkAnd(boolExprs)
+        );
+
         BoolExpr existsMatch = ctx.mkExists(
                 new Expr[]{symbolicKey},
-                ctx.mkAnd(
-                        ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, symbolicKey))),
-                        ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), symbolicKey)
-                ),
+                condition,
                 1, null, null, null, null
         );
 
         // Add the constraint to the solver
         solver.push();
         solver.add(existsMatch);
+        solver.add(ctx.mkImplies(existsMatch, condition));
 
         int i = 0;
         while (solver.check() == Status.SATISFIABLE && i < size) {
@@ -89,18 +136,15 @@ public class Z3ExtendedSolver {
             // Evaluate the symbolicKey in the current model
             Expr<SeqSort> keyValue = model.eval(symbolicKey, true);
 
-            // Convert the key to a string and add it to our list
-//            String keyString = keyValue.toString();
-//            keyString = keyString.substring(1, keyString.length()-1); // remove quotes
-//            keyString = keyString.replaceAll("\"", ""); // Remove quotes if present
-            matchingKeys.add(keyValue);
+            Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyValue);
+            String key = keyValue.toString();
+            String value = model.eval(mapModel.getValue(retrieved), true).toString();
+            target.put(key, value);
+            log.debug("(filled unknown) Key:Value " + key + ":" + value);
 
             // Add a constraint to exclude this key in the next iteration
             solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, keyValue)));
         }
-
         solver.pop();
-
-        return matchingKeys;
     }
 }
