@@ -18,6 +18,94 @@ import java.util.Map;
 
 
 public class Z3MapCollectionTest {
+    @SymbolicTest({0,1})
+    @DisplayName("test_remove_1")
+    public int test_remove_1(String a) {
+        Map<String, String> map = new HashMap<>();
+        map.put("AAWDAWD", "ASD");
+        map.remove(a);
+        if (map.containsValue("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_remove_winput_1")
+    public int test_remove_winput_1(Map map, String a) {
+        map.put("AAWDAWD", "ASD");
+        map.remove(a);
+        if (map.containsValue("AAWDAWD"))
+            return 0;
+        return 1;
+    }
+
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_1")
+    public int test_contains_key_1(String a) {
+        Map<String, String> map = new HashMap<>();
+        map.put("123", "ASD");
+        map.put(a, "ASD");
+        if (map.containsKey("TEEEST"))
+            return 0;
+        if (map.containsKey("123"))
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_winput_1")
+    public int test_contains_key_winput_1(Map<String, String> map) {
+        if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_winput_2")
+    public int test_contains_key_winput_2(Map<String, String> map) {
+        map.containsKey("AWDAD");
+        if (map.containsKey("KEY1") && map.containsKey("KEY2"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_winput_3")
+    public int test_contains_key_winput_3(Map<String, String> map) {
+        map.put("123", "adwawdd");
+        if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_winput_4")
+    public int test_contains_key_winput_4(Map<String, String> map, String a) {
+        map.put(a, "adwawdd");
+        if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1,2,3,5})
+    @DisplayName("test_contains_key_winput_5")
+    public int test_contains_key_winput_5(Map map, String a) {
+        if (map.containsKey("VALUE1"))
+            return 0;
+        if (map.containsKey(a))
+            return 1;
+        if (map.isEmpty())
+            return 2;
+        map.put("KEY2", "VALUE2");
+        if (map.containsKey(a))
+            return 3;
+        map.remove("KEY3");
+        if (map.containsKey("KEY3"))
+            return 4;
+        return 5;
+    }
+
     @SymbolicTest({1,2})
     @DisplayName("test_contains_value_1")
     public int test_contains_value_1(String a) {
@@ -27,7 +115,36 @@ public class Z3MapCollectionTest {
         map.put("AAWDAWD", "ASD");
         if (map.containsValue(a))
             return 1;
+        if (map.containsValue("ASD"))
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_contains_value_winput_1")
+    public int test_contains_value_winput_1(Map map, String a) {
+        if (map.containsValue("VALUE1"))
+            return 0;
+        map.put("KEY2", "VALUE2");
+        if (map.containsValue(a))
+            return 1;
         return 2;
+    }
+
+    @SymbolicTest({0,1,2,3,4})
+    @DisplayName("test_contains_value_winput_2")
+    public int test_contains_value_winput_2(Map map, String a) {
+        if (map.containsValue("VALUE1"))
+            return 0;
+        if (map.containsValue(a))
+            return 1;
+        map.put("KEY2", "VALUE2");
+        if (map.containsValue(a))
+            return 2;
+        map.remove("KEY2");
+        if (map.containsValue("VALUE2"))
+            return 3;
+        return 4;
     }
 
     @SymbolicTest({0})
@@ -279,54 +396,6 @@ public class Z3MapCollectionTest {
                 return 2;
         }
         return 3;
-    }
-
-    @SymbolicTest({0,1})
-    @DisplayName("test_contains_key_1")
-    public int test_contains_key_1(String a) {
-        Map<String, String> map = new HashMap<>();
-        map.put("123", "ASD");
-        map.put(a, "ASD");
-        if (map.containsKey("TEEEST")) {
-            System.out.println("123123123");
-            return 0;
-        }
-        return 1;
-    }
-
-    @SymbolicTest({0,1})
-    @DisplayName("test_contains_key_winput_1")
-    public int test_contains_key_winput_1(Map<String, String> map) {
-        if (map.containsKey("ASD"))
-            return 0;
-        return 1;
-    }
-
-    @SymbolicTest({0,1})
-    @DisplayName("test_contains_key_winput_2")
-    public int test_contains_key_winput_2(Map<String, String> map) {
-        map.containsKey("AWDAD");
-        if (map.containsKey("KEY1") && map.containsKey("KEY2"))
-            return 0;
-        return 1;
-    }
-
-    @SymbolicTest({0,1})
-    @DisplayName("test_contains_key_winput_3")
-    public int test_contains_key_winput_3(Map<String, String> map) {
-        map.put("123", "adwawdd");
-        if (map.containsKey("ASD"))
-            return 0;
-        return 1;
-    }
-
-    @SymbolicTest({0,1})
-    @DisplayName("test_contains_key_winput_4")
-    public int test_contains_key_winput_4(Map<String, String> map, String a) {
-        map.put(a, "adwawdd");
-        if (map.containsKey("ASD"))
-            return 0;
-        return 1;
     }
 
     private void fillValues(Map map) {
