@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -17,7 +16,8 @@ public class MapModel {
     private ArrayExpr array;
     private TupleSort sort;
     private Expr sentinel;
-    private List<Expr> discoveredKeys;
+    private KeyExprs discoveredKeys;
+    private ArrayExpr addedKeySet; // a set of keys that were added to the array
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -25,6 +25,7 @@ public class MapModel {
                     ArrayExpr array,
                     ArithExpr size,
                     boolean isSizeUnknown,
+                    ArrayExpr addedKeySet,
                     TupleSort sort,
                     Expr sentinel) {
         this.hashCode = hashCode;
@@ -32,7 +33,8 @@ public class MapModel {
         this.size = size;
         this.sort = sort;
         this.sentinel = sentinel;
-        this.discoveredKeys = new ArrayList<>();
+        this.addedKeySet = addedKeySet;
+        this.discoveredKeys = new KeyExprs();
         this.isSizeUnknown = isSizeUnknown;
     }
 
@@ -43,7 +45,8 @@ public class MapModel {
         this.isSizeUnknown = model.isSizeUnknown;
         this.sort = model.sort;
         this.sentinel = model.sentinel;
-        this.discoveredKeys = new ArrayList<>(model.discoveredKeys);
+        this.discoveredKeys = model.discoveredKeys;
+        this.addedKeySet = model.addedKeySet;
     }
 
     @Getter
@@ -54,13 +57,24 @@ public class MapModel {
         private Expr<TupleSort> value;
     }
 
-    public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty) {
+    public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty, BoolExpr wasInitiallyPresent) {
         return this.sort.mkDecl().apply(key, element, isEmpty);
     }
 
     public void addDiscoveredKey(Expr key) {
-        if (!this.discoveredKeys.contains(key))
-            this.discoveredKeys.add(key);
+        this.discoveredKeys.add(key, null);
+    }
+
+    public void addDiscoveredKey(Expr key, BoolExpr wasInitiallyPresent) {
+        this.discoveredKeys.add(key, wasInitiallyPresent);
+    }
+
+    public List<Expr> getDiscoveredKeys() {
+        return this.discoveredKeys.getKeys();
+    }
+
+    public KeyExprs getKeyExprs() {
+        return this.discoveredKeys;
     }
 
     public Sort getKeySort() {

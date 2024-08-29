@@ -39,14 +39,14 @@ public class Z3ExtendedSolver {
         return solver.getModel();
     }
 
-    public int minimize(Expr x) {
+    public int minimizeInteger(Expr x) {
         // Binary search for the minimum value of x
         int low = 0;
         int high = Integer.MAX_VALUE;
         int result = -1;
 
         while (low <= high) {
-            int mid = low + (high - low) / 2;
+            int mid = (low + high) / 2;
             solver.push();
             solver.add(ctx.mkLe(x, ctx.mkInt(mid)));
 
@@ -61,22 +61,44 @@ public class Z3ExtendedSolver {
         return result;
     }
 
-    public Map createInitialMap(MapModel mapModel, int size) {
+    public Map createInitialMap(MapModel mapModel, int size, MapModel initialMap) {
         Map target = new HashMap<>();
         ArrayExpr map = mapModel.getArray();
-        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
-            Expr keyValue = mapModel.getDiscoveredKeys().get(i);
-            BoolExpr condition = ctx.mkAnd(
-                    ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, keyValue)), keyValue))
+        for (int i = 0; i < mapModel.getKeyExprs().getKeys().size(); i++) {
+            Expr keyValue = mapModel.getKeyExprs().getKeys().get(i);
+
+//            if (i == 3) {
+//                solver.push();
+//                BoolExpr condition = ctx.mkAnd(
+//                        ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, keyValue))),
+//                        ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, keyValue)), keyValue),
+//                        ctx.mkEq(mapModel.getValue(ctx.mkSelect(map, keyValue)), ctx.mkString("VALUE1"))
+//                );
+//                solver.add(condition);
+//                solver.check();
+//                solver.pop();
+//            }
+
+            BoolExpr wasInitiallyPresent = mapModel.getKeyExprs().getWasInitiallyPresent().get(i);
+
+            BoolExpr keyEqualityCondition = ctx.mkNot(
+                    ctx.mkEq(
+                            keyValue,
+                            mapModel.getKey(ctx.mkSelect(map, keyValue)))
             );
 
             solver.push();
-            solver.add(condition);
-
+            solver.add(keyEqualityCondition);
             Status status = solver.check();
             solver.pop();
-
             if (status != Status.UNSATISFIABLE) continue;
+
+            solver.push();
+            solver.add(ctx.mkNot(wasInitiallyPresent));
+            status = solver.check();
+            solver.pop();
+            if (status != Status.UNSATISFIABLE) continue;
+
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
 

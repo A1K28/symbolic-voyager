@@ -96,15 +96,18 @@ public class SymbolicTestEngine implements TestEngine {
         Set<Integer> reachedCodes = new HashSet<>();
         SatisfiableResults sr = new SymbolicPathCarver(testClass, testMethod).analyzeSymbolicPaths();
         Map<SatisfiableResult, EvaluatedResult> evalMap = SymbolTranslator.translate(sr);
-        for (SatisfiableResult res : sr.getResults()) {
-            Object[] parameters = evalMap.get(res).getEvaluatedParameters();
-            int expected = (int) evalMap.get(res).getReturnValue();
+        for (SatisfiableResult satisfiableResult : sr.getResults()) {
+            EvaluatedResult res = evalMap.get(satisfiableResult);
+            Object[] parameters = res.getEvaluatedParameters();
+            String paramsString = Arrays.toString(parameters);
+
+            int expected = (int) res.getReturnValue();
             int actual = (int) testMethod.invoke(
                     testClass.getDeclaredConstructor().newInstance(), parameters);
-
             log.debug(String.format("Trying to assert parameters: %s" +
                             " with expected: %s & actual: %s codes",
-                    Arrays.toString(parameters), expected, actual));
+                    paramsString, expected, actual));
+
 
             assertEquals(expected, actual);
             assertTrue(reachableCodes.contains(expected));
