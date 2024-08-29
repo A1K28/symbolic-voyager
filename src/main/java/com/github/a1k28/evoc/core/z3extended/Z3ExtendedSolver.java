@@ -61,7 +61,7 @@ public class Z3ExtendedSolver {
         return result;
     }
 
-    public Map createInitialMap(MapModel mapModel, int size, MapModel initialMap) {
+    public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
         ArrayExpr map = mapModel.getArray();
         for (int i = 0; i < mapModel.getKeyExprs().getKeys().size(); i++) {
@@ -79,7 +79,7 @@ public class Z3ExtendedSolver {
 //                solver.pop();
 //            }
 
-            BoolExpr wasInitiallyPresent = mapModel.getKeyExprs().getWasInitiallyPresent().get(i);
+//            BoolExpr wasInitiallyPresent = mapModel.getKeyExprs().getWasInitiallyPresent().get(i);
 
             BoolExpr keyEqualityCondition = ctx.mkNot(
                     ctx.mkEq(
@@ -93,11 +93,11 @@ public class Z3ExtendedSolver {
             solver.pop();
             if (status != Status.UNSATISFIABLE) continue;
 
-            solver.push();
-            solver.add(ctx.mkNot(wasInitiallyPresent));
-            status = solver.check();
-            solver.pop();
-            if (status != Status.UNSATISFIABLE) continue;
+//            solver.push();
+//            solver.add(ctx.mkNot(wasInitiallyPresent));
+//            status = solver.check();
+//            solver.pop();
+//            if (status != Status.UNSATISFIABLE) continue;
 
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
