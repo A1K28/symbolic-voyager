@@ -17,7 +17,6 @@ public class MapModel {
     private TupleSort sort;
     private Expr sentinel;
     private KeyExprs discoveredKeys;
-    private ArrayExpr addedKeySet; // a set of keys that were added to the array
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -25,7 +24,6 @@ public class MapModel {
                     ArrayExpr array,
                     ArithExpr size,
                     boolean isSizeUnknown,
-                    ArrayExpr addedKeySet,
                     TupleSort sort,
                     Expr sentinel) {
         this.hashCode = hashCode;
@@ -33,7 +31,6 @@ public class MapModel {
         this.size = size;
         this.sort = sort;
         this.sentinel = sentinel;
-        this.addedKeySet = addedKeySet;
         this.discoveredKeys = new KeyExprs();
         this.isSizeUnknown = isSizeUnknown;
     }
@@ -46,7 +43,6 @@ public class MapModel {
         this.sort = model.sort;
         this.sentinel = model.sentinel;
         this.discoveredKeys = model.discoveredKeys;
-        this.addedKeySet = model.addedKeySet;
     }
 
     @Getter
