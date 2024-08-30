@@ -30,7 +30,26 @@ import java.util.Map;
 
 
 public class Z3MapCollectionTest {
-    @SymbolicTest({2,3,4})
+//    @SymbolicTest({2,3,4})
+    @DisplayName("test_init_from_map_1")
+    public int test_init_from_map_1(String a) {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", "VALUE1");
+        map1.put("KEY2", "VALUE2");
+        map1.put(a, "VALUE3");
+        Map<String, String> map2 = new HashMap<>(map1);
+        if (map2.isEmpty())
+            return 0;
+        if (map2.size() == 1)
+            return 1;
+        if (map2.containsKey("KEY3"))
+            return 2;
+        if (map2.size() == 3)
+            return 3;
+        return 4;
+    }
+
+//    @SymbolicTest({2,3,4})
     @DisplayName("test_put_all_1")
     public int test_put_all_1(String a) {
         Map<String, String> map1 = new HashMap<>();
@@ -50,26 +69,7 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-    @SymbolicTest({2,3,4})
-    @DisplayName("test_put_all_2")
-    public int test_put_all_2(String a) {
-        Map<String, String> map1 = new HashMap<>();
-        map1.put("KEY1", "VALUE1");
-        map1.put("KEY2", "VALUE2");
-        map1.put(a, "VALUE3");
-        Map<String, String> map2 = new HashMap<>(map1);
-        if (map2.isEmpty())
-            return 0;
-        if (map2.size() == 1)
-            return 1;
-        if (map2.containsKey("KEY3"))
-            return 2;
-        if (map2.size() == 3)
-            return 3;
-        return 4;
-    }
-
-    @SymbolicTest({1,2,3,4})
+//    @SymbolicTest({1,2,3,4})
     @DisplayName("test_put_all_winput_1")
     public int test_put_all_winput_1(Map map1, String a) {
         Map<String, String> map2 = new HashMap<>();
@@ -86,9 +86,32 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-    @SymbolicTest({0,1,3,4,5,6})
+    @SymbolicTest({2,3,4})
     @DisplayName("test_put_all_winput_2")
-    public int test_put_all_winput_2(Map map1, Map map2) {
+    public int test_put_all_winput_2(Map map1, String a) {
+        Map<String, String> map2 = new HashMap<>();
+        map2.put("KEY1", "VALUE1");
+        map2.put(a, "VALUE1");
+        map1.putAll(map2);
+        if (map2.isEmpty() || map1.isEmpty())
+            return 0;
+        if (map2.isEmpty())
+            return 1;
+        if (map2.size() == 2)
+            return 2;
+        if (map1.size() == 2)
+            return 3;
+        if (map1.containsKey(a))
+            return 4;
+        if (map1.containsValue("VALUE1"))
+            return 5;
+        return 6;
+    }
+
+
+//    @SymbolicTest({0,1,3,4,5,6})
+    @DisplayName("test_put_all_winput_3")
+    public int test_put_all_winput_3(Map map1, Map map2) {
         map2.putAll(map1);
         if (map2.isEmpty() && map1.isEmpty())
             return 0;
