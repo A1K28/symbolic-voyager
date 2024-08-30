@@ -115,7 +115,7 @@ public class Z3MapCollection implements IStack {
         MapModel model = getModel(var1);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyCondition(model, retrieved, key);
-        model.addDiscoveredKey(key, null);
+        model.addDiscoveredKey(key);
         return exists;
     }
 
@@ -133,7 +133,7 @@ public class Z3MapCollection implements IStack {
             );
             Z3Translator.makeSolver().add(ctx.mkImplies(existsMatch, exists));
 
-            model.addDiscoveredKey(key, null);
+            model.addDiscoveredKey(key);
             return existsMatch;
         } else {
             BoolExpr exists = ctx.mkBool(false);
@@ -160,7 +160,7 @@ public class Z3MapCollection implements IStack {
 //        if (model.isSizeUnknown())
         model.setSize(decrementSizeIfExists(model.getSize(), exists));
 
-        model.addDiscoveredKey(key, null);
+        model.addDiscoveredKey(key);
         model.setArray(map);
 
         return previousValue;
@@ -311,10 +311,8 @@ public class Z3MapCollection implements IStack {
         Expr newValue = model.mkDecl(key, value, ctx.mkBool(false), ctx.mkBool(false));
         ArrayExpr newMap = ctx.mkStore(map, key, newValue);
 
-//        if (model.isSizeUnknown())
-
         model.setArray(newMap);
-        model.addDiscoveredKey(key, ctx.mkBool(false));
+        model.addDiscoveredKey(key);
         model.setSize(incrementSizeIfNotExists(model.getSize(), exists));
 
         return model.getValue(previous);

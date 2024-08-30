@@ -64,8 +64,8 @@ public class Z3ExtendedSolver {
     public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
         ArrayExpr map = mapModel.getArray();
-        for (int i = 0; i < mapModel.getKeyExprs().getKeys().size(); i++) {
-            Expr keyValue = mapModel.getKeyExprs().getKeys().get(i);
+        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
+            Expr keyValue = mapModel.getDiscoveredKeys().get(i);
 
 //            if (i == 3) {
 //                solver.push();

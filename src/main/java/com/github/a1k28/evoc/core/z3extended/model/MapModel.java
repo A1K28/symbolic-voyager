@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -16,7 +17,7 @@ public class MapModel {
     private ArrayExpr array;
     private TupleSort sort;
     private Expr sentinel;
-    private KeyExprs discoveredKeys;
+    private List<Expr> discoveredKeys;
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -31,7 +32,7 @@ public class MapModel {
         this.size = size;
         this.sort = sort;
         this.sentinel = sentinel;
-        this.discoveredKeys = new KeyExprs();
+        this.discoveredKeys = new ArrayList<>();
         this.isSizeUnknown = isSizeUnknown;
     }
 
@@ -58,19 +59,8 @@ public class MapModel {
     }
 
     public void addDiscoveredKey(Expr key) {
-        this.discoveredKeys.add(key, null);
-    }
-
-    public void addDiscoveredKey(Expr key, BoolExpr wasInitiallyPresent) {
-        this.discoveredKeys.add(key, wasInitiallyPresent);
-    }
-
-    public List<Expr> getDiscoveredKeys() {
-        return this.discoveredKeys.getKeys();
-    }
-
-    public KeyExprs getKeyExprs() {
-        return this.discoveredKeys;
+        if (!this.discoveredKeys.contains(key))
+            this.discoveredKeys.add(key);
     }
 
     public Sort getKeySort() {
