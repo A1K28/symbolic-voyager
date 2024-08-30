@@ -295,9 +295,10 @@ public class SymbolicPathCarver {
     }
 
     private SVarEvaluated handleMapSatisfiability(SVar var) {
-        MapModel mapModel = Z3Translator.getContext().getInitialMap(var.getExpr()).orElseThrow();
-        int size = solver.minimizeInteger(mapModel.getSize());
-        Map map = solver.createInitialMap(mapModel, size);
+        Optional<MapModel> mapModelOptional = Z3Translator.getContext().getInitialMap(var.getExpr());
+        if (mapModelOptional.isEmpty()) return new SVarEvaluated(var, new HashMap<>());
+        int size = solver.minimizeInteger(mapModelOptional.get().getSize());
+        Map map = solver.createInitialMap(mapModelOptional.get(), size);
         return new SVarEvaluated(var, map);
     }
 

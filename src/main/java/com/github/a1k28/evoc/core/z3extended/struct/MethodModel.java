@@ -75,6 +75,7 @@ public enum MethodModel {
 
     // maps
     MAP_INIT(Map.class,"void <init>()", true),
+    MAP_INIT_FROM_MAP(Map.class, "<java.util.HashMap: void <init>(java.util.Map)>", true),
     MAP_GET(Map.class, "java.lang.Object get(java.lang.Object)", true),
     MAP_PUT(Map.class, "java.lang.Object put(java.lang.Object,java.lang.Object)", true),
     MAP_SIZE(Map.class, "int size()", true),
@@ -183,6 +184,7 @@ public enum MethodModel {
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
 
             case MAP_INIT -> ctx.mkMapInit(args.get(0));
+            case MAP_INIT_FROM_MAP -> ctx.mkMapInitFromMap(args.get(0), args.get(1));
             case MAP_GET -> ctx.mkMapGet(args.get(0), args.get(1));
             case MAP_PUT -> ctx.mkMapPut(args.get(0), args.get(1), args.get(2));
             case MAP_SIZE -> ctx.mkMapLength(args.get(0));

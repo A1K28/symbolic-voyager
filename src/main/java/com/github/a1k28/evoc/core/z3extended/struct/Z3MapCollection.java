@@ -30,16 +30,27 @@ public class Z3MapCollection implements IStack {
         this.stack = new Z3Stack<>();
     }
 
-    public Expr constructor(Expr var1) {
-        return constructor(ihc(var1), false);
-    }
-
     public Optional<MapModel> getMap(Expr var1) {
         return stack.get(ihc(var1));
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {
         return stack.getFirst(ihc(var1));
+    }
+
+    public Expr constructor(Expr var1) {
+        return constructor(ihc(var1), false);
+    }
+
+    public Expr constructor(Expr var1, Expr var2) {
+        return constructor(ihc(var1), getModel(var2));
+    }
+
+    private ArrayExpr constructor(int hashCode, MapModel fromMap) {
+        MapModel newModel = new MapModel(fromMap);
+        newModel.setHashCode(hashCode);
+        stack.add(newModel.getHashCode(), newModel);
+        return newModel.getArray();
     }
 
     private ArrayExpr constructor(int hashCode, boolean isSizeUnknown) {
@@ -54,14 +65,14 @@ public class Z3MapCollection implements IStack {
         if (isSizeUnknown) {
             size = (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort());
             array = mkArray(hashCode, keySort, sort);
+
+            // size assertion
+            BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
+            Z3Translator.makeSolver().add(sizeAssertion);
         } else {
             size = ctx.mkInt(0);
             array = mkEmptyArray(keySort, sentinel);
         }
-
-        // size assertion
-        BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
-        Z3Translator.makeSolver().add(sizeAssertion);
 
         MapModel mapModel = new MapModel(
                 hashCode, array, size, isSizeUnknown, sort, sentinel);
@@ -70,7 +81,7 @@ public class Z3MapCollection implements IStack {
         return array;
     }
 
-    private ArrayExpr mkArray(int hashCode, Sort keySort, TupleSort valueSort) {
+    private ArrayExpr mkArray(int hashCode, Sort keySort, Sort valueSort) {
         ArraySort arraySort = ctx.mkArraySort(keySort, valueSort);
         return (ArrayExpr) ctx.mkFreshConst("Map"+hashCode, arraySort);
     }
@@ -82,11 +93,6 @@ public class Z3MapCollection implements IStack {
     public Expr get(Expr var1, Expr key) {
         MapModel model = getModel(var1);
         return model.getValue(getEntry(model, key, model.getSentinel(), false));
-    }
-
-    public Expr getEntry(Expr var1, Expr key) {
-        MapModel model = getModel(var1);
-        return getEntry(model, key, model.getSentinel(), false);
     }
 
     public Expr getOrDefault(Expr var1, Expr key, Expr def) {
@@ -184,17 +190,36 @@ public class Z3MapCollection implements IStack {
 
     // TODO: fix for unknown size maps
     public Expr putAll(Expr var1, Expr var2) {
-        MapModel target = getModel(var1);
+        MapModel target = copyModel(getModel(var1));
         MapModel source = getModel(var2);
 
         ArrayExpr map = target.getArray();
-        for (Expr key : source.getDiscoveredKeys()) {
-            Expr value = getByKey(source, key);
-            map = ctx.mkStore(map, key, value);
+
+        if (source.isSizeUnknown() && !target.isSizeUnknown()) {
+            ArrayExpr sourceMap = source.getArray();
+            for (Expr key : target.getDiscoveredKeys()) {
+                Expr retrievedFromTarget = ctx.mkSelect(target.getArray(), key);
+                BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
+
+                Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
+                BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
+
+                sourceMap = (ArrayExpr) ctx.mkITE(ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource)),
+                        sourceMap, ctx.mkStore(sourceMap, key, retrievedFromTarget));
+            }
+            map = sourceMap;
+        } else {
+            for (Expr key : source.getDiscoveredKeys()) {
+                Expr retrieved = ctx.mkSelect(source.getArray(), key);
+                BoolExpr exists = existsByKeyCondition(source, retrieved, key);
+                map = (ArrayExpr) ctx.mkITE(exists, ctx.mkStore(map, key, retrieved), map);
+            }
         }
 
-        source.setArray(map);
-        source.setSize(ctx.mkAdd(target.getSize(), source.getSize()));
+        ArithExpr size = ctx.mkAdd(target.getSize(), source.getSize());
+
+        target.setArray(map);
+        target.setSize(size);
         return null;
     }
 

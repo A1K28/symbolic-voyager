@@ -134,10 +134,6 @@ public class Z3ExtendedContext extends Context implements IStack {
 //    }
 
     // maps
-    public Expr mkMapInit(Expr var1) {
-        return z3MapCollection.constructor(var1);
-    }
-
     public Optional<MapModel> getMap(Expr var1) {
         return z3MapCollection.getMap(var1);
     }
@@ -146,12 +142,16 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.getInitialMap(var1);
     }
 
-    public Expr mkMapGet(Expr var1, Expr key) {
-        return z3MapCollection.get(var1, key);
+    public Expr mkMapInit(Expr var1) {
+        return z3MapCollection.constructor(var1);
     }
 
-    public Expr mkMapGetEntry(Expr var1, Expr key) {
-        return z3MapCollection.getEntry(var1, key);
+    public Expr mkMapInitFromMap(Expr var1, Expr var2) {
+        return z3MapCollection.constructor(var1, var2);
+    }
+
+    public Expr mkMapGet(Expr var1, Expr key) {
+        return z3MapCollection.get(var1, key);
     }
 
     public Expr mkMapPut(Expr var1, Expr key, Expr value) {
