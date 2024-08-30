@@ -201,6 +201,7 @@ public class Z3MapCollection implements IStack {
         model = copyModel(model);
         ArrayExpr updatedArray = mkEmptyArray(model.getKeySort(), model.getSentinel());
         model.setArray(updatedArray);
+        model.setSize(ctx.mkInt(0));
         return null;
     }
 
