@@ -166,7 +166,7 @@ public class Z3MapCollection implements IStack {
     }
 
     public Expr remove(Expr var1, Expr key) {
-        MapModel model = getModel(var1);
+        MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
         Expr retrieved = ctx.mkSelect(map, key);
