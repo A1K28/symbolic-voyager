@@ -84,6 +84,10 @@ public class Z3Translator {
         return ctx.mkEq(expr, val);
     }
 
+    public Expr mkEq(ArithExpr expr, int num) {
+        return ctx.mkEq(expr, ctx.mkInt(num));
+    }
+
     public Expr mkExpr(String name, Type type) {
         Sort sort = translateType(type);
         return mkExpr(name, sort);
