@@ -54,7 +54,7 @@ public class MapModel {
         private Expr<TupleSort> value;
     }
 
-    public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty, BoolExpr wasInitiallyPresent) {
+    public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty) {
         return this.sort.mkDecl().apply(key, element, isEmpty);
     }
 

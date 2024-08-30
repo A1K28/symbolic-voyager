@@ -154,7 +154,7 @@ public class Z3MapCollection implements IStack {
         Expr previous = ctx.mkITE(exists, retrieved, model.getSentinel());
         Expr previousValue = model.getValue(previous);
 
-        Expr value = model.mkDecl(key, previousValue, ctx.mkBool(true), ctx.mkBool(false));
+        Expr value = model.mkDecl(key, previousValue, ctx.mkBool(true));
         map = ctx.mkStore(map, key, value);
 
 //        if (model.isSizeUnknown())
@@ -167,20 +167,23 @@ public class Z3MapCollection implements IStack {
     }
 
     public BoolExpr removeByKeyAndValue(Expr var1, Expr key, Expr value) {
-        MapModel model = getModel(var1);
+        MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
-        Expr previousValue = getByKeyAndValue(model, key, value);
-        Expr val = model.mkDecl(key, value, ctx.mkBool(true), ctx.mkBool(false));
-        BoolExpr isEmpty = model.isEmpty(previousValue);
-        val = ctx.mkITE(isEmpty, model.getSentinel(), val);
+        Expr previousValue = ctx.mkSelect(model.getArray(), key);
+        BoolExpr exists = existsByKeyAndValueCondition(model, previousValue, key, value);
 
-        map = ctx.mkStore(map, key, val);
+        Expr newValue = ctx.mkITE(exists, model.getSentinel(), previousValue);
+
+        map = ctx.mkStore(map, key, newValue);
+
         model.setArray(map);
+        model.addDiscoveredKey(key);
 
-        return ctx.mkNot(isEmpty);
+        return exists;
     }
 
+    // TODO: fix for unknown size maps
     public Expr putAll(Expr var1, Expr var2) {
         MapModel target = getModel(var1);
         MapModel source = getModel(var2);
@@ -221,29 +224,37 @@ public class Z3MapCollection implements IStack {
     }
 
     public BoolExpr replaceByKeyAndValue(Expr var1, Expr key, Expr oldValue, Expr newValue) {
-        MapModel model = getModel(var1);
+        MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
-        Expr previousValue = getByKeyAndValue(model, key, oldValue);
-        Expr val = model.mkDecl(key, newValue, ctx.mkBool(false), ctx.mkBool(false));
-        BoolExpr isEmpty = model.isEmpty(previousValue);
-        val = ctx.mkITE(isEmpty, model.getSentinel(), val);
+        Expr previousValue = ctx.mkSelect(model.getArray(), key);
+        BoolExpr exists = existsByKeyAndValueCondition(model, previousValue, key, oldValue);
 
-        map = ctx.mkStore(map, key, val);
+        Expr value = model.mkDecl(key, newValue, ctx.mkBool(false));
+        value = ctx.mkITE(exists, value, previousValue);
+
+        map = ctx.mkStore(map, key, value);
+
         model.setArray(map);
+        model.addDiscoveredKey(key);
 
-        return ctx.mkNot(isEmpty);
+        return exists;
     }
 
     public Expr replace(Expr var1, Expr key, Expr value) {
-        MapModel model = getModel(var1);
+        MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
-        Expr previousValue = getByKey(model, key);
-        Expr newValue = model.mkDecl(key, value, ctx.mkBool(false), ctx.mkBool(false));
+        Expr previousValue = ctx.mkSelect(model.getArray(), key);
+        BoolExpr exists = existsByKeyCondition(model, previousValue, key);
+
+        Expr newValue = model.mkDecl(key, value, ctx.mkBool(false));
+        newValue = ctx.mkITE(exists, newValue, model.getSentinel());
 
         map = ctx.mkStore(map, key, newValue);
+
         model.setArray(map);
+        model.addDiscoveredKey(key);
 
         return model.getValue(previousValue);
     }
@@ -251,7 +262,7 @@ public class Z3MapCollection implements IStack {
     public Expr copyOf(Expr var1) {
         MapModel model = getModel(ihc(var1), false);
         MapModel newModel = new MapModel(model);
-        newModel.setHashCode(UUID.randomUUID().toString().hashCode());;
+        newModel.setHashCode(UUID.randomUUID().toString().hashCode());
         stack.add(newModel.getHashCode(), newModel);
         return newModel.getArray();
     }
@@ -259,30 +270,18 @@ public class Z3MapCollection implements IStack {
     public Expr of(Expr... vars) {
         MapModel model = getModel(UUID.randomUUID().toString().hashCode(), false);
         ArrayExpr map = model.getArray();
+        ArrayExpr set = ctx.mkEmptySet(model.getKeySort());
+        ArithExpr size = ctx.mkInt(0);
         for (int i = 0; i < vars.length; i+=2) {
-            Expr value = model.mkDecl(vars[i], vars[i+1], ctx.mkBool(false), ctx.mkBool(false));
+            Expr value = model.mkDecl(vars[i], vars[i+1], ctx.mkBool(false));
             map = ctx.mkStore(map, vars[i], value);
             model.addDiscoveredKey(vars[i]);
+            BoolExpr exists = ctx.mkSetMembership(vars[i], set);
+            size = incrementSizeIfNotExists(size, exists);
         }
         model.setArray(map);
+        model.setSize(size);
         return model.getArray();
-    }
-
-    private Expr clear(MapModel model, ArrayExpr array) {
-        // Create a symbolic index
-        Expr index = ctx.mkFreshConst("index", model.getKeySort());
-
-        // Assert that for all indices, the values in both arrays are equal
-        BoolExpr rule = ctx.mkForall(
-                new Expr[]{index},
-                model.isEmpty(ctx.mkSelect(array, index)),
-                1, null, null, null, null
-        );
-
-        Z3Translator.makeSolver().add(rule);
-
-        model.setArray(array);
-        return null;
     }
 
     private Expr getEntry(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
@@ -293,12 +292,11 @@ public class Z3MapCollection implements IStack {
     }
 
     private Expr put(Expr var1, Expr key, Expr value, boolean shouldBeAbsent) {
-        MapModel model = getModel(var1);
+        MapModel model = copyModel(getModel(var1));
         return put(model, key, value, shouldBeAbsent);
     }
 
     private Expr put(MapModel model, Expr key, Expr value, boolean shouldBeAbsent) {
-        model = copyModel(model);
         ArrayExpr map = model.getArray();
 
         Expr retrieved = ctx.mkSelect(map, key);
@@ -308,7 +306,7 @@ public class Z3MapCollection implements IStack {
         if (shouldBeAbsent)
             value = ctx.mkITE(exists, model.getValue(previous), value);
 
-        Expr newValue = model.mkDecl(key, value, ctx.mkBool(false), ctx.mkBool(false));
+        Expr newValue = model.mkDecl(key, value, ctx.mkBool(false));
         ArrayExpr newMap = ctx.mkStore(map, key, newValue);
 
         model.setArray(newMap);
@@ -335,19 +333,6 @@ public class Z3MapCollection implements IStack {
         );
     }
 
-    private BoolExpr existsByKeyCondition(MapModel model, Expr key) {
-        model.addDiscoveredKey(key);
-        Expr retrieved = ctx.mkSelect(model.getArray(), key);
-        return existsByKeyCondition(model, retrieved, key);
-    }
-
-    private BoolExpr existsByValue(MapModel model, Expr value) {
-        Expr key = ctx.mkFreshConst("unknown", model.getKeySort());
-        model.addDiscoveredKey(key);
-        Expr retrieved = ctx.mkSelect(model.getArray(), key);
-        return existsByKeyAndValueCondition(model, retrieved, key, value);
-    }
-
     private Expr getByKey(MapModel model, Expr key) {
         model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
@@ -357,13 +342,6 @@ public class Z3MapCollection implements IStack {
 
     private Expr getByValue(MapModel model, Expr value) {
         Expr key = ctx.mkFreshConst("unknown", model.getKeySort());
-        model.addDiscoveredKey(key);
-        Expr retrieved = ctx.mkSelect(model.getArray(), key);
-        BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, key, value);
-        return ctx.mkITE(exists, retrieved, model.getSentinel());
-    }
-
-    private Expr getByKeyAndValue(MapModel model, Expr key, Expr value) {
         model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, key, value);
