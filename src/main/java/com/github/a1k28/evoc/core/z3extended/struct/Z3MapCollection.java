@@ -157,7 +157,6 @@ public class Z3MapCollection implements IStack {
         Expr value = model.mkDecl(key, previousValue, ctx.mkBool(true));
         map = ctx.mkStore(map, key, value);
 
-//        if (model.isSizeUnknown())
         model.setSize(decrementSizeIfExists(model.getSize(), exists));
 
         model.addDiscoveredKey(key);
