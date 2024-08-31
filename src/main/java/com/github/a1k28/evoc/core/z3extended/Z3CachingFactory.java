@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Z3SortState {
+public class Z3CachingFactory {
     private final Map<String, SortContainer> listSorts = new HashMap<>();
     private final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
 
