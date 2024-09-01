@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class SNode {
-    private final SStmt unit;
+    private final Stmt unit;
     private SType type;
     private SNode parent;
     private final List<SNode> children;
@@ -22,7 +22,7 @@ public class SNode {
         this.type = SType.ROOT;
     }
 
-    public SNode(SStmt unit, SType sType) {
+    public SNode(Stmt unit, SType sType) {
         this.unit = unit;
         this.type = sType;
         this.children = new ArrayList<>();
@@ -41,7 +41,7 @@ public class SNode {
     }
 
     public Stmt getUnit() {
-        return this.unit.getUnit();
+        return this.unit;
     }
 
     public void print(int level) {

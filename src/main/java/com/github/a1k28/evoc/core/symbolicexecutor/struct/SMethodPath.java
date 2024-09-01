@@ -7,29 +7,36 @@ import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
+import sootup.core.model.Body;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 public class SMethodPath {
     private static final Logger log = Logger.getInstance(SMethodPath.class);
 
+    private final Body body;
     private final SNode root;
     private final Set<String> fields;
     private final Class<?> clazz;
     private final SParamList paramList;
+    private final Map<Stmt, SNode> sNodeMap; // used for GOTO tracking
 
-    public SMethodPath(Class<?> clazz, SParamList paramList) {
+    public SMethodPath(Body body, Class<?> clazz, SParamList paramList) {
+        this.body = body;
         this.root = new SNode();
         this.fields = new HashSet<>();
+        this.sNodeMap = new HashMap<>();
         this.clazz = clazz;
         this.paramList = paramList;
     }
 
     public SNode createNode(Stmt unit) {
-        SStmt u = new SStmt(unit);
-        return new SNode(u, getType(unit));
+        SType type = getType(unit);
+        SNode sNode = new SNode(unit, type);
+        assert !sNodeMap.containsKey(unit) || sNodeMap.get(unit).getUnit() == unit;
+        sNodeMap.put(unit, sNode);
+        return sNode;
     }
 
     public void print() {
@@ -37,11 +44,25 @@ public class SMethodPath {
         log.empty();
     }
 
+    public String getClassname() {
+        return this.clazz.getName();
+    }
+
+    public List<SNode> getSNodes(Stmt unit) {
+        List<SNode> sNodes = new ArrayList<>();
+        for (Stmt target : ((JGotoStmt)unit).getTargetStmts(body)) {
+            assert sNodeMap.containsKey(target);
+            sNodes.add(sNodeMap.get(target));
+        }
+        return sNodes;
+    }
+
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;
         if (clazz == JRetStmt.class) return SType.RETURN;
-        if (clazz == JGotoStmt.class) return SType.GOTO;
+        if (clazz == JGotoStmt.class)
+            return SType.GOTO;
         if (clazz == JAssignStmt.class) return SType.ASSIGNMENT;
         if (clazz == JReturnStmt.class) return SType.RETURN;
         if (clazz == JInvokeStmt.class) return SType.INVOKE;
@@ -61,9 +82,5 @@ public class SMethodPath {
         }
         log.warn("Could not identify: " + unit);
         return SType.OTHER;
-    }
-
-    public String getClassname() {
-        return this.clazz.getName();
     }
 }
