@@ -28,7 +28,8 @@ public class SMethodPath {
     }
 
     public SNode createNode(Stmt unit) {
-        return new SNode(unit, getType(unit));
+        SStmt u = new SStmt(unit);
+        return new SNode(u, getType(unit));
     }
 
     public void print() {
@@ -39,8 +40,8 @@ public class SMethodPath {
     private SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;
-        if (clazz == JGotoStmt.class) return SType.GOTO;
         if (clazz == JRetStmt.class) return SType.RETURN;
+        if (clazz == JGotoStmt.class) return SType.GOTO;
         if (clazz == JAssignStmt.class) return SType.ASSIGNMENT;
         if (clazz == JReturnStmt.class) return SType.RETURN;
         if (clazz == JInvokeStmt.class) return SType.INVOKE;
@@ -53,8 +54,7 @@ public class SMethodPath {
         if (clazz == JBreakpointStmt.class) return SType.BREAKPOINT;
         if (unit instanceof JIdentityStmt u) {
             Value val = u.getRightOp();
-            if (val instanceof JParameterRef v) {
-//                this.nameToParamIdx.put(u.getLeftOp().toString(), new SParam(v));
+            if (val instanceof JParameterRef) {
                 return SType.PARAMETER;
             }
             return SType.IDENTITY;

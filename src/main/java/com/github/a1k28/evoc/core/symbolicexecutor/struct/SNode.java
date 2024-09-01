@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class SNode {
-    private final Stmt unit;
+    private final SStmt unit;
     private SType type;
     private SNode parent;
     private final List<SNode> children;
@@ -22,7 +22,7 @@ public class SNode {
         this.type = SType.ROOT;
     }
 
-    public SNode(Stmt unit, SType sType) {
+    public SNode(SStmt unit, SType sType) {
         this.unit = unit;
         this.type = sType;
         this.children = new ArrayList<>();
@@ -40,6 +40,10 @@ public class SNode {
         return false;
     }
 
+    public Stmt getUnit() {
+        return this.unit.getUnit();
+    }
+
     public void print(int level) {
         for (int i = 1; i < level; i++) System.out.print("\t");
         if (this.getType() == SType.BRANCH_FALSE || this.getType() == SType.BRANCH_TRUE)
@@ -51,6 +55,6 @@ public class SNode {
 
     @Override
     public String toString() {
-        return this.type + " " + this.unit;
+        return this.type + " " + unit;
     }
 }
