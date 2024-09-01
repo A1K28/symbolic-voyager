@@ -5,14 +5,13 @@ import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @RequiredArgsConstructor
 public class Z3ExtendedSolver {
     private static final Logger log = Logger.getInstance(Z3ExtendedSolver.class);
 
-    private final Context ctx;
+    private final Z3ExtendedContext ctx;
     private final Solver solver;
 
     public void push() {
@@ -23,8 +22,8 @@ public class Z3ExtendedSolver {
         solver.pop();
     }
 
-    public void add(Expr expr) {
-        solver.add(expr);
+    public void add(Expr... vars) {
+        solver.add(vars);
     }
 
     public Status check() {
@@ -37,6 +36,15 @@ public class Z3ExtendedSolver {
 
     public Model getModel() {
         return solver.getModel();
+    }
+
+    // debug method
+    public boolean isSatisfiable(BoolExpr x) {
+        return getSatisfiableStatus(x) == Status.SATISFIABLE;
+    }
+
+    public boolean isUnsatisfiable(BoolExpr x) {
+        return getSatisfiableStatus(x) == Status.UNSATISFIABLE;
     }
 
     public int minimizeInteger(Expr x) {
@@ -58,46 +66,26 @@ public class Z3ExtendedSolver {
             }
             solver.pop();
         }
+
+        // TODO: verify for unintended side-effects
+        solver.add(ctx.mkEq(x, ctx.mkInt(result)));
+
         return result;
     }
 
     public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
-        ArrayExpr map = mapModel.getArray();
+//        ArrayExpr map = mapModel.getArray();
         for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
             Expr keyValue = mapModel.getDiscoveredKeys().get(i);
+//            BoolExpr condition = mapModel.isEmpty(ctx.mkSelect(map, keyValue));
+            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsKey(mapModel, keyValue));
 
-//            if (i == 3) {
-//                solver.push();
-//                BoolExpr condition = ctx.mkAnd(
-//                        ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, keyValue))),
-//                        ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, keyValue)), keyValue),
-//                        ctx.mkEq(mapModel.getValue(ctx.mkSelect(map, keyValue)), ctx.mkString("VALUE1"))
-//                );
-//                solver.add(condition);
-//                solver.check();
-//                solver.pop();
-//            }
-
-//            BoolExpr wasInitiallyPresent = mapModel.getKeyExprs().getWasInitiallyPresent().get(i);
-
-            BoolExpr keyEqualityCondition = ctx.mkNot(
-                    ctx.mkEq(
-                            keyValue,
-                            mapModel.getKey(ctx.mkSelect(map, keyValue)))
-            );
-
-            solver.push();
-            solver.add(keyEqualityCondition);
-            Status status = solver.check();
-            solver.pop();
-            if (status != Status.UNSATISFIABLE) continue;
-
-//            solver.push();
-//            solver.add(ctx.mkNot(wasInitiallyPresent));
-//            status = solver.check();
-//            solver.pop();
-//            if (status != Status.UNSATISFIABLE) continue;
+            // only continue if the condition is UNSATISFIABLE
+            if (!isUnsatisfiable(condition)) {
+                solver.add(condition);
+                continue;
+            };
 
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
@@ -153,7 +141,12 @@ public class Z3ExtendedSolver {
             Model model = solver.getModel();
 
             // Evaluate the symbolicKey in the current model
-            Expr<SeqSort> keyValue = model.eval(symbolicKey, true);
+//            Expr<SeqSort> keyValue = model.eval(symbolicKey, true);
+
+            // assuming that all keys are unique across different maps
+            String uuid = UUID.randomUUID().toString();
+            uuid = uuid.substring(uuid.lastIndexOf("-")+1);
+            Expr keyValue = ctx.mkString(uuid);
 
             Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyValue);
             String key = keyValue.toString();
@@ -165,5 +158,15 @@ public class Z3ExtendedSolver {
             solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, keyValue)));
         }
         solver.pop();
+    }
+
+    private Status getSatisfiableStatus(BoolExpr x) {
+        solver.push();
+        solver.add(x);
+        Status status = solver.check();
+        solver.pop();
+        if (status == Status.UNKNOWN)
+            log.warn("UNKNOWN status for expression: " + x);
+        return status;
     }
 }

@@ -43,7 +43,7 @@ public class Z3Stack<K,V> implements IStack {
     public Optional<V> getFirst(K key) {
         for (int i = 0; i < stack.size(); i++) {
             if (stack.get(i).containsKey(key))
-                return Optional.of(stack.get(i).get(key).get(stack.get(i).get(key).size()-1));
+                return Optional.of(stack.get(i).get(key).get(0));
         }
         return Optional.empty();
     }

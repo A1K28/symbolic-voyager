@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Optional;
 
 public class Z3ExtendedContext extends Context implements IStack {
-    private final Z3SortState sortState;
+    private final Z3CachingFactory sortState;
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
     private final Z3MapCollection z3MapCollection;
 
     public Z3ExtendedContext() {
         super();
-        this.sortState = new Z3SortState();
+        this.sortState = new Z3CachingFactory();
 //        this.z3ListCollection = new Z3ListCollection(this);
         this.z3MapCollection = new Z3MapCollection(this, sortState);
 //        this.z3SetCollection = new Z3SetCollection(this);
@@ -168,6 +168,10 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public BoolExpr mkMapContainsKey(Expr var1, Expr key) {
         return z3MapCollection.containsKey(var1, key);
+    }
+
+    public BoolExpr mkMapContainsKey(MapModel model, Expr key) {
+        return z3MapCollection.containsKey(model, key);
     }
 
     public BoolExpr mkMapContainsValue(Expr var1, Expr value) {
