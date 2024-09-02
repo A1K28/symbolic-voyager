@@ -22,23 +22,22 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.github.a1k28.evoc.core.z3extended.Z3Translator.close;
 import static com.github.a1k28.evoc.core.z3extended.Z3Translator.makeSolver;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
-public class SymbolicPathCarver {
-    private static final Logger log = Logger.getInstance(SymbolicPathCarver.class);
+public class SymbolicExecutor {
+    private static final Logger log = Logger.getInstance(SymbolicExecutor.class);
     private static Z3ExtendedSolver solver = null;
     private final SStack symbolicVarStack = new SStack();
     private final Z3Translator z3t;
     private final SMethodPath sMethodPath;
     private final SatisfiableResults satisfiableResults;
 
-    public SymbolicPathCarver(Class<?> clazz, Method method) throws ClassNotFoundException {
+    public SymbolicExecutor(Class<?> clazz, Method method) throws ClassNotFoundException {
         this(clazz, method, new SParamList());
     }
 
-    public SymbolicPathCarver(Class<?> clazz, Method method, SParamList paramList)
+    public SymbolicExecutor(Class<?> clazz, Method method, SParamList paramList)
             throws ClassNotFoundException {
         this.sMethodPath = createMethodPath(clazz, method, paramList);
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
@@ -242,7 +241,7 @@ public class SymbolicPathCarver {
                 .map(e -> z3t.translateValue(e, getVarType(e)))
                 .collect(Collectors.toList());
         // TODO: fix this
-        return new SymbolicPathCarver(sMethodPath.getClazz(), null, new SParamList(exprArgs))
+        return new SymbolicExecutor(sMethodPath.getClazz(), null, new SParamList(exprArgs))
                 .analyzeSymbolicPaths();
     }
 
