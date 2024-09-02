@@ -20,6 +20,7 @@ public class MapModel {
     private List<Expr> discoveredKeys;
     private ArithExpr size;
     private boolean isSizeUnknown;
+    private Integer lastCalcSizeHashCode;
 
     public MapModel(int hashCode,
                     ArrayExpr array,
@@ -44,6 +45,7 @@ public class MapModel {
         this.sort = model.sort;
         this.sentinel = model.sentinel;
         this.discoveredKeys = model.discoveredKeys;
+        this.lastCalcSizeHashCode = model.lastCalcSizeHashCode;
     }
 
     @Getter
@@ -61,6 +63,14 @@ public class MapModel {
     public void addDiscoveredKey(Expr key) {
         if (!this.discoveredKeys.contains(key))
             this.discoveredKeys.add(key);
+    }
+
+    public boolean isSizeOutdated() {
+        int newHashCode = System.identityHashCode(array);
+        boolean isOutdated = this.lastCalcSizeHashCode == null
+                || this.lastCalcSizeHashCode != newHashCode;
+        this.lastCalcSizeHashCode = newHashCode;
+        return isOutdated;
     }
 
     public Sort getKeySort() {

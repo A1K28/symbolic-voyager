@@ -110,7 +110,7 @@ public class Z3MapCollection implements IStack {
     public Expr size(Expr var1) {
         MapModel model = getModel(var1);
 
-        if (model.isSizeUnknown()) {
+        if (model.isSizeUnknown() && model.isSizeOutdated()) {
             ArrayExpr set = ctx.mkEmptySet(model.getKeySort());
             ArithExpr size = ctx.mkInt(0);
             for (Expr key : model.getDiscoveredKeys()) {
@@ -141,10 +141,6 @@ public class Z3MapCollection implements IStack {
     public BoolExpr containsKey(MapModel model, Expr key) {
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyCondition(model, retrieved, key);
-
-//        if (model.isSizeUnknown())
-//            addSizeConstraint(model, model.getSize(), exists, key);
-
         model.addDiscoveredKey(key);
         return exists;
     }
