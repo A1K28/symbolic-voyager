@@ -8,10 +8,7 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
-import com.microsoft.z3.Status;
+import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.stmt.*;
@@ -25,6 +22,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.github.a1k28.evoc.core.z3extended.Z3Translator.close;
 import static com.github.a1k28.evoc.core.z3extended.Z3Translator.makeSolver;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
@@ -57,11 +55,12 @@ public class SymbolicPathCarver {
     private SMethodPath createMethodPath(Class<?> clazz, Method method, SParamList paramList)
             throws ClassNotFoundException {
         // Find all paths
-        SMethodPath sMethodPath = new SMethodPath(clazz, paramList);
-        SootClass<JavaSootClassSource> sootClass = getSootClass(sMethodPath.getClassname());
+        SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());
 
         SootMethod sootMethod = getSootMethod(sootClass, method);
         Body body = sootMethod.getBody();
+
+        SMethodPath sMethodPath = new SMethodPath(body, clazz, paramList);
 
         List<String> fields = SootHelper.getFields(sootClass).stream()
                 .map(SootClassMember::toString).toList();
@@ -80,6 +79,12 @@ public class SymbolicPathCarver {
 
         SType type = null;
 
+        if (node.getType() == SType.GOTO) {
+            List<SNode> nodes = sMethodPath.getSNodes(node.getUnit());
+            assert nodes.size() == 1; // TODO: is this always 1??
+            analyzePaths(nodes.get(0));
+        }
+
         // handle node types
         if (node.getType() == SType.PARAMETER) {
             if (sMethodPath.getParamList().hasNext())
@@ -95,6 +100,11 @@ public class SymbolicPathCarver {
         }
         if (node.getType() == SType.INVOKE) {
             type = handleVoidMethodCall(node);
+        }
+        if (node.getType() == SType.RETURN
+                || node.getType() == SType.RETURN_VOID
+                || node.getType() == SType.THROW) {
+            type = node.getType();
         }
 
         solver.push();
@@ -240,7 +250,7 @@ public class SymbolicPathCarver {
         if (solver.check() != Status.SATISFIABLE) {
             log.warn("Path is unsatisfiable\n");
             return Z3Status.UNSATISFIABLE_END;
-        } else if (SType.INVOKE != type) {
+        } else if (SType.RETURN == type || SType.RETURN_VOID == type || SType.THROW == type) {
             if (node.getChildren().isEmpty()) {
                 // if tail
                 SVarEvaluated returnValue = null;
@@ -261,7 +271,6 @@ public class SymbolicPathCarver {
 
     private void handleSatisfiability(SVarEvaluated returnValue) {
         log.info("Path is satisfiable");
-        Model model = solver.getModel();
 
         List<SVarEvaluated> res = new ArrayList<>();
         for (SVar var : symbolicVarStack.getAll()) {
@@ -269,8 +278,17 @@ public class SymbolicPathCarver {
             if (var.getType() != VarType.PARAMETER
                     && var.getType() != VarType.FIELD
                     && var.getType() != VarType.METHOD_MOCK) continue;
-            Object evaluated = model.eval(var.getExpr(), true);
+
+            if (solver.check() != Status.SATISFIABLE)
+                throw new IllegalStateException("Unknown state: " + solver.check());
+
+            Model model = solver.getModel();
+
+            Expr evaluated = model.eval(var.getExpr(), true);
             log.debug(evaluated + " - " + var.getName());
+
+            // this is required to keep an accurate solver state
+            solver.add(z3t.mkEq(var.getExpr(), evaluated));
 
             if (SortType.MAP.equals(var.getExpr().getSort())) {
                 SVarEvaluated sVarEvaluated = handleMapSatisfiability(var);
@@ -280,6 +298,9 @@ public class SymbolicPathCarver {
                 res.add(sVarEvaluated);
             }
         }
+
+        if (returnValue != null)
+            log.debug(returnValue.getEvaluated() + " - ret. val.");
 
         // TODO: handle throw clause
         SatisfiableResult satisfiableResult = new SatisfiableResult(
@@ -297,8 +318,9 @@ public class SymbolicPathCarver {
     private SVarEvaluated handleMapSatisfiability(SVar var) {
         Optional<MapModel> mapModelOptional = Z3Translator.getContext().getInitialMap(var.getExpr());
         if (mapModelOptional.isEmpty()) return new SVarEvaluated(var, new HashMap<>());
-        int size = solver.minimizeInteger(mapModelOptional.get().getSize());
-        Map map = solver.createInitialMap(mapModelOptional.get(), size);
+        MapModel mapModel = mapModelOptional.get();
+        int size = solver.minimizeInteger(mapModel.getSize());
+        Map map = solver.createInitialMap(mapModel, size);
         return new SVarEvaluated(var, map);
     }
 
@@ -336,10 +358,30 @@ public class SymbolicPathCarver {
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-//        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-//        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
+        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
+        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
 //        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
 //                .analyzeSymbolicPaths();
 //        close();
+
+        Context ctx = new Context();
+        Solver solver = ctx.mkSolver();
+
+        ArraySort arraySort = ctx.mkArraySort(ctx.mkStringSort(), ctx.mkStringSort());
+        ArrayExpr arr1 = (ArrayExpr) ctx.mkFreshConst("arr1", arraySort);
+
+        Expr symbolicKey = ctx.mkConst("symbolicKey", ctx.mkStringSort());
+        arr1 = ctx.mkStore(arr1, symbolicKey, ctx.mkString("ASD"));
+
+        BoolExpr exists = ctx.mkEq(ctx.mkSelect(arr1, ctx.mkString("ASD")), ctx.mkString("ASD"));
+
+        solver.add(exists);
+
+        Status status = solver.check();
+        Model model = solver.getModel();
+
+//        System.out.println(model.eval());
+
+        String asd = "asdawd";
     }
 }
