@@ -30,7 +30,7 @@ import java.util.Map;
 
 
 public class Z3MapCollectionTest {
-//    @SymbolicTest({2,3,4})
+    @SymbolicTest({2,3,4})
     @DisplayName("test_init_from_map_1")
     public int test_init_from_map_1(String a) {
         Map<String, String> map1 = new HashMap<>();
@@ -50,8 +50,8 @@ public class Z3MapCollectionTest {
     }
 
 //    @SymbolicTest({2,3,4})
-    @DisplayName("test_put_all_1")
-    public int test_put_all_1(String a) {
+    @DisplayName("test_put_all_TKSK_1")
+    public int test_put_all_TKSK_1(String a) {
         Map<String, String> map1 = new HashMap<>();
         Map<String, String> map2 = new HashMap<>();
         map1.put("KEY1", "VALUE1");
@@ -70,8 +70,8 @@ public class Z3MapCollectionTest {
     }
 
 //    @SymbolicTest({1,2,3,4})
-    @DisplayName("test_put_all_winput_1")
-    public int test_put_all_winput_1(Map map1, String a) {
+    @DisplayName("test_put_all_TKSU_winput_1")
+    public int test_put_all_TKSU_winput_1(Map map1, String a) {
         Map<String, String> map2 = new HashMap<>();
         map2.put(a, "VALUE1");
         map2.putAll(map1);
@@ -86,14 +86,14 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-    @SymbolicTest({2,3,4})
-    @DisplayName("test_put_all_winput_2")
-    public int test_put_all_winput_2(Map map1, String a) {
+//    @SymbolicTest({0,2,3,4})
+    @DisplayName("test_put_all_TUSK_winput_1")
+    public int test_put_all_TUSK_winput_1(Map map1, String a) {
         Map<String, String> map2 = new HashMap<>();
         map2.put("KEY1", "VALUE1");
-        map2.put(a, "VALUE1");
+        map2.put(a, a);
         map1.putAll(map2);
-        if (map2.isEmpty() || map1.isEmpty())
+        if (map1.size() > 5 || map1.isEmpty())
             return 0;
         if (map2.isEmpty())
             return 1;
@@ -109,9 +109,9 @@ public class Z3MapCollectionTest {
     }
 
 
-//    @SymbolicTest({0,1,3,4,5,6})
-    @DisplayName("test_put_all_winput_3")
-    public int test_put_all_winput_3(Map map1, Map map2) {
+    @SymbolicTest({0,1,3,4,5,6})
+    @DisplayName("test_put_all_TUSU_winput_1")
+    public int test_put_all_TUSU_winput_1(Map map1, Map map2) {
         map2.putAll(map1);
         if (map2.isEmpty() && map1.isEmpty())
             return 0;
@@ -128,26 +128,27 @@ public class Z3MapCollectionTest {
         return 6;
     }
 
-//    @SymbolicTest({2,3,4})
-//    @DisplayName("test_put_all_winput_2")
-//    public int test_put_all_winput_2(Map map1, String a) {
-//        Map<String, String> map2 = new HashMap<>();
-//        map1.put("KEY1", "VALUE1");
-//        map1.put("KEY2", "VALUE2");
-//        map1.put(a, "VALUE3");
-//        map2.putAll(map1);
-//        if (map2.isEmpty())
-//            return 0;
-//        if (map2.size() == 1)
-//            return 1;
-//        if (map2.containsKey("KEY3"))
-//            return 2;
-//        if (map2.size() == 3)
-//            return 3;
-//        return 4;
-//    }
+    @SymbolicTest({3,4,5,6})
+    @DisplayName("test_put_all_TUSU_winput_2")
+    public int test_put_all_TUSU_winput_2(Map map1, Map map2, String a) {
+        map1.put(a, a);
+        map2.putAll(map1);
+        if (map2.isEmpty() && map1.isEmpty())
+            return 0;
+        if (map1.isEmpty())
+            return 1;
+        if (map2.isEmpty())
+            return 2;
+        if (map2.size() == 1)
+            return 3;
+        if (map1.containsKey("ASD"))
+            return 4;
+        if (map2.size() == 3)
+            return 5;
+        return 6;
+    }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_remove_1")
     public int test_remove_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -158,7 +159,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_remove_winput_1")
     public int test_remove_winput_1(Map map, String a) {
         map.put("AAWDAWD", "ASD");
@@ -169,7 +170,7 @@ public class Z3MapCollectionTest {
     }
 
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_1")
     public int test_contains_key_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -182,7 +183,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_winput_1")
     public int test_contains_key_winput_1(Map<String, String> map) {
         if (map.containsKey("ASD"))
@@ -190,7 +191,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_winput_2")
     public int test_contains_key_winput_2(Map<String, String> map) {
         map.containsKey("AWDAD");
@@ -199,7 +200,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_winput_3")
     public int test_contains_key_winput_3(Map<String, String> map) {
         map.put("123", "adwawdd");
@@ -208,16 +209,25 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_contains_key_winput_4")
-    public int test_contains_key_winput_4(Map<String, String> map, String a) {
+    public int test_contains_key_winput_4(Map map, String a) {
         map.put(a, "adwawdd");
         if (map.containsKey("ASD"))
             return 0;
         return 1;
     }
 
-    //@SymbolicTest({0,1,2,3,5})
+    @SymbolicTest({0,1})
+    @DisplayName("test_contains_key_winput_4_2")
+    public int test_contains_key_winput_4_2(String a, Map map) {
+        map.put(a, "adwawdd");
+        if (map.containsKey("ASD"))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1,2,3,5})
     @DisplayName("test_contains_key_winput_5")
     public int test_contains_key_winput_5(Map map, String a) {
         if (map.containsKey("VALUE1"))
@@ -235,7 +245,7 @@ public class Z3MapCollectionTest {
         return 5;
     }
 
-    //@SymbolicTest({1,2})
+    @SymbolicTest({1,2})
     @DisplayName("test_contains_value_1")
     public int test_contains_value_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -249,7 +259,7 @@ public class Z3MapCollectionTest {
         return 3;
     }
 
-    //@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_contains_value_winput_1")
     public int test_contains_value_winput_1(Map map, String a) {
         if (map.containsValue("VALUE1"))
@@ -260,7 +270,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2,3,4})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_contains_value_winput_2")
     public int test_contains_value_winput_2(Map map, String a) {
         if (map.containsValue("VALUE1"))
@@ -276,7 +286,7 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-    //@SymbolicTest({0})
+    @SymbolicTest({0})
     @DisplayName("test_is_empty_1")
     public int test_is_empty_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -288,7 +298,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({1,2})
+    @SymbolicTest({1,2})
     @DisplayName("test_is_empty_2")
     public int test_is_empty_2(String a) {
         Map<String, String> map = new HashMap<>();
@@ -301,7 +311,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0,2})
+    @SymbolicTest({0,2})
     @DisplayName("test_is_empty_winput_1")
     public int test_is_empty_winput_1(Map map, String a) {
         if (map.isEmpty())
@@ -312,7 +322,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0})
+    @SymbolicTest({0})
     @DisplayName("test_get_1")
     public int test_get_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -323,7 +333,51 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_put_winput_1")
+    public int test_put_winput_1(Map map, String a) {
+        map.put(a, "VALUE0");
+        map.put("KEY1", "VALUE1");
+        map.put("KEY2", "VALUE2");
+        map.put("KEY2", "VALUE3");
+        if (map.size() == 3)
+            return 0;
+        if (map.size() == 5)
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({2,3})
+    @DisplayName("test_put_winput_2")
+    public int test_put_winput_2(Map map1) {
+        map1.put("KEY1", "VALUE1");
+        map1.put("KEY2", "VALUE2");
+        map1.put("KEY3", "VALUE3");
+        if (map1.isEmpty())
+            return 0;
+        if (map1.size() < 3)
+            return 1;
+        if (map1.size() < 10)
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({1,2,3})
+    @DisplayName("test_put_winput_3")
+    public int test_put_winput_3(Map map1) {
+        map1.put("KEY1", "VALUE1");
+        map1.put("KEY2", "VALUE2");
+        map1.put("KEY2", "VALUE3");
+        if (map1.isEmpty())
+            return 0;
+        if (map1.size() < 3)
+            return 1;
+        if (map1.size() < 10)
+            return 2;
+        return 3;
+    }
+
+//    @SymbolicTest({0,1})
     @DisplayName("test_put_overwrite_1")
     public int test_put_overwrite_1(String a) {
         Map<String, String> map = new HashMap<>();
@@ -399,7 +453,7 @@ public class Z3MapCollectionTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_1")
     public int test_size_1(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -411,7 +465,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_2")
     public int test_size_2(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -424,7 +478,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({6,7})
+    @SymbolicTest({6,7})
     @DisplayName("test_size_3")
     public int test_size_3(String a, String b) {
         Map<String, String> map = new HashMap<>();
@@ -495,7 +549,7 @@ public class Z3MapCollectionTest {
         return 7;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_winput_1")
     public int test_size_winput_1(Map<String, String> map) {
         if (map.size() == 3)
@@ -503,7 +557,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_size_winput_2")
     public int test_size_winput_2(Map<String, String> map, String a) {
         map.put(a, "ASD");
@@ -512,7 +566,7 @@ public class Z3MapCollectionTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_size_winput_3")
     public int test_size_winput_3(Map<String, String> map, String a) {
         if (map.size() == 1) {

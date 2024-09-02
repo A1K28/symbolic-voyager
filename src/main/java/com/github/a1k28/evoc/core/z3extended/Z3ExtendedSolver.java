@@ -75,11 +75,9 @@ public class Z3ExtendedSolver {
 
     public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
-//        ArrayExpr map = mapModel.getArray();
         for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
-            Expr keyValue = mapModel.getDiscoveredKeys().get(i);
-//            BoolExpr condition = mapModel.isEmpty(ctx.mkSelect(map, keyValue));
-            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsKey(mapModel, keyValue));
+            Expr key = mapModel.getDiscoveredKeys().get(i);
+            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsKey(mapModel, key));
 
             // only continue if the condition is UNSATISFIABLE
             if (!isUnsatisfiable(condition)) {
@@ -90,11 +88,15 @@ public class Z3ExtendedSolver {
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
 
-            Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyValue);
-            String key = model.eval(keyValue, true).toString();
-            String value = model.eval(mapModel.getValue(retrieved), true).toString();
-            target.put(key, value);
+            Expr retrieved = ctx.mkSelect(mapModel.getArray(), key);
+            key = model.eval(key, true);
+            Expr value = model.eval(mapModel.getValue(retrieved), true);
+            target.put(key.toString(), value.toString());
             log.debug("(filled) Key:Value " + key + ":" + value);
+
+            // update solver state
+            BoolExpr contains = ctx.mkMapContainsKeyValuePair(mapModel, key, value);
+            solver.add(contains);
         }
 
         if (target.size() < size)
@@ -146,16 +148,18 @@ public class Z3ExtendedSolver {
             // assuming that all keys are unique across different maps
             String uuid = UUID.randomUUID().toString();
             uuid = uuid.substring(uuid.lastIndexOf("-")+1);
-            Expr keyValue = ctx.mkString(uuid);
+            Expr key = ctx.mkString(uuid);
 
-            Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyValue);
-            String key = keyValue.toString();
-            String value = model.eval(mapModel.getValue(retrieved), true).toString();
-            target.put(key, value);
+            Expr retrieved = ctx.mkSelect(mapModel.getArray(), key);
+            Expr value = model.eval(mapModel.getValue(retrieved), true);
+            target.put(key.toString(), value.toString());
             log.debug("(filled unknown) Key:Value " + key + ":" + value);
 
             // Add a constraint to exclude this key in the next iteration
-            solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, keyValue)));
+            solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, key)));
+
+            BoolExpr contains = ctx.mkMapContainsKeyValuePair(mapModel, key, value);
+            solver.add(contains);
         }
         solver.pop();
     }

@@ -174,6 +174,10 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapCollection.containsKey(model, key);
     }
 
+    public BoolExpr mkMapContainsKeyValuePair(MapModel model, Expr key, Expr value) {
+        return z3MapCollection.containsKeyValuePair(model, key, value);
+    }
+
     public BoolExpr mkMapContainsValue(Expr var1, Expr value) {
         return z3MapCollection.containsValue(var1, value);
     }
