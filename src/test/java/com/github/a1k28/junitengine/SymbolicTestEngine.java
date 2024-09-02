@@ -1,12 +1,10 @@
 package com.github.a1k28.junitengine;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
-import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicPathCarver;
+import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.EvaluatedResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.helper.Logger;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
@@ -94,7 +92,7 @@ public class SymbolicTestEngine implements TestEngine {
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
-        SatisfiableResults sr = new SymbolicPathCarver(testClass, testMethod).analyzeSymbolicPaths();
+        SatisfiableResults sr = new SymbolicExecutor(testClass, testMethod).analyzeSymbolicPaths();
         Map<SatisfiableResult, EvaluatedResult> evalMap = SymbolTranslator.translate(sr);
         for (SatisfiableResult satisfiableResult : sr.getResults()) {
             EvaluatedResult res = evalMap.get(satisfiableResult);
