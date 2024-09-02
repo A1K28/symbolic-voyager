@@ -6,6 +6,8 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -224,76 +226,13 @@ public class Z3MapCollection implements IStack {
         return null;
     }
 
-    private void putAllTKSU(MapModel target, MapModel source) {
-        ArrayExpr map = source.getArray();
-        ArithExpr size = source.getSize();
-        for (Expr key : target.getDiscoveredKeys()) {
-            Expr retrievedFromSource = ctx.mkSelect(map, key);
-            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
-
-            Expr retrievedFromTarget = ctx.mkSelect(target.getArray(), key);
-            BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
-
-            Expr newValue = target.mkDecl(key, target.getValue(retrievedFromTarget), ctx.mkBool(false));
-            map = (ArrayExpr) ctx.mkITE(ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource)),
-                    ctx.mkStore(map, key, newValue), map);
-
-            size = (ArithExpr) ctx.mkITE(ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource)),
-                    ctx.mkAdd(size, ctx.mkInt(1)), size);
-        }
-
-        target.setArray(map);
-        target.setSizeUnknown(true);
-        target.setSize(size);
-        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
-    }
-
-    private void putAllTUSU(MapModel target, MapModel source) {
-        ArrayExpr map = target.getArray();
-        for (Expr key : source.getDiscoveredKeys()) {
-            Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
-            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
-            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
-            map = (ArrayExpr) ctx.mkITE(existsInSource,
-                    ctx.mkStore(map, key, newValue), map);
-        }
-
-        ArithExpr size = ctx.mkAdd(target.getSize(), source.getSize()); // TODO: is this correct?
-
-        target.setArray(map);
-        target.setSize(size);
-        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
-    }
-
-    private void putAllTKSK(MapModel target, MapModel source) {
-        ArrayExpr map = target.getArray();
-        ArithExpr size = target.getSize();
-        for (Expr key : source.getDiscoveredKeys()) {
-            Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
-            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
-
-            Expr retrievedFromTarget = ctx.mkSelect(map, key);
-            BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
-
-            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
-            map = (ArrayExpr) ctx.mkITE(existsInSource,
-                    ctx.mkStore(map, key, newValue), map);
-
-            size = (ArithExpr) ctx.mkITE(ctx.mkAnd(existsInSource, ctx.mkNot(existsInTarget)),
-                    ctx.mkAdd(size, ctx.mkInt(1)), size);
-        }
-
-        target.setArray(map);
-        target.setSize(size);
-        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
-    }
-
     public Expr clear(Expr var1) {
         MapModel model = getModel(var1);
         model = copyModel(model);
         ArrayExpr updatedArray = mkEmptyArray(model.getKeySort(), model.getSentinel());
         model.setArray(updatedArray);
         model.setSize(ctx.mkInt(0));
+        model.setSizeUnknown(false);
         return null;
     }
 
@@ -301,15 +240,11 @@ public class Z3MapCollection implements IStack {
         MapModel m1 = getModel(var1);
         MapModel m2 = getModel(var2);
 
-        // Create a symbolic index
-        Expr index = ctx.mkFreshConst("index", m1.getKeySort());
+        List<Expr> m1DiscoveredKeys = new ArrayList<>(m1.getDiscoveredKeys());
+        m2.getDiscoveredKeys().forEach(m1::addDiscoveredKey);
+        m1DiscoveredKeys.forEach(m2::addDiscoveredKey);
 
-        // Assert that for all indices, the values in both arrays are equal
-        return ctx.mkForall(
-                new Expr[]{index},
-                equalsElements(m1, m2, index),
-                1, null, null, null, null
-        );
+        return ctx.mkEq(m1.getArray(), m2.getArray());
     }
 
     public BoolExpr replaceByKeyAndValue(Expr var1, Expr key, Expr oldValue, Expr newValue) {
@@ -404,20 +339,77 @@ public class Z3MapCollection implements IStack {
         return model.getValue(previous);
     }
 
+    private void putAllTKSU(MapModel target, MapModel source) {
+        ArrayExpr map = source.getArray();
+        ArithExpr size = source.getSize();
+        for (Expr key : target.getDiscoveredKeys()) {
+            Expr retrievedFromSource = ctx.mkSelect(map, key);
+            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
+
+            Expr retrievedFromTarget = ctx.mkSelect(target.getArray(), key);
+            BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
+
+            Expr newValue = target.mkDecl(key, target.getValue(retrievedFromTarget), ctx.mkBool(false));
+            map = (ArrayExpr) ctx.mkITE(ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource)),
+                    ctx.mkStore(map, key, newValue), map);
+
+            size = (ArithExpr) ctx.mkITE(ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource)),
+                    ctx.mkAdd(size, ctx.mkInt(1)), size);
+        }
+
+        target.setArray(map);
+        target.setSizeUnknown(true);
+        target.setSize(size);
+        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
+    }
+
+    private void putAllTUSU(MapModel target, MapModel source) {
+        ArrayExpr map = target.getArray();
+        for (Expr key : source.getDiscoveredKeys()) {
+            Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
+            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
+            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
+            map = (ArrayExpr) ctx.mkITE(existsInSource,
+                    ctx.mkStore(map, key, newValue), map);
+        }
+
+        ArithExpr size = ctx.mkAdd(target.getSize(), source.getSize()); // TODO: is this correct?
+
+        target.setArray(map);
+        target.setSize(size);
+        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
+    }
+
+    private void putAllTKSK(MapModel target, MapModel source) {
+        ArrayExpr map = target.getArray();
+        ArithExpr size = target.getSize();
+        for (Expr key : source.getDiscoveredKeys()) {
+            Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
+            BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
+
+            Expr retrievedFromTarget = ctx.mkSelect(map, key);
+            BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
+
+            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
+            map = (ArrayExpr) ctx.mkITE(existsInSource,
+                    ctx.mkStore(map, key, newValue), map);
+
+            size = (ArithExpr) ctx.mkITE(ctx.mkAnd(existsInSource, ctx.mkNot(existsInTarget)),
+                    ctx.mkAdd(size, ctx.mkInt(1)), size);
+        }
+
+        target.setArray(map);
+        target.setSize(size);
+        source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
+    }
+
     private BoolExpr equalsElements(MapModel m1, MapModel m2, Expr index) {
-        // either they are both empty or all values match
         Expr v1 = ctx.mkSelect(m1.getArray(), index);
         Expr v2 = ctx.mkSelect(m2.getArray(), index);
-        return ctx.mkOr(
-                ctx.mkAnd(
-                        m1.isEmpty(v1),
-                        m2.isEmpty(v2)
-                ),
-                ctx.mkAnd(
-                        ctx.mkEq(m1.getKey(v1), m2.getKey(v2)),
-                        ctx.mkEq(m1.getValue(v1), m2.getValue(v2)),
-                        ctx.mkEq(m1.isEmpty(v1), m2.isEmpty(v2))
-                )
+        return ctx.mkAnd(
+                ctx.mkEq(m1.getKey(v1), m2.getKey(v2)),
+                ctx.mkEq(m1.getValue(v1), m2.getValue(v2)),
+                ctx.mkEq(m1.isEmpty(v1), m2.isEmpty(v2))
         );
     }
 
