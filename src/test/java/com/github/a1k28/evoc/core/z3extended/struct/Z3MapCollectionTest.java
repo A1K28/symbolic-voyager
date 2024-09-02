@@ -15,7 +15,6 @@ import java.util.Map;
 //containsKey
 //containsValue
 //remove
-
 //putall
 
 //clear
@@ -49,7 +48,7 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-//    @SymbolicTest({2,3,4})
+    @SymbolicTest({2,3,4})
     @DisplayName("test_put_all_TKSK_1")
     public int test_put_all_TKSK_1(String a) {
         Map<String, String> map1 = new HashMap<>();
@@ -69,7 +68,7 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-//    @SymbolicTest({1,2,3,4})
+    @SymbolicTest({1,2,3,4})
     @DisplayName("test_put_all_TKSU_winput_1")
     public int test_put_all_TKSU_winput_1(Map map1, String a) {
         Map<String, String> map2 = new HashMap<>();
@@ -86,7 +85,7 @@ public class Z3MapCollectionTest {
         return 4;
     }
 
-//    @SymbolicTest({0,2,3,4})
+    @SymbolicTest({0,2,3,4})
     @DisplayName("test_put_all_TUSK_winput_1")
     public int test_put_all_TUSK_winput_1(Map map1, String a) {
         Map<String, String> map2 = new HashMap<>();
@@ -377,7 +376,7 @@ public class Z3MapCollectionTest {
         return 3;
     }
 
-//    @SymbolicTest({0,1})
+    @SymbolicTest({0,1})
     @DisplayName("test_put_overwrite_1")
     public int test_put_overwrite_1(String a) {
         Map<String, String> map = new HashMap<>();
