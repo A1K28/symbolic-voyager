@@ -76,6 +76,10 @@ public class Z3Translator {
         return solver;
     }
 
+    public static boolean containsAssertion(Expr assertion) {
+        return Arrays.asList(makeSolver().getAssertions()).contains(assertion);
+    }
+
     public Expr mkEq(Expr expr, boolean val) {
         return mkEq(expr, ctx.mkBool(val));
     }
