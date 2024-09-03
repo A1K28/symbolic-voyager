@@ -78,15 +78,6 @@ public class SymbolicExecutor {
 
         SType type = null;
 
-        if (node.getType() == SType.GOTO) {
-            List<SNode> nodes = sMethodPath.getSNodes(node.getUnit());
-            assert nodes.size() == 1; // TODO: is this always 1??
-
-            // under-approximate
-            if (sMethodPath.incrementGotoCount(node))
-                analyzePaths(nodes.get(0));
-        }
-
         // handle node types
         if (node.getType() == SType.PARAMETER) {
             if (sMethodPath.getParamList().hasNext())
@@ -102,6 +93,14 @@ public class SymbolicExecutor {
         }
         if (node.getType() == SType.INVOKE) {
             type = handleVoidMethodCall(node);
+        }
+        if (node.getType() == SType.GOTO) {
+            List<SNode> nodes = sMethodPath.getSNodes(node.getUnit());
+            assert nodes.size() == 1; // TODO: is this always 1??
+
+            // under-approximate
+            if (sMethodPath.incrementGotoCount(node))
+                analyzePaths(nodes.get(0));
         }
         if (node.getType() == SType.RETURN
                 || node.getType() == SType.RETURN_VOID
