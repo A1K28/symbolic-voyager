@@ -78,6 +78,7 @@ public class SymbolicTestEngine implements TestEngine {
 
     private void executeMethod(TestMethodTestDescriptor methodDescriptor, EngineExecutionListener listener) {
         try {
+            Z3Translator.initZ3(true);
             UniqueId uniqueId = methodDescriptor.getUniqueId();
             assertMethodCorrectness(
                     methodDescriptor.getTestClass(),
