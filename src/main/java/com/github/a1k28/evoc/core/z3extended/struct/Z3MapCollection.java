@@ -93,12 +93,12 @@ public class Z3MapCollection implements IStack {
 
     public Expr get(Expr var1, Expr key) {
         MapModel model = getModel(var1);
-        return model.getValue(getEntry(model, key, model.getSentinel(), false));
+        return getValue(model, key, model.getValue(model.getSentinel()), false);
     }
 
     public Expr getOrDefault(Expr var1, Expr key, Expr def) {
         MapModel model = getModel(var1);
-        return model.getValue(getEntry(model, key, def, false));
+        return getValue(model, key, def, false);
     }
 
     public Expr put(Expr var1, Expr key, Expr value) {
@@ -308,11 +308,11 @@ public class Z3MapCollection implements IStack {
         return model.getArray();
     }
 
-    private Expr getEntry(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
+    private Expr getValue(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
         Expr retrieved = valueComparison ?
                 getByValue(model, expr) : getByKey(model, expr);
         BoolExpr isEmpty = model.isEmpty(retrieved);
-        return ctx.mkITE(isEmpty, defaultValue, retrieved);
+        return ctx.mkITE(isEmpty, defaultValue, model.getValue(retrieved));
     }
 
     private Expr put(Expr var1, Expr key, Expr value, boolean shouldBeAbsent) {
