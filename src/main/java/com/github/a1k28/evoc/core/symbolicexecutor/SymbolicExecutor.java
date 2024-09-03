@@ -81,7 +81,10 @@ public class SymbolicExecutor {
         if (node.getType() == SType.GOTO) {
             List<SNode> nodes = sMethodPath.getSNodes(node.getUnit());
             assert nodes.size() == 1; // TODO: is this always 1??
-            analyzePaths(nodes.get(0));
+
+            // under-approximate
+            if (sMethodPath.incrementGotoCount(node))
+                analyzePaths(nodes.get(0));
         }
 
         // handle node types

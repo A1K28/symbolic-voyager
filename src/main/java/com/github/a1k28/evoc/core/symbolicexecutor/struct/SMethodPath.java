@@ -21,12 +21,14 @@ public class SMethodPath {
     private final Class<?> clazz;
     private final SParamList paramList;
     private final Map<Stmt, SNode> sNodeMap; // used for GOTO tracking
+    private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
 
     public SMethodPath(Body body, Class<?> clazz, SParamList paramList) {
         this.body = body;
         this.root = new SNode();
         this.fields = new HashSet<>();
         this.sNodeMap = new HashMap<>();
+        this.gotoCount = new HashMap<>();
         this.clazz = clazz;
         this.paramList = paramList;
     }
@@ -55,6 +57,13 @@ public class SMethodPath {
             sNodes.add(sNodeMap.get(target));
         }
         return sNodes;
+    }
+
+    public boolean incrementGotoCount(SNode sNode) {
+        if (!this.gotoCount.containsKey(sNode))
+            this.gotoCount.put(sNode, 0);
+        this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
+        return this.gotoCount.get(sNode) <= 10; // limit is 10
     }
 
     private SType getType(Stmt unit) {
