@@ -32,16 +32,18 @@ public class SymbolicExecutor {
     private final Z3Translator z3t;
     private final SMethodPath sMethodPath;
     private final SatisfiableResults satisfiableResults;
+    private final boolean isInnerCall;
 
     public SymbolicExecutor(Class<?> clazz, Method method) throws ClassNotFoundException {
-        this(clazz, method, new SParamList());
+        this(clazz, method, new SParamList(), false);
     }
 
-    public SymbolicExecutor(Class<?> clazz, Method method, SParamList paramList)
+    public SymbolicExecutor(Class<?> clazz, Method method, SParamList paramList, boolean isInnerCall)
             throws ClassNotFoundException {
         this.sMethodPath = createMethodPath(clazz, method, paramList);
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
         this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
+        this.isInnerCall = isInnerCall;
     }
 
     public SatisfiableResults analyzeSymbolicPaths()
@@ -73,8 +75,10 @@ public class SymbolicExecutor {
     }
 
     private void analyzePaths(SNode node) throws ClassNotFoundException {
-        solver.push();
-        symbolicVarStack.push();
+        if (!isInnerCall) {
+            solver.push();
+            symbolicVarStack.push();
+        }
 
         SType type = null;
 
@@ -108,14 +112,14 @@ public class SymbolicExecutor {
             type = node.getType();
         }
 
-        solver.push();
         if (Z3Status.SATISFIABLE == checkSatisfiability(node, type))
             for (SNode child : node.getChildren())
                 analyzePaths(child);
-        solver.pop();
 
-        solver.pop();
-        symbolicVarStack.pop();
+        if (!isInnerCall) {
+            solver.pop();
+            symbolicVarStack.pop();
+        }
     }
 
     private void handleBranch(SNode node) {
@@ -234,7 +238,6 @@ public class SymbolicExecutor {
     }
 
     private SatisfiableResults returnPermutations(SMethodExpr methodExpr) throws ClassNotFoundException {
-        String sig = methodExpr.getInvokeExpr().getMethodSignature().getSubSignature().toString();
         List<Value> args = methodExpr.getArgs();
         args.addAll(symbolicVarStack.getFields().stream()
                 .map(SVar::getValue)
@@ -242,8 +245,8 @@ public class SymbolicExecutor {
         List<Expr> exprArgs = args.stream()
                 .map(e -> z3t.translateValue(e, getVarType(e)))
                 .collect(Collectors.toList());
-        // TODO: fix this
-        return new SymbolicExecutor(sMethodPath.getClazz(), null, new SParamList(exprArgs))
+        Method method = SootHelper.getMethod(methodExpr.getInvokeExpr());
+        return new SymbolicExecutor(sMethodPath.getClazz(), method, new SParamList(exprArgs), true)
                 .analyzeSymbolicPaths();
     }
 

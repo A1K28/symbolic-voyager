@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import sootup.core.Project;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
+import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
@@ -65,8 +66,20 @@ public class SootHelper {
         throw new IllegalStateException("Could not match method: " + method);
     }
 
-    public static Method getMethod() {
-        return null;
+    public static Method getMethod(AbstractInvokeExpr invokeExpr) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(invokeExpr.getMethodSignature().getDeclClassType().toString());
+        List<Type> sootParamTypes = invokeExpr.getMethodSignature().getParameterTypes();
+        String methodName = invokeExpr.getMethodSignature().getName();
+        outer: for (Method method : clazz.getDeclaredMethods()) {
+            if (!method.getName().equals(methodName)) continue;
+            Class<?>[] methodParamTypes = method.getParameterTypes();
+            if (methodParamTypes.length != sootParamTypes.size()) continue;
+            for (int i = 0; i < methodParamTypes.length; i++)
+                if (!methodParamTypes[i].getName().equals(sootParamTypes.get(i).toString()))
+                    continue outer;
+            return method;
+        }
+        throw new IllegalStateException("Could not match method: " + invokeExpr.getMethodSignature());
     }
 
     public static int getJavaVersion(Class<?> clazz) {
@@ -111,8 +124,6 @@ public class SootHelper {
     private static void dfs(StmtGraph<?> cfg, Stmt current, SMethodPath sMethodPath, SNode parent) {
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
-
-//        sMethodPath.incrementTotalLines();
 
         if (!cfg.getTails().contains(current)) {
             List<Stmt> succs = cfg.getAllSuccessors(current);

@@ -20,8 +20,8 @@ import java.util.Map;
 //equals
 //getOrDefault
 //putIfAbsent
-
 //removeByKeyAndValue
+
 //replaceByKeyAndValue
 //replace
 //copyOf
@@ -29,6 +29,37 @@ import java.util.Map;
 
 
 public class Z3MapCollectionTest {
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_remove_by_key_and_value_1")
+    public int test_remove_by_key_and_value_1(String a) {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        if (map1.remove("KEY1", "VALUE1"))
+            return 0;
+        map1.remove("KEY1", a);
+        if (map1.remove("KEY2", a))
+            return 1;
+        if (map1.remove("KEY2", "VALUE2"))
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_remove_by_key_and_value_winput_1")
+    public int test_remove_by_key_and_value_winput_1(Map map1, String a) {
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        if (map1.remove("KEY1", "VALUE1"))
+            return 0;
+        map1.remove("KEY1", a);
+        if (map1.remove("KEY2", a))
+            return 1;
+        if (map1.remove("KEY2", "VALUE2"))
+            return 2;
+        return 3;
+    }
+
     @SymbolicTest({0,1,2})
     @DisplayName("test_put_if_absent_1")
     public int test_put_if_absent_1(String a) {
@@ -525,51 +556,7 @@ public class Z3MapCollectionTest {
         map.put(a, "123");
         map.put(a, "ASD");
 
-        map.put("a21412412ed", "123");
-        map.put("a2141241awd2ed", "123");
-        map.put("a2141awd2412ed", "123");
-        map.put("a214awd12412ed", "123");
-        map.put("a21412awd412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
+        fillValues(map);
 
         if (map.get(a).equals("123"))
             return 0;
@@ -627,51 +614,7 @@ public class Z3MapCollectionTest {
         if (a.equals("RANDOM TEXT"))
             map.put(b, "123");
 
-        map.put("a21412412ed", "123");
-        map.put("a2141241awd2ed", "123");
-        map.put("a2141awd2412ed", "123");
-        map.put("a214awd12412ed", "123");
-        map.put("a21412awd412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a21412asd412ed", "123");
-        map.put("a214asd12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
-        map.put("a214zxc12412ed", "123");
+        fillValues(map);
 
         if (map.size() == 2)
             return 0;

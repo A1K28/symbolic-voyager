@@ -27,17 +27,19 @@ public class Z3Translator {
     private static final Logger log = Logger.getInstance(Z3Translator.class);
 
     public Z3Translator(SMethodPath sMethodPath, SStack symbolicVarStack) {
-        initZ3();
+        initZ3(false);
 
         this.sMethodPath = sMethodPath;
         this.symbolicVarStack = symbolicVarStack;
     }
 
-    public static void initZ3() {
+    public static void initZ3(boolean force) {
         // Initialize Z3
         // TODO: change the initialization
-        solver = null;
-        ctx = null;
+        if (force) {
+            solver = null;
+            ctx = null;
+        }
         if (ctx == null) {
             synchronized (Z3Translator.class) {
                 if (ctx == null) {
@@ -150,10 +152,6 @@ public class Z3Translator {
                 .toList());
 
         return methodModel.apply(ctx, args);
-//        if (methodModel != null) {
-//        } else {
-//            return handleUnknownMethod(methodExpr.getInvokeExpr(), args);
-//        }
     }
 
     public Expr translateCondition(Value condition, VarType varType) {
