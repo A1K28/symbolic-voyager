@@ -19,8 +19,8 @@ import java.util.Map;
 //clear
 //equals
 //getOrDefault
-
 //putIfAbsent
+
 //removeByKeyAndValue
 //replaceByKeyAndValue
 //replace
@@ -29,6 +29,35 @@ import java.util.Map;
 
 
 public class Z3MapCollectionTest {
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_put_if_absent_1")
+    public int test_put_if_absent_1(String a) {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        String prev = map1.putIfAbsent("KEY1", "VALUE2");
+        if ("NULL".equals(a))
+            return 0;
+        if ("KEY1".equals(prev))
+            return 1;
+        if (a.equals(map1.getOrDefault("KEY1", "NULL")))
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_put_if_absent_winput_1")
+    public int test_put_if_absent_winput_1(Map map1, String a) {
+        map1.put("KEY1", a);
+        String prev = (String) map1.putIfAbsent("KEY1", "VALUE2");
+        if ("NULL".equals(a))
+            return 0;
+        if ("KEY1".equals(prev))
+            return 1;
+        if (a.equals(map1.getOrDefault("KEY1", "NULL")))
+            return 2;
+        return 3;
+    }
+
     @SymbolicTest({0,1,2,3})
     @DisplayName("test_get_or_default_1")
     public int test_get_or_default_1(String a) {
