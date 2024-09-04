@@ -22,11 +22,10 @@ import java.util.Map;
 //putIfAbsent
 //removeByKeyAndValue
 //replace
-
-//replaceByKeyAndValue -- ?
-
 //copyOf
 //mapOf
+
+//replaceByKeyAndValue -- ?
 
 
 public class Z3MapCollectionTest {
@@ -777,6 +776,63 @@ public class Z3MapCollectionTest {
                 return 2;
         }
         return 3;
+    }
+
+    @SymbolicTest({2})
+    @DisplayName("test_map_of_1")
+    public int test_map_of_1() {
+        Map map = Map.of();
+        if (!map.isEmpty())
+            return 0;
+        if (map.size() > 0)
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({3,5,7})
+    @DisplayName("test_map_of_2")
+    public int test_map_of_2(String a) {
+        Map map = Map.of("KEY1", "VALUE1");
+        if (map.isEmpty())
+            return 0;
+        if (map.size() != 1)
+            return 1;
+        if (!map.containsKey("KEY1"))
+            return 2;
+        if (map.containsKey(a))
+            return 3;
+        if (map.containsKey("KEY2"))
+            return 4;
+        if (map.containsValue(a))
+            return 5;
+        if (!map.containsValue("VALUE1"))
+            return 6;
+        return 7;
+    }
+
+    @SymbolicTest({3,5,9})
+    @DisplayName("test_map_of_3")
+    public int test_map_of_3(String a) {
+        Map map = Map.of("KEY1", "VALUE1", "KEY2", "VALUE2");
+        if (map.isEmpty())
+            return 0;
+        if (map.size() != 2)
+            return 1;
+        if (!map.containsKey("KEY1"))
+            return 2;
+        if (map.containsKey(a))
+            return 3;
+        if (!map.containsKey("KEY2"))
+            return 4;
+        if (map.containsValue(a))
+            return 5;
+        if (!map.containsValue("VALUE1"))
+            return 6;
+        if (!map.containsValue("VALUE2"))
+            return 7;
+        if (map.containsValue("VALUE3"))
+            return 8;
+        return 9;
     }
 
     private void fillValues(Map map) {

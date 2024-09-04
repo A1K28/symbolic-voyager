@@ -43,18 +43,18 @@ public class Z3MapCollection implements IStack {
     public Expr constructor(Expr var1) {
         MapModel mapModel = constructor(ihc(var1), false);
         stack.add(mapModel.getHashCode(), mapModel);
-        return mapModel.getArray();
+        return ctx.mkString("Map"+mapModel.getHashCode());
     }
 
     public Expr constructor(Expr var1, Expr var2) {
         return constructor(ihc(var1), getModel(var2));
     }
 
-    private ArrayExpr constructor(int hashCode, MapModel fromMap) {
+    private Expr constructor(int hashCode, MapModel fromMap) {
         MapModel newModel = new MapModel(fromMap);
         newModel.setHashCode(hashCode);
         stack.add(newModel.getHashCode(), newModel);
-        return newModel.getArray();
+        return ctx.mkString("Map"+newModel.getHashCode());
     }
 
     private MapModel constructor(int hashCode, boolean isSizeUnknown) {
@@ -288,7 +288,7 @@ public class Z3MapCollection implements IStack {
         target.setArray(arr);
         Z3Translator.makeSolver().add(ctx.mkEq(source.getArray(), arr));
         stack.add(target.getHashCode(), target);
-        return target.getArray();
+        return ctx.mkString("Map"+target.getHashCode());
     }
 
     public Expr of(Expr... vars) {
@@ -296,16 +296,18 @@ public class Z3MapCollection implements IStack {
         ArrayExpr map = model.getArray();
         ArrayExpr set = ctx.mkEmptySet(model.getKeySort());
         ArithExpr size = ctx.mkInt(0);
-        for (int i = 0; i < vars.length; i+=2) {
-            Expr value = model.mkDecl(vars[i], vars[i+1], ctx.mkBool(false));
-            map = ctx.mkStore(map, vars[i], value);
-            model.addDiscoveredKey(vars[i]);
-            BoolExpr exists = ctx.mkSetMembership(vars[i], set);
-            size = incrementSizeIfNotExists(size, exists);
+        if (vars != null) {
+            for (int i = 0; i < vars.length; i+=2) {
+                Expr value = model.mkDecl(vars[i], vars[i+1], ctx.mkBool(false));
+                map = ctx.mkStore(map, vars[i], value);
+                model.addDiscoveredKey(vars[i]);
+                BoolExpr exists = ctx.mkSetMembership(vars[i], set);
+                size = incrementSizeIfNotExists(size, exists);
+            }
         }
         model.setArray(map);
         model.setSize(size);
-        return model.getArray();
+        return ctx.mkString("Map"+model.getHashCode());
     }
 
     private Expr getValue(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
@@ -403,16 +405,6 @@ public class Z3MapCollection implements IStack {
         source.getDiscoveredKeys().forEach(target::addDiscoveredKey);
     }
 
-    private BoolExpr equalsElements(MapModel m1, MapModel m2, Expr index) {
-        Expr v1 = ctx.mkSelect(m1.getArray(), index);
-        Expr v2 = ctx.mkSelect(m2.getArray(), index);
-        return ctx.mkAnd(
-                ctx.mkEq(m1.getKey(v1), m2.getKey(v2)),
-                ctx.mkEq(m1.getValue(v1), m2.getValue(v2)),
-                ctx.mkEq(m1.isEmpty(v1), m2.isEmpty(v2))
-        );
-    }
-
     private Expr getByKey(MapModel model, Expr key) {
         model.addDiscoveredKey(key);
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
@@ -447,10 +439,6 @@ public class Z3MapCollection implements IStack {
         return (ArithExpr) ctx.mkITE(exists, size, ctx.mkAdd(size, ctx.mkInt(1)));
     }
 
-    private ArithExpr decrementSizeIfExists(ArithExpr size, BoolExpr exists) {
-        return (ArithExpr) ctx.mkITE(exists, ctx.mkSub(size, ctx.mkInt(1)), size);
-    }
-
     private MapModel copyModel(MapModel model) {
         MapModel newModel = new MapModel(model);
         newModel.setSize(ctx.mkAdd(model.getSize(), ctx.mkInt(0)));
@@ -476,12 +464,17 @@ public class Z3MapCollection implements IStack {
 
 // gremlin niko
     public static int ihc(Object o) {
-        if (o instanceof Expr && o.toString().startsWith("Map")) {
-            try {
-                String val = o.toString().replace("Map", "");
-                val = val.substring(0, val.indexOf('!'));
-                return Integer.parseInt(val);
-            } catch (NumberFormatException ignored) {}
+        if (o instanceof Expr) {
+            String val = o.toString().replace("\"","");
+            if (val.startsWith("Map")) {
+                try {
+                    val = val.replace("Map", "");
+                    int lastIdx = val.indexOf('!');
+                    lastIdx = lastIdx == -1 ? val.length() : lastIdx;
+                    val = val.substring(0, lastIdx);
+                    return Integer.parseInt(val);
+                } catch (NumberFormatException ignored) {}
+            }
         }
         return System.identityHashCode(o);
     }
