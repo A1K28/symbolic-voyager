@@ -1,7 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3MapCollection;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3Map;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
@@ -12,13 +12,13 @@ public class Z3ExtendedContext extends Context implements IStack {
     private final Z3CachingFactory sortState;
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
-    private final Z3MapCollection z3MapCollection;
+    private final Z3Map z3Map;
 
     public Z3ExtendedContext() {
         super();
         this.sortState = new Z3CachingFactory();
 //        this.z3ListCollection = new Z3ListCollection(this);
-        this.z3MapCollection = new Z3MapCollection(this, sortState);
+        this.z3Map = new Z3Map(this, sortState);
 //        this.z3SetCollection = new Z3SetCollection(this);
     }
 
@@ -26,14 +26,14 @@ public class Z3ExtendedContext extends Context implements IStack {
     public void push() {
 //        this.z3SetCollection.push();
 //        this.z3ListCollection.push();
-        this.z3MapCollection.push();
+        this.z3Map.push();
     }
 
     @Override
     public void pop() {
 //        this.z3SetCollection.pop();
 //        this.z3ListCollection.pop();
-        this.z3MapCollection.pop();
+        this.z3Map.pop();
     }
 
     // lists
@@ -134,96 +134,92 @@ public class Z3ExtendedContext extends Context implements IStack {
 //    }
 
     // maps
-    public Optional<MapModel> getMap(Expr var1) {
-        return z3MapCollection.getMap(var1);
-    }
-
     public Optional<MapModel> getInitialMap(Expr var1) {
-        return z3MapCollection.getInitialMap(var1);
+        return z3Map.getInitialMap(var1);
     }
 
     public Expr mkMapInit(Expr var1) {
-        return z3MapCollection.constructor(var1);
+        return z3Map.constructor(var1);
     }
 
     public Expr mkMapInitFromMap(Expr var1, Expr var2) {
-        return z3MapCollection.constructor(var1, var2);
+        return z3Map.constructor(var1, var2);
     }
 
     public Expr mkMapGet(Expr var1, Expr key) {
-        return z3MapCollection.get(var1, key);
+        return z3Map.get(var1, key);
     }
 
     public Expr mkMapPut(Expr var1, Expr key, Expr value) {
-        return z3MapCollection.put(var1, key, value);
+        return z3Map.put(var1, key, value);
     }
 
     public Expr mkMapLength(Expr var1) {
-        return z3MapCollection.size(var1);
+        return z3Map.size(var1);
     }
 
     public BoolExpr mkMapIsEmpty(Expr var1) {
-        return z3MapCollection.isEmpty(var1);
+        return z3Map.isEmpty(var1);
     }
 
     public BoolExpr mkMapContainsKey(Expr var1, Expr key) {
-        return z3MapCollection.containsKey(var1, key);
+        return z3Map.containsKey(var1, key);
     }
 
     public BoolExpr mkMapContainsKey(MapModel model, Expr key) {
-        return z3MapCollection.containsKey(model, key);
+        return z3Map.containsKey(model, key);
     }
 
     public BoolExpr mkMapContainsKeyValuePair(MapModel model, Expr key, Expr value) {
-        return z3MapCollection.containsKeyValuePair(model, key, value);
+        return z3Map.containsKeyValuePair(model, key, value);
     }
 
     public BoolExpr mkMapContainsValue(Expr var1, Expr value) {
-        return z3MapCollection.containsValue(var1, value);
+        return z3Map.containsValue(var1, value);
     }
 
     public Expr mkMapRemove(Expr var1, Expr key) {
-        return z3MapCollection.remove(var1, key);
+        return z3Map.remove(var1, key);
     }
 
     public Expr mkMapPutAll(Expr var1, Expr var2) {
-        return z3MapCollection.putAll(var1, var2);
+        return z3Map.putAll(var1, var2);
     }
 
     public Expr mkMapClear(Expr var1) {
-        return z3MapCollection.clear(var1);
+        return z3Map.clear(var1);
     }
 
     public Expr mkMapEquals(Expr var1, Expr var2) {
-        return z3MapCollection.equals(var1, var2);
+        return z3Map.equals(var1, var2);
     }
 
     public Expr mkMapGetOrDefault(Expr var1, Expr key, Expr def) {
-        return z3MapCollection.getOrDefault(var1, key, def);
+        return z3Map.getOrDefault(var1, key, def);
     }
 
     public Expr mkMapPutIfAbsent(Expr var1, Expr key, Expr value) {
-        return z3MapCollection.putIfAbsent(var1, key, value);
+        return z3Map.putIfAbsent(var1, key, value);
     }
 
     public Expr mkMapRemove(Expr var1, Expr key, Expr value) {
-        return z3MapCollection.removeByKeyAndValue(var1, key, value);
+        return z3Map.removeByKeyAndValue(var1, key, value);
     }
 
     public Expr mkMapReplace(Expr var1, Expr key, Expr value) {
-        return z3MapCollection.replace(var1, key, value);
+        return z3Map.replace(var1, key, value);
     }
 
     public Expr mkMapReplace(Expr var1, Expr key, Expr oldValue, Expr newValue) {
-        return z3MapCollection.replaceByKeyAndValue(var1, key, oldValue, newValue);
+        return z3Map.replaceByKeyAndValue(var1, key, oldValue, newValue);
     }
 
     public Expr mkMapCopyOf(Expr var1) {
-        return z3MapCollection.copyOf(var1);
+        return z3Map.copyOf(var1);
     }
 
     public Expr mkMapOf(List<Expr> vars) {
-        return z3MapCollection.of(vars.toArray(new Expr[0]));
+        return z3Map.of(vars.toArray(new Expr[0]));
     }
 
     // sets

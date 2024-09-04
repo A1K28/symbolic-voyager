@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class Z3MapCollection implements IStack {
+public class Z3Map implements IStack {
     private final Context ctx;
     private final Z3CachingFactory sortState;
     private final Z3Stack<Integer, MapModel> stack;
@@ -26,14 +26,10 @@ public class Z3MapCollection implements IStack {
         stack.pop();
     }
 
-    public Z3MapCollection(Context context, Z3CachingFactory sortState) {
+    public Z3Map(Context context, Z3CachingFactory sortState) {
         this.ctx = context;
         this.sortState = sortState;
         this.stack = new Z3Stack<>();
-    }
-
-    public Optional<MapModel> getMap(Expr var1) {
-        return stack.get(ihc(var1));
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {

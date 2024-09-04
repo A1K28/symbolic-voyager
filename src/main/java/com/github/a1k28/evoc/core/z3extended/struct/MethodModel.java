@@ -99,7 +99,7 @@ public enum MethodModel {
     MAP_REPLACE(Map.class, "java.lang.Object replace(java.lang.Object,java.lang.Object)", true),
 //    MAP_OF_ENTRIES(Map.class, "java.util.Map ofEntries(java.util.Map$Entry[])", false),
 //    MAP_ENTRY(Map.class, "java.util.Map$Entry entry(java.lang.Object,java.lang.Object)", false),
-    MAP_COPY_OF(Map.class, "java.util.Map copyOf(java.util.Map)", false),
+    MAP_COPY_OF(Map.class, "java.util.Map copyOf(java.util.Map)", true),
     MAP_OF(Map.class, "java.util.Map of()", false),
     MAP_OF_1(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object)", false),
     MAP_OF_2(Map.class, "java.util.Map of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),

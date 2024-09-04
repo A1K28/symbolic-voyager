@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Z3MapCollectionTest {
+public class Z3MapTest {
     @SymbolicTest({0})
     @DisplayName("test_copy_of_1")
     public int test_copy_of_1(String a) {
