@@ -3,30 +3,8 @@ package com.github.a1k28.evoc.core.z3extended.struct;
 import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-//get
-//put
-//size
-//isEmpty
-//containsKey
-//containsValue
-//remove
-//putall
-//clear
-//equals
-//getOrDefault
-//putIfAbsent
-//removeByKeyAndValue
-//replace
-//copyOf
-//mapOf
-
-//replaceByKeyAndValue -- ?
-
 
 public class Z3MapCollectionTest {
     @SymbolicTest({0})
@@ -118,29 +96,27 @@ public class Z3MapCollectionTest {
         return 8;
     }
 
-//    @SymbolicTest({0,3,4,8})
-//    @DisplayName("test_replace_by_key_and_value_winput_1")
-//    public int test_replace_by_key_and_value_winput_1(Map map1, String a) {
-//        map1.put("KEY1", a);
-//        map1.put("KEY2", "VALUE2");
-//        if (map1.replace("KEY1", "VALUE1", "VALUE3"))
-//            return 0;
-//        if (!map1.replace("KEY2", "VALUE2", "VALUE4"))
-//            return 1;
-//        if (!map1.replace("KEY1", a, a+"ASD"))
-//            return 2;
-//        if (map1.containsValue("VALUE2"))
-//            return 3;
-//        if (map1.containsValue(a))
-//            return 4;
-////        if (!map1.containsValue(a+"ASD"))
-////            return 5;
-////        if (!map1.containsValue("VALUE4"))
-////            return 6;
-//        if (map1.containsValue("VALUE3"))
-//            return 5;
-//        return 6;
-//    }
+    @SymbolicTest({0,1,4,5,6,7})
+    @DisplayName("test_replace_by_key_and_value_winput_1")
+    public int test_replace_by_key_and_value_winput_1(Map map1, String a) {
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        if (map1.replace("KEY1", "VALUE1", "VALUE3"))
+            return 0;
+        if (map1.replace("KEY1", "VALUE3", a+"ASD"))
+            return 1;
+        if (!map1.containsValue("VALUE2"))
+            return 2;
+        if (!map1.containsValue(a))
+            return 3;
+        if (!map1.containsValue(a+"ASD"))
+            return 4;
+        if (!map1.containsValue("VALUE4"))
+            return 5;
+        if (map1.containsValue("VALUE3"))
+            return 6;
+        return 7;
+    }
 
     @SymbolicTest({0,1,2})
     @DisplayName("test_remove_by_key_and_value_1")
@@ -776,6 +752,21 @@ public class Z3MapCollectionTest {
                 return 2;
         }
         return 3;
+    }
+
+    @SymbolicTest({1,2,3,4})
+    @DisplayName("test_size_winput_4")
+    public int test_size_winput_4(Map map1, Map map2, String a) {
+        map1.put(a, "ASD");
+        if (map1.size() == 0)
+            return 0;
+        if (map2.size() == 0)
+            return 1;
+        if (map1.size() == 3)
+            return 2;
+        if (map2.size() == 10)
+            return 3;
+        return 4;
     }
 
     @SymbolicTest({2})

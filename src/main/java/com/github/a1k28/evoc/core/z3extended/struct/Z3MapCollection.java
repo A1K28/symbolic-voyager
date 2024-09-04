@@ -150,7 +150,6 @@ public class Z3MapCollection implements IStack {
     public BoolExpr containsKeyValuePair(MapModel model, Expr key, Expr value) {
         Expr retrieved = ctx.mkSelect(model.getArray(), key);
         BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, key, value);
-        model.addDiscoveredKey(key);
         return exists;
     }
 

@@ -95,8 +95,9 @@ public class Z3ExtendedSolver {
             log.debug("(filled) Key:Value " + key + ":" + value);
 
             // update solver state
-            BoolExpr contains = ctx.mkMapContainsKeyValuePair(mapModel, key, value);
-            solver.add(contains);
+            solver.add(ctx.mkMapContainsKeyValuePair(mapModel, key, value));
+            solver.add(ctx.mkEq(key, mapModel.getKey(retrieved)));
+            solver.add(ctx.mkEq(value, mapModel.getValue(retrieved)));
         }
 
         if (target.size() < size)
