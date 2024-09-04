@@ -66,14 +66,12 @@ public class SStack implements IStack {
     @Override
     public void push() {
         stack.add(new HashMap<>());
-        Z3Translator.getContext().push();
         index++;
     }
 
     @Override
     public void pop() {
         stack.remove(index);
-        Z3Translator.getContext().pop();
         index--;
     }
 

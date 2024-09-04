@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
 import com.github.a1k28.evoc.helper.Logger;
+import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
@@ -80,6 +81,10 @@ public class Z3Translator {
 
     public static boolean containsAssertion(Expr assertion) {
         return Arrays.asList(makeSolver().getAssertions()).contains(assertion);
+    }
+
+    public IStack getStack() {
+        return ctx;
     }
 
     public Expr mkEq(Expr expr, boolean val) {

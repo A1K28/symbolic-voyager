@@ -40,10 +40,10 @@ public class SymbolicExecutor {
 
     public SymbolicExecutor(Class<?> clazz, Method method, SParamList paramList, boolean isInnerCall)
             throws ClassNotFoundException {
+        this.isInnerCall = isInnerCall;
         this.sMethodPath = createMethodPath(clazz, method, paramList);
         this.z3t = new Z3Translator(sMethodPath, symbolicVarStack);
         this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
-        this.isInnerCall = isInnerCall;
     }
 
     public SatisfiableResults analyzeSymbolicPaths()
@@ -75,10 +75,7 @@ public class SymbolicExecutor {
     }
 
     private void analyzePaths(SNode node) throws ClassNotFoundException {
-        if (!isInnerCall) {
-            solver.push();
-            symbolicVarStack.push();
-        }
+        push();
 
         SType type = null;
 
@@ -116,10 +113,7 @@ public class SymbolicExecutor {
             for (SNode child : node.getChildren())
                 analyzePaths(child);
 
-        if (!isInnerCall) {
-            solver.pop();
-            symbolicVarStack.pop();
-        }
+        pop();
     }
 
     private void handleBranch(SNode node) {
@@ -200,8 +194,7 @@ public class SymbolicExecutor {
         VarType varType = getVarType(node.getUnit());
 
         for (SatisfiableResult result : satisfiableResults) {
-            solver.push();
-            symbolicVarStack.push();
+            push();
 
             // add fields
             for (SVar field : result.getFields())
@@ -221,8 +214,7 @@ public class SymbolicExecutor {
             for (SNode child : node.getChildren())
                 analyzePaths(child);
 
-            solver.pop();
-            symbolicVarStack.pop();
+            pop();
         }
     }
 
@@ -254,7 +246,9 @@ public class SymbolicExecutor {
         if (solver.check() != Status.SATISFIABLE) {
             log.warn("Path is unsatisfiable\n");
             return Z3Status.UNSATISFIABLE_END;
-        } else if (SType.RETURN == type || SType.RETURN_VOID == type || SType.THROW == type) {
+        }
+        if (SType.INVOKE == type) return Z3Status.SATISFIABLE_END;
+        if (SType.RETURN == type || SType.RETURN_VOID == type || SType.THROW == type) {
             if (node.getChildren().isEmpty()) {
                 // if tail
                 SVarEvaluated returnValue = null;
@@ -269,7 +263,6 @@ public class SymbolicExecutor {
                 return Z3Status.SATISFIABLE_END;
             }
         }
-        if (SType.INVOKE == type) return Z3Status.SATISFIABLE_END;
         return Z3Status.SATISFIABLE;
     }
 
@@ -359,6 +352,20 @@ public class SymbolicExecutor {
         if (val.startsWith("this.")) val = val.substring(5);
         if (sMethodPath.getFields().contains(val)) return VarType.FIELD;
         return VarType.getType(value);
+    }
+
+    private void push() {
+        solver.push();
+        symbolicVarStack.push();
+        if (!isInnerCall)
+            z3t.getStack().push();
+    }
+
+    private void pop() {
+        solver.pop();
+        symbolicVarStack.pop();
+        if (!isInnerCall)
+            z3t.getStack().pop();
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
