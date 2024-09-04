@@ -251,13 +251,10 @@ public class Z3MapCollection implements IStack {
         MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
-        Expr previousValue = ctx.mkSelect(model.getArray(), key);
-        BoolExpr exists = existsByKeyAndValueCondition(model, previousValue, key, oldValue);
-
+        Expr retrieved = ctx.mkSelect(model.getArray(), key);
+        BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, key, oldValue);
         Expr value = model.mkDecl(key, newValue, ctx.mkBool(false));
-        value = ctx.mkITE(exists, value, previousValue);
-
-        map = ctx.mkStore(map, key, value);
+        map = (ArrayExpr) ctx.mkITE(exists, ctx.mkStore(map, key, value), map);
 
         model.setArray(map);
         model.addDiscoveredKey(key);
@@ -284,11 +281,14 @@ public class Z3MapCollection implements IStack {
     }
 
     public Expr copyOf(Expr var1) {
-        MapModel model = getModel(ihc(var1), false);
-        MapModel newModel = new MapModel(model);
-        newModel.setHashCode(UUID.randomUUID().toString().hashCode());
-        stack.add(newModel.getHashCode(), newModel);
-        return newModel.getArray();
+        MapModel source = getModel(ihc(var1), false);
+        MapModel target = new MapModel(source);
+        target.setHashCode(UUID.randomUUID().toString().hashCode());
+        ArrayExpr arr = mkArray(target.getHashCode(), source.getKeySort(), source.getValueSort());
+        target.setArray(arr);
+        Z3Translator.makeSolver().add(ctx.mkEq(source.getArray(), arr));
+        stack.add(target.getHashCode(), target);
+        return target.getArray();
     }
 
     public Expr of(Expr... vars) {
@@ -478,7 +478,9 @@ public class Z3MapCollection implements IStack {
     public static int ihc(Object o) {
         if (o instanceof Expr && o.toString().startsWith("Map")) {
             try {
-                return Integer.parseInt(o.toString().replace("Map", ""));
+                String val = o.toString().replace("Map", "");
+                val = val.substring(0, val.indexOf('!'));
+                return Integer.parseInt(val);
             } catch (NumberFormatException ignored) {}
         }
         return System.identityHashCode(o);

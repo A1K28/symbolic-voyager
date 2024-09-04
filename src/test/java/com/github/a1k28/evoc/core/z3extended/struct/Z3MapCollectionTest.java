@@ -21,14 +21,128 @@ import java.util.Map;
 //getOrDefault
 //putIfAbsent
 //removeByKeyAndValue
-
-//replaceByKeyAndValue
 //replace
+
+//replaceByKeyAndValue -- ?
+
 //copyOf
 //mapOf
 
 
 public class Z3MapCollectionTest {
+    @SymbolicTest({0})
+    @DisplayName("test_copy_of_1")
+    public int test_copy_of_1(String a) {
+        Map map2 = new HashMap();
+        map2.put("ASDASD", "ASDASD");
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        map2 = Map.copyOf(map1);
+        if (map1.equals(map2))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0})
+    @DisplayName("test_copy_of_winput_1")
+    public int test_copy_of_winput_1(Map map1, String a) {
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        Map map2 = Map.copyOf(map1);
+        if (map1.equals(map2))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0})
+    @DisplayName("test_copy_of_winput_2")
+    public int test_copy_of_winput_2(Map map1, Map map2) {
+        map2.put("ASDASDASDAD", "ASDAWDAW");
+        map1.put("KEY1", "VALUE1");
+        map1.put("KEY2", "VALUE2");
+        map2 = Map.copyOf(map1);
+        if (map1.equals(map2))
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_replace_1")
+    public int test_replace_1(String a) {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        map1.replace("KEY1", "VALUE3");
+        if (map1.containsKey(a))
+            return 0;
+        if (map1.containsValue("VALUE3"))
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_replace_winput_1")
+    public int test_replace_winput_1(Map map1, String a) {
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        map1.replace("KEY1", "VALUE3");
+        if (map1.containsKey(a))
+            return 0;
+        if (map1.containsValue("VALUE3"))
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0,4,8})
+    @DisplayName("test_replace_by_key_and_value_1")
+    public int test_replace_by_key_and_value_1(String a) {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        map1.put("KEY2", "VALUE2");
+        if (map1.replace("KEY1", "VALUE1", "VALUE3"))
+            return 0;
+        if (!map1.replace("KEY2", "VALUE2", "VALUE4"))
+            return 1;
+        if (!map1.replace("KEY1", a, a+"ASD"))
+            return 2;
+        if (map1.containsValue("VALUE2"))
+            return 3;
+        if (map1.containsValue(a))
+            return 4;
+        if (!map1.containsValue(a+"ASD"))
+            return 5;
+        if (!map1.containsValue("VALUE4"))
+            return 6;
+        if (map1.containsValue("VALUE3"))
+            return 7;
+        return 8;
+    }
+
+//    @SymbolicTest({0,3,4,8})
+//    @DisplayName("test_replace_by_key_and_value_winput_1")
+//    public int test_replace_by_key_and_value_winput_1(Map map1, String a) {
+//        map1.put("KEY1", a);
+//        map1.put("KEY2", "VALUE2");
+//        if (map1.replace("KEY1", "VALUE1", "VALUE3"))
+//            return 0;
+//        if (!map1.replace("KEY2", "VALUE2", "VALUE4"))
+//            return 1;
+//        if (!map1.replace("KEY1", a, a+"ASD"))
+//            return 2;
+//        if (map1.containsValue("VALUE2"))
+//            return 3;
+//        if (map1.containsValue(a))
+//            return 4;
+////        if (!map1.containsValue(a+"ASD"))
+////            return 5;
+////        if (!map1.containsValue("VALUE4"))
+////            return 6;
+//        if (map1.containsValue("VALUE3"))
+//            return 5;
+//        return 6;
+//    }
+
     @SymbolicTest({0,1,2})
     @DisplayName("test_remove_by_key_and_value_1")
     public int test_remove_by_key_and_value_1(String a) {
