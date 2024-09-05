@@ -95,9 +95,7 @@ public class Z3ExtendedSolver {
             log.debug("(filled) Key:Value " + key + ":" + value);
 
             // update solver state
-            add(ctx.mkMapContainsKeyValuePair(mapModel, key, value));
-            add(ctx.mkEq(key, mapModel.getKey(retrieved)));
-            add(ctx.mkEq(value, mapModel.getValue(retrieved)));
+            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, key, value));
         }
 
         if (target.size() < size)
@@ -158,9 +156,7 @@ public class Z3ExtendedSolver {
 
             // Add a constraint to exclude this key in the next iteration
             add(ctx.mkNot(ctx.mkEq(symbolicKey, key)));
-
-            BoolExpr contains = ctx.mkMapContainsKeyValuePair(mapModel, key, value);
-            add(contains);
+            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, key, value));
         }
         solver.pop();
     }

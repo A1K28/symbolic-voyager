@@ -308,6 +308,14 @@ public class Z3Map implements IStack {
         return ctx.mkString("Map"+model.getHashCode());
     }
 
+    public BoolExpr existsByKeyAndValueCondition(MapModel model, Expr retrieved, Expr key, Expr value) {
+        return ctx.mkAnd(
+                ctx.mkNot(model.isEmpty(retrieved)),
+                ctx.mkEq(model.getKey(retrieved), key),
+                ctx.mkEq(model.getValue(retrieved), value)
+        );
+    }
+
     private Expr getValue(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
         Expr retrieved = valueComparison ?
                 getByValue(model, expr) : getByKey(model, expr);
@@ -422,14 +430,6 @@ public class Z3Map implements IStack {
         return ctx.mkAnd(
                 ctx.mkNot(model.isEmpty(retrieved)),
                 ctx.mkEq(model.getKey(retrieved), key)
-        );
-    }
-
-    private BoolExpr existsByKeyAndValueCondition(MapModel model, Expr retrieved, Expr key, Expr value) {
-        return ctx.mkAnd(
-                ctx.mkNot(model.isEmpty(retrieved)),
-                ctx.mkEq(model.getKey(retrieved), key),
-                ctx.mkEq(model.getValue(retrieved), value)
         );
     }
 
