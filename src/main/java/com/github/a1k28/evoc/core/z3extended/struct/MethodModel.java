@@ -2,7 +2,6 @@ package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
 import lombok.RequiredArgsConstructor;
 import sootup.core.signatures.MethodSignature;
 
