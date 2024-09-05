@@ -5,6 +5,9 @@ import com.microsoft.z3.Expr;
 import java.util.Collections;
 import java.util.List;
 
+// only 2 possibilies:
+// 1. empty params list implies that all expressions should be interpreted.
+// 2. full params list implies that all expressions are already set.
 public class SParamList {
     private int index = 0;
     private final int size;

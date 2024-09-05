@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SymbolicTestEngine implements TestEngine {
     private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
+    private final Map<Class, SymbolicExecutor> symbolicExecutorMap = new HashMap<>();
 
     static {
         System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
@@ -78,7 +79,6 @@ public class SymbolicTestEngine implements TestEngine {
 
     private void executeMethod(TestMethodTestDescriptor methodDescriptor, EngineExecutionListener listener) {
         try {
-            Z3Translator.initZ3(true);
             UniqueId uniqueId = methodDescriptor.getUniqueId();
             assertMethodCorrectness(
                     methodDescriptor.getTestClass(),
@@ -93,7 +93,11 @@ public class SymbolicTestEngine implements TestEngine {
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
-        SatisfiableResults sr = new SymbolicExecutor(testClass, testMethod).analyzeSymbolicPaths();
+        if (!symbolicExecutorMap.containsKey(testClass))
+            symbolicExecutorMap.put(testClass, new SymbolicExecutor(testClass));
+        SymbolicExecutor symbolicExecutor = symbolicExecutorMap.get(testClass);
+        symbolicExecutor.refresh();
+        SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
         Map<SatisfiableResult, EvaluatedResult> evalMap = SymbolTranslator.translate(sr);
         for (SatisfiableResult satisfiableResult : sr.getResults()) {
             EvaluatedResult res = evalMap.get(satisfiableResult);

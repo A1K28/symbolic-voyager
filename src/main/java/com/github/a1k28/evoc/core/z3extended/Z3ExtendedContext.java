@@ -13,13 +13,18 @@ public class Z3ExtendedContext extends Context implements IStack {
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
     private final Z3Map z3Map;
+    private final Z3ExtendedSolver solver;
 
     public Z3ExtendedContext() {
         super();
         this.sortState = new Z3CachingFactory();
 //        this.z3ListCollection = new Z3ListCollection(this);
-        this.z3Map = new Z3Map(this, sortState);
 //        this.z3SetCollection = new Z3SetCollection(this);
+
+        Solver slvr = this.mkSolver();
+        this.solver = new Z3ExtendedSolver(this, slvr);
+
+        this.z3Map = new Z3Map(this, sortState, solver);
     }
 
     @Override
@@ -34,6 +39,10 @@ public class Z3ExtendedContext extends Context implements IStack {
 //        this.z3SetCollection.pop();
 //        this.z3ListCollection.pop();
         this.z3Map.pop();
+    }
+
+    public Z3ExtendedSolver getSolver() {
+        return this.solver;
     }
 
     // lists

@@ -56,7 +56,7 @@ public class Z3ExtendedSolver {
         while (low <= high) {
             int mid = (low + high) / 2;
             solver.push();
-            solver.add(ctx.mkLe(x, ctx.mkInt(mid)));
+            add(ctx.mkLe(x, ctx.mkInt(mid)));
 
             if (solver.check() == Status.SATISFIABLE) {
                 result = mid;
@@ -68,7 +68,7 @@ public class Z3ExtendedSolver {
         }
 
         // TODO: verify for unintended side-effects
-        solver.add(ctx.mkEq(x, ctx.mkInt(result)));
+        add(ctx.mkEq(x, ctx.mkInt(result)));
 
         return result;
     }
@@ -81,7 +81,7 @@ public class Z3ExtendedSolver {
 
             // only continue if the condition is UNSATISFIABLE
             if (!isUnsatisfiable(condition)) {
-                solver.add(condition);
+                add(condition);
                 continue;
             };
 
@@ -95,9 +95,9 @@ public class Z3ExtendedSolver {
             log.debug("(filled) Key:Value " + key + ":" + value);
 
             // update solver state
-            solver.add(ctx.mkMapContainsKeyValuePair(mapModel, key, value));
-            solver.add(ctx.mkEq(key, mapModel.getKey(retrieved)));
-            solver.add(ctx.mkEq(value, mapModel.getValue(retrieved)));
+            add(ctx.mkMapContainsKeyValuePair(mapModel, key, value));
+            add(ctx.mkEq(key, mapModel.getKey(retrieved)));
+            add(ctx.mkEq(value, mapModel.getValue(retrieved)));
         }
 
         if (target.size() < size)
@@ -135,8 +135,8 @@ public class Z3ExtendedSolver {
 
         // Add the constraint to the solver
         solver.push();
-        solver.add(existsMatch);
-        solver.add(ctx.mkImplies(existsMatch, condition));
+        add(existsMatch);
+        add(ctx.mkImplies(existsMatch, condition));
 
         int i = 0;
         while (solver.check() == Status.SATISFIABLE && i < size) {
@@ -157,17 +157,17 @@ public class Z3ExtendedSolver {
             log.debug("(filled unknown) Key:Value " + key + ":" + value);
 
             // Add a constraint to exclude this key in the next iteration
-            solver.add(ctx.mkNot(ctx.mkEq(symbolicKey, key)));
+            add(ctx.mkNot(ctx.mkEq(symbolicKey, key)));
 
             BoolExpr contains = ctx.mkMapContainsKeyValuePair(mapModel, key, value);
-            solver.add(contains);
+            add(contains);
         }
         solver.pop();
     }
 
     private Status getSatisfiableStatus(BoolExpr x) {
         solver.push();
-        solver.add(x);
+        add(x);
         Status status = solver.check();
         solver.pop();
         if (status == Status.UNKNOWN)

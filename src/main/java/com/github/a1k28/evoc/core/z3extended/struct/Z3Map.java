@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.Z3CachingFactory;
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.model.common.IStack;
@@ -15,6 +16,7 @@ public class Z3Map implements IStack {
     private final Context ctx;
     private final Z3CachingFactory sortState;
     private final Z3Stack<Integer, MapModel> stack;
+    private final Z3ExtendedSolver solver;
 
     @Override
     public void push() {
@@ -26,9 +28,10 @@ public class Z3Map implements IStack {
         stack.pop();
     }
 
-    public Z3Map(Context context, Z3CachingFactory sortState) {
+    public Z3Map(Context context, Z3CachingFactory sortState, Z3ExtendedSolver solver) {
         this.ctx = context;
         this.sortState = sortState;
+        this.solver = solver;
         this.stack = new Z3Stack<>();
     }
 
@@ -68,7 +71,7 @@ public class Z3Map implements IStack {
 
             // size assertion
             BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
-            Z3Translator.makeSolver().add(sizeAssertion);
+            solver.add(sizeAssertion);
         } else {
             size = ctx.mkInt(0);
             array = mkEmptyArray(keySort, sentinel);
@@ -122,7 +125,7 @@ public class Z3Map implements IStack {
             // save condition in state if not present
             Expr condition = ctx.mkGe(model.getSize(), size);
             if (!Z3Translator.containsAssertion(condition))
-                Z3Translator.makeSolver().add(ctx.mkGe(model.getSize(), size));
+                solver.add(ctx.mkGe(model.getSize(), size));
         }
 
         return model.getSize();
@@ -160,7 +163,7 @@ public class Z3Map implements IStack {
                 exists,
                 1, null, null, null, null
         );
-        Z3Translator.makeSolver().add(ctx.mkImplies(existsMatch, exists));
+        solver.add(ctx.mkImplies(existsMatch, exists));
 
         model.addDiscoveredKey(key);
         return existsMatch;
@@ -281,7 +284,7 @@ public class Z3Map implements IStack {
         target.setHashCode(UUID.randomUUID().toString().hashCode());
         ArrayExpr arr = mkArray(target.getHashCode(), source.getKeySort(), source.getValueSort());
         target.setArray(arr);
-        Z3Translator.makeSolver().add(ctx.mkEq(source.getArray(), arr));
+        solver.add(ctx.mkEq(source.getArray(), arr));
         stack.add(target.getHashCode(), target);
         return ctx.mkString("Map"+target.getHashCode());
     }

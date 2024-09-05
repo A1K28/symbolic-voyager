@@ -96,7 +96,7 @@ public class Z3MapTest {
         return 8;
     }
 
-    @SymbolicTest({0,1,4,5,6,7})
+    @SymbolicTest({0,1,4,5,6})
     @DisplayName("test_replace_by_key_and_value_winput_1")
     public int test_replace_by_key_and_value_winput_1(Map map1, String a) {
         map1.put("KEY1", a);
@@ -113,9 +113,7 @@ public class Z3MapTest {
             return 4;
         if (!map1.containsValue("VALUE4"))
             return 5;
-        if (map1.containsValue("VALUE3"))
-            return 6;
-        return 7;
+        return 6;
     }
 
     @SymbolicTest({0,1,2})

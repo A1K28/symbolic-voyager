@@ -1,6 +1,8 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
 import lombok.Getter;
 import sootup.core.jimple.basic.Value;
@@ -9,6 +11,7 @@ import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
 import sootup.core.model.Body;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 @Getter
@@ -17,20 +20,30 @@ public class SMethodPath {
 
     private final Body body;
     private final SNode root;
-    private final Set<String> fields;
-    private final Class<?> clazz;
-    private final SParamList paramList;
+    private final Method method;
     private final Map<Stmt, SNode> sNodeMap; // used for GOTO tracking
     private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
+    private SParamList paramList;
+    private SatisfiableResults satisfiableResults;
+    private JumpNode jumpNode;
 
-    public SMethodPath(Body body, Class<?> clazz, SParamList paramList) {
+    public SMethodPath(Body body, Method method) {
         this.body = body;
+        this.method = method;
         this.root = new SNode();
-        this.fields = new HashSet<>();
         this.sNodeMap = new HashMap<>();
         this.gotoCount = new HashMap<>();
-        this.clazz = clazz;
+    }
+
+    public SMethodPath(SMethodPath skeleton, SParamList paramList, JumpNode jumpNode) {
+        this.body = skeleton.body;
+        this.method = skeleton.method;
+        this.root = skeleton.root;
+        this.sNodeMap = skeleton.sNodeMap;
         this.paramList = paramList;
+        this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
+        this.gotoCount = new HashMap<>();
+        this.jumpNode = jumpNode;
     }
 
     public SNode createNode(Stmt unit) {
@@ -44,10 +57,6 @@ public class SMethodPath {
     public void print() {
         this.root.print(2);
         log.empty();
-    }
-
-    public String getClassname() {
-        return this.clazz.getName();
     }
 
     public List<SNode> getSNodes(Stmt unit) {
@@ -66,7 +75,7 @@ public class SMethodPath {
         return this.gotoCount.get(sNode) <= 10; // limit is 10
     }
 
-    private SType getType(Stmt unit) {
+    private static SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;
         if (clazz == JRetStmt.class) return SType.RETURN;

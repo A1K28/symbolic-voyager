@@ -6,6 +6,7 @@ import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,7 @@ public class SStack implements IStack {
     public SStack() {
         this.index = 0;
         this.stack = new ArrayList<>();
-        this.stack.add(new HashMap<>());
+        this.stack.add(new LinkedHashMap<>());
     }
 
     public Optional<SVar> get(String key) {
@@ -29,18 +30,14 @@ public class SStack implements IStack {
         return Optional.empty();
     }
 
-    public void add(SVar sVar) {
-        add(sVar.getName(), sVar.getValue(), sVar.getExpr(), sVar.getType());
-    }
-
-    public SVar add(String name, Value value, Expr expr, VarType type) {
+    public SVar add(String name, Value value, Expr expr, VarType type, Method method) {
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
         if (optional.isPresent()) {
-            sVar = new SVar(name, value, expr, type, false);
+            sVar = new SVar(name, value, expr, type, method, false);
         }
         else {
-            sVar = new SVar(name, value, expr, type, true);
+            sVar = new SVar(name, value, expr, type, method, true);
         }
         _add(sVar);
         return sVar;
@@ -65,7 +62,7 @@ public class SStack implements IStack {
 
     @Override
     public void push() {
-        stack.add(new HashMap<>());
+        stack.add(new LinkedHashMap<>());
         index++;
     }
 
