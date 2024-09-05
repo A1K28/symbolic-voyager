@@ -124,28 +124,8 @@ public class SymbolicExecutor {
         if (node.getType() == SType.RETURN
                 || node.getType() == SType.RETURN_VOID
                 || node.getType() == SType.THROW) {
-            if (sMethodPath.getJumpNode() != null) {
-                JumpNode jn = sMethodPath.getJumpNode();
-                push();
-                if (node.getType() == SType.RETURN
-                        && jn.getNode().getUnit() instanceof JAssignStmt<?,?> assignStmt) {
-                    JReturnStmt stmt = (JReturnStmt) node.getUnit();
-                    Expr expr = z3t.translateValue(
-                            stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getMethod());
-
-                    Value leftOp = assignStmt.getLeftOp();
-                    VarType leftOpVarType = getVarType(leftOp);
-
-                    z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath.getMethod());
-                }
-                for (SNode child : jn.getNode().getChildren())
-                    analyzePaths(jn.getMethodPath(), child);
-                pop();
-
-                type = SType.INVOKE;
-            } else {
-                type = node.getType();
-            }
+            // TODO: handle throw clause
+            type = handleReturn(sMethodPath, node);
         }
 
         if (Z3Status.SATISFIABLE == checkSatisfiability(sMethodPath, node, type))
@@ -206,6 +186,34 @@ public class SymbolicExecutor {
             z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath.getMethod());
         }
         return SType.ASSIGNMENT;
+    }
+
+    private SType handleReturn(SMethodPath sMethodPath, SNode node)
+            throws ClassNotFoundException {
+        if (sMethodPath.getJumpNode() == null)
+            return node.getType();
+
+        push();
+
+        JumpNode jn = sMethodPath.getJumpNode();
+        if (node.getType() == SType.RETURN
+                && jn.getNode().getUnit() instanceof JAssignStmt<?, ?> assignStmt) {
+            JReturnStmt stmt = (JReturnStmt) node.getUnit();
+            Expr expr = z3t.translateValue(
+                    stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getMethod());
+
+            Value leftOp = assignStmt.getLeftOp();
+            VarType leftOpVarType = getVarType(leftOp);
+
+            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath.getMethod());
+        }
+
+        for (SNode child : jn.getNode().getChildren())
+            analyzePaths(jn.getMethodPath(), child);
+
+        pop();
+
+        return SType.INVOKE;
     }
 
     private void propagate(SMethodExpr methodExpr, JumpNode jumpNode)
