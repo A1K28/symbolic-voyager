@@ -141,9 +141,6 @@ public class Z3ExtendedSolver {
             i++;
             Model model = solver.getModel();
 
-            // Evaluate the symbolicKey in the current model
-//            Expr<SeqSort> keyValue = model.eval(symbolicKey, true);
-
             // assuming that all keys are unique across different maps
             String uuid = UUID.randomUUID().toString();
             uuid = uuid.substring(uuid.lastIndexOf("-")+1);
