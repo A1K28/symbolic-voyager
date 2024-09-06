@@ -190,8 +190,6 @@ public class SymbolicExecutor {
 
     private SType handleReturn(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        SStack stack = sMethodPath.getSymbolicVarStack();
-
         if (sMethodPath.getJumpNode() == null)
             return node.getType();
 
@@ -202,12 +200,12 @@ public class SymbolicExecutor {
                 && jn.getNode().getUnit() instanceof JAssignStmt<?, ?> assignStmt) {
             JReturnStmt stmt = (JReturnStmt) node.getUnit();
             Expr expr = z3t.translateValue(
-                    stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getMethod(), stack);
+                    stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getMethod(), sMethodPath.getSymbolicVarStack());
 
             Value leftOp = assignStmt.getLeftOp();
             VarType leftOpVarType = getVarType(leftOp);
 
-            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath.getMethod(), stack);
+            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath.getMethod(), jn.getMethodPath().getSymbolicVarStack());
         }
 
         for (SNode child : jn.getNode().getChildren())
