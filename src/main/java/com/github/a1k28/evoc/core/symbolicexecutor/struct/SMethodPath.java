@@ -26,6 +26,7 @@ public class SMethodPath {
     private SParamList paramList;
     private SatisfiableResults satisfiableResults;
     private JumpNode jumpNode;
+    private SStack symbolicVarStack;
 
     public SMethodPath(Body body, Method method) {
         this.body = body;
@@ -35,7 +36,10 @@ public class SMethodPath {
         this.gotoCount = new HashMap<>();
     }
 
-    public SMethodPath(SMethodPath skeleton, SParamList paramList, JumpNode jumpNode) {
+    public SMethodPath(SMethodPath skeleton,
+                       SParamList paramList,
+                       JumpNode jumpNode,
+                       SStack symbolicVarStack) {
         this.body = skeleton.body;
         this.method = skeleton.method;
         this.root = skeleton.root;
@@ -44,6 +48,7 @@ public class SMethodPath {
         this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
         this.gotoCount = new HashMap<>();
         this.jumpNode = jumpNode;
+        this.symbolicVarStack = symbolicVarStack;
     }
 
     public SNode createNode(Stmt unit) {
