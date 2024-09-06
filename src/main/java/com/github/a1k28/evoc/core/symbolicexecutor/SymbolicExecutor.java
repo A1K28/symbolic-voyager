@@ -150,7 +150,7 @@ public class SymbolicExecutor {
         SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath.getMethod(), sMethodPath.getSymbolicVarStack());
         if (wrapped.getSType() != SType.INVOKE) return SType.OTHER;
         SMethodExpr method = wrapped.asMethod();
-        if (!method.isInvokable()) {
+        if (!method.shouldPropagate()) {
             z3t.callProverMethod(method, getVarType(invoke), sMethodPath.getSymbolicVarStack());
             return SType.OTHER;
         }
@@ -172,7 +172,7 @@ public class SymbolicExecutor {
 
         if (rightOpHolder.getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = rightOpHolder.asMethod();
-            if (methodExpr.isInvokable()) {
+            if (methodExpr.shouldPropagate()) {
                 JumpNode jumpNode = new JumpNode(sMethodPath, node);
                 propagate(methodExpr, sMethodPath, jumpNode);
                 return SType.INVOKE;

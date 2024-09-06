@@ -14,18 +14,22 @@ public class SMethodExpr extends SExpr {
     private final Value base;
     private final List<Value> args;
     private final Method method;
-    private final boolean invokable;
+    private final boolean shouldPropagate; // false means modelled, true means propagation
 
     public SMethodExpr(AbstractInvokeExpr invokeExpr,
                        Value base,
                        List<Value> args,
                        Method method,
-                       boolean invokable) {
+                       boolean shouldPropagate) {
         super(SType.INVOKE);
         this.invokeExpr = invokeExpr;
         this.args = args;
         this.base = base;
         this.method = method;
-        this.invokable = invokable;
+        this.shouldPropagate = shouldPropagate;
+    }
+
+    public boolean shouldPropagate() {
+        return this.shouldPropagate;
     }
 }
