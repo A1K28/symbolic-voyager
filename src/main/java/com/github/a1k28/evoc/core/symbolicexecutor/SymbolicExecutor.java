@@ -243,7 +243,7 @@ public class SymbolicExecutor {
                     JReturnStmt stmt = (JReturnStmt) node.getUnit();
                     Expr expr = z3t.translateValue(
                             stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getMethod());
-                    SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
+                    SVar svar = new SVar(z3t.getValueName(stmt.getOp(), sMethodPath.getMethod()),
                             stmt.getOp(),
                             expr,
                             VarType.RETURN_VALUE,

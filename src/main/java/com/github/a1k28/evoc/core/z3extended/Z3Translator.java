@@ -424,41 +424,42 @@ public class Z3Translator {
     }
 
     private Expr getSymbolicValue(Value value, VarType varType, Method method) {
-        String key = getValueName(value);
+        String key = getValueName(value, method);
         Optional<SVar> optional = symbolicVarStack.get(key);
         return optional.orElseGet(() -> saveSymbolicVar(value, value.getType(), varType, method)).getExpr();
     }
 
     private Expr getSymbolicValue(Value value, Sort sort, VarType varType, Method method) {
-        String key = getValueName(value);
+        String key = getValueName(value, method);
         Optional<SVar> optional = symbolicVarStack.get(key);
         return optional.orElseGet(() -> saveSymbolicVar(value, sort, varType, method)).getExpr();
     }
 
     public SVar saveSymbolicVar(Value value, Type type, VarType varType, Method method) {
-        String name = getValueName(value);
+        String name = getValueName(value, method);
         if (type == null) type = value.getType();
         Expr expr = mkExpr(name, type);
         return updateSymbolicVar(value, expr, varType, method);
     }
 
     public SVar saveSymbolicVar(Value value, Sort sort, VarType varType, Method method) {
-        String name = getValueName(value);
+        String name = getValueName(value, method);
         Expr expr = mkExpr(name, sort);
         return updateSymbolicVar(value, expr, varType, method);
     }
 
     public SVar updateSymbolicVar(Value variable, Expr expression, VarType varType, Method method) {
         if (variable != null && expression != null) {
-            String name = getValueName(variable);
+            String name = getValueName(variable, method);
             if (sClassInstance.getFields().contains(name)) varType = VarType.FIELD;
             return symbolicVarStack.add(name, variable, expression, varType, method);
         }
         return null;
     }
 
-    public String getValueName(Value value) {
+    public String getValueName(Value value, Method method) {
         String res = value.toString();
+        if (method != null) res += ":" + method;
         if (res.startsWith("this.")) res = res.substring(5);
         return res;
     }
