@@ -31,7 +31,9 @@ public class SClassInstance {
         if (!this.gotoCount.containsKey(sNode))
             this.gotoCount.put(sNode, 0);
         this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
-        return this.gotoCount.get(sNode) <= 10; // limit is 10
+        boolean shouldBreak = this.gotoCount.get(sNode) > 10; // limit is 10
+        if (shouldBreak) this.gotoCount.put(sNode, 0);
+        return !shouldBreak;
     }
 
     public String getClassname() {

@@ -29,14 +29,12 @@ public class SymbolicExecutor {
     private final SClassInstance sClassInstance;
     private final Z3Translator z3t;
     private Z3ExtendedSolver solver;
-//    private final Set<String> satisfiedPaths;
 
     public SymbolicExecutor(Class<?> clazz)
             throws ClassNotFoundException {
         this.sClassInstance = createClassInstance(clazz);
         this.z3t = new Z3Translator(sClassInstance);
         this.solver = z3t.getContext().getSolver();
-//        this.satisfiedPaths = new HashSet<>();
     }
 
     public void refresh() {
@@ -136,23 +134,6 @@ public class SymbolicExecutor {
             pop(sMethodPath);
         }
     }
-
-//    private boolean isPathSatisfied(SNode node, JumpNode jumpNode) {
-//        if (node.getChildren().isEmpty())
-//            return satisfiedPaths.contains(getPathCode(node, jumpNode));
-//        boolean isPathSatisfied = true;
-//        for (SNode child : node.getChildren())
-//            isPathSatisfied == isPathSatisfied && isPathSatisfied(child, jumpNode);
-//    }
-//
-//    private String getPathCode(SNode node, JumpNode jumpNode) {
-//        StringBuilder code = new StringBuilder(System.identityHashCode(node));
-//        while (jumpNode != null) {
-//            code.append(":").append(System.identityHashCode(jumpNode.getNode()));
-//            jumpNode = jumpNode.getMethodPath().getJumpNode();
-//        }
-//        return code.toString();
-//    }
 
     private void handleBranch(SMethodPath sMethodPath, SNode node) {
         JIfStmt ifStmt = (JIfStmt) node.getUnit();
@@ -258,8 +239,8 @@ public class SymbolicExecutor {
         }
         if (SType.INVOKE == type) return Z3Status.SATISFIABLE_END;
         if (SType.RETURN == type || SType.RETURN_VOID == type || SType.THROW == type) {
+            // if tail
             if (node.getChildren().isEmpty()) {
-                // if tail
                 SVarEvaluated returnValue = null;
                 if (node.getType() == SType.RETURN) {
                     JReturnStmt stmt = (JReturnStmt) node.getUnit();
