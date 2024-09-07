@@ -1,12 +1,10 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,14 +28,14 @@ public class SStack implements IStack {
         return Optional.empty();
     }
 
-    public SVar add(String name, Value value, Expr expr, VarType type, Method method) {
+    public SVar add(String name, Value value, Expr expr, VarType type) {
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
         if (optional.isPresent()) {
-            sVar = new SVar(name, value, expr, type, method, false);
+            sVar = new SVar(name, value, expr, type, false);
         }
         else {
-            sVar = new SVar(name, value, expr, type, method, true);
+            sVar = new SVar(name, value, expr, type, true);
         }
         _add(sVar);
         return sVar;
@@ -48,15 +46,6 @@ public class SStack implements IStack {
                 .map(Map::values)
                 .flatMap(Collection::stream)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-    }
-
-    public List<SVar> getFields() {
-        return stack.stream()
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .filter(e -> e.getType() == VarType.FIELD)
                 .collect(Collectors.toList());
     }
 

@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3ClassInstance;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Map;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
@@ -13,6 +14,7 @@ public class Z3ExtendedContext extends Context implements IStack {
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
     private final Z3Map z3Map;
+    private final Z3ClassInstance z3ClassInstance;
     private final Z3ExtendedSolver solver;
 
     public Z3ExtendedContext() {
@@ -25,6 +27,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.solver = new Z3ExtendedSolver(this, slvr);
 
         this.z3Map = new Z3Map(this, sortState, solver);
+        this.z3ClassInstance = new Z3ClassInstance(this, sortState, solver);
     }
 
     @Override
@@ -32,6 +35,7 @@ public class Z3ExtendedContext extends Context implements IStack {
 //        this.z3SetCollection.push();
 //        this.z3ListCollection.push();
         this.z3Map.push();
+        this.z3ClassInstance.push();
     }
 
     @Override
@@ -39,6 +43,7 @@ public class Z3ExtendedContext extends Context implements IStack {
 //        this.z3SetCollection.pop();
 //        this.z3ListCollection.pop();
         this.z3Map.pop();
+        this.z3ClassInstance.pop();
     }
 
     public Z3ExtendedSolver getSolver() {
