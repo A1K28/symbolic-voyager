@@ -16,6 +16,7 @@ public class SClassInstance {
     private final SStack symbolicFieldStack;
     private final Map<Method, SMethodPath> methodPathSkeletons;
     private final CLIOptions cliOptions;
+    private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
 
     public SClassInstance(Class<?> clazz, CLIOptions cliOptions) {
         this.fields = new HashSet<>();
@@ -23,6 +24,14 @@ public class SClassInstance {
         this.clazz = clazz;
         this.cliOptions = cliOptions;
         this.symbolicFieldStack = new SStack();
+        this.gotoCount = new HashMap<>();
+    }
+
+    public boolean incrementGotoCount(SNode sNode) {
+        if (!this.gotoCount.containsKey(sNode))
+            this.gotoCount.put(sNode, 0);
+        this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
+        return this.gotoCount.get(sNode) <= 10; // limit is 10
     }
 
     public String getClassname() {
