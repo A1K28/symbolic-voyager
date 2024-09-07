@@ -18,6 +18,7 @@ import sootup.core.model.SootClassMember;
 import sootup.core.model.SootMethod;
 import sootup.java.core.JavaSootClassSource;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +30,11 @@ public class SymbolicExecutor {
     private final SClassInstance sClassInstance;
     private final Z3Translator z3t;
     private Z3ExtendedSolver solver;
+
+    static {
+        System.load(System.getProperty("java.library.path") + File.separator + "libz3.dylib");
+        Runtime.getRuntime().addShutdownHook(new Thread(Z3Translator::close));
+    }
 
     public SymbolicExecutor(Class<?> clazz)
             throws ClassNotFoundException {
@@ -367,12 +373,6 @@ public class SymbolicExecutor {
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3java.dylib");
-//        new SymbolicPathCarver("com.github.a1k28.Stack", "test_method_call")
-//                .analyzeSymbolicPaths();
-//        close();
-
         Context ctx = new Context();
         Solver solver = ctx.mkSolver();
 

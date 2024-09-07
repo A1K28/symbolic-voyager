@@ -7,7 +7,6 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
-import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.helper.Logger;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
@@ -27,11 +26,6 @@ public class SymbolicTestEngine implements TestEngine {
     private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
     private final Map<Class, SymbolicExecutor> symbolicExecutorMap = new HashMap<>();
-
-    static {
-        System.load("/Users/ak/Desktop/z3-4.13.0-arm64-osx-11.0/bin/libz3.dylib");
-        Runtime.getRuntime().addShutdownHook(new Thread(Z3Translator::close));
-    }
 
     @Override
     public String getId() {
