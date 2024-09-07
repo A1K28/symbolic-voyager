@@ -243,12 +243,16 @@ public class SymbolicExecutor {
                     JReturnStmt stmt = (JReturnStmt) node.getUnit();
                     Expr expr = z3t.translateValue(
                             stmt.getOp(), VarType.RETURN_VALUE, sMethodPath.getSymbolicVarStack());
+                    Class<?> classType = SootHelper.translateType(stmt.getOp().getType());
                     SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
                             stmt.getOp(),
                             expr,
                             VarType.RETURN_VALUE,
+                            classType,
                             true);
-                    returnValue = new SVarEvaluated(svar, solver.getModel().eval(expr, true).toString());
+                    returnValue = new SVarEvaluated(
+                            svar,
+                            solver.getModel().eval(expr, true).toString());
                 }
                 handleSatisfiability(sMethodPath, returnValue);
                 return Z3Status.SATISFIABLE_END;
@@ -260,7 +264,8 @@ public class SymbolicExecutor {
     private void handleSatisfiability(SMethodPath sMethodPath, SVarEvaluated returnValue) {
         log.info("Path is satisfiable - " + sMethodPath.getMethod().getName());
 
-        List<SVarEvaluated> res = new ArrayList<>();
+        List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
+        List<SVarEvaluated> parametersEvaluated = new ArrayList<>();
         List<SVar> symbolicVars = sMethodPath.getSymbolicVarStack().getAll();
         symbolicVars.addAll(sClassInstance.getSymbolicFieldStack().getAll());
         for (SVar var : symbolicVars) {
@@ -280,13 +285,15 @@ public class SymbolicExecutor {
             // this is required to keep an accurate solver state
             solver.add(z3t.mkEq(var.getExpr(), evaluated));
 
+            SVarEvaluated sVarEvaluated;
             if (SortType.MAP.equals(var.getExpr().getSort())) {
-                SVarEvaluated sVarEvaluated = handleMapSatisfiability(var);
-                res.add(sVarEvaluated);
+                sVarEvaluated = handleMapSatisfiability(var);
             } else {
-                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated.toString());
-                res.add(sVarEvaluated);
+                sVarEvaluated = new SVarEvaluated(var, evaluated.toString());
             }
+
+            if (var.getType() == VarType.FIELD) fieldsEvaluated.add(sVarEvaluated);
+            else parametersEvaluated.add(sVarEvaluated);
         }
 
         if (returnValue != null)
@@ -295,10 +302,10 @@ public class SymbolicExecutor {
         // TODO: handle throw clause
         SatisfiableResult satisfiableResult = new SatisfiableResult(
                 solver.getAssertions(),
-                sClassInstance.getSymbolicFieldStack().getAll(),
+                fieldsEvaluated,
+                parametersEvaluated,
                 returnValue,
-                true,
-                res
+                true
         );
 
         sMethodPath.getSatisfiableResults().getResults().add(satisfiableResult);

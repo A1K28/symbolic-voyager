@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.helper;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
+import com.microsoft.z3.Sort;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
@@ -13,8 +14,7 @@ import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
-import sootup.core.types.ClassType;
-import sootup.core.types.Type;
+import sootup.core.types.*;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.core.JavaProject;
@@ -107,6 +107,34 @@ public class SootHelper {
         List<JavaSootField> fields = new ArrayList<>();
         addFields(sootClass, fields);
         return fields;
+    }
+
+    public static Class translateType(Type type) {
+        try {
+            if (type.getClass() == PrimitiveType.BooleanType.class)
+                return boolean.class;
+            if (type.getClass() == PrimitiveType.ByteType.class)
+                return byte.class;
+            if (type.getClass() == PrimitiveType.ShortType.class)
+                return short.class;
+            if (type.getClass() == PrimitiveType.CharType.class)
+                return char.class;
+            if (type.getClass() == PrimitiveType.IntType.class)
+                return int.class;
+            if (type.getClass() == PrimitiveType.LongType.class)
+                return long.class;
+            if (type.getClass() == PrimitiveType.FloatType.class)
+                return float.class;
+            if (type.getClass() == PrimitiveType.DoubleType.class)
+                return double.class;
+            if (type.getClass() == ArrayType.class)
+                return translateType(((ArrayType) type).getElementType()).arrayType();
+            if (type.getClass() == UnknownType.class)
+                return Object.class;
+            return Class.forName(type.toString());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static void addFields(SootClass<?> sootClass, List<JavaSootField> fields) throws ClassNotFoundException {

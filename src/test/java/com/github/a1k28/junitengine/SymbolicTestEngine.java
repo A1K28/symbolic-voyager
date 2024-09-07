@@ -2,16 +2,20 @@ package com.github.a1k28.junitengine;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.EvaluatedResult;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.helper.Logger;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
+import sootup.core.jimple.common.ref.JInstanceFieldRef;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -98,19 +102,19 @@ public class SymbolicTestEngine implements TestEngine {
         SymbolicExecutor symbolicExecutor = symbolicExecutorMap.get(testClass);
         symbolicExecutor.refresh();
         SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
-        Map<SatisfiableResult, EvaluatedResult> evalMap = SymbolTranslator.translate(sr);
+        Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
         for (SatisfiableResult satisfiableResult : sr.getResults()) {
-            EvaluatedResult res = evalMap.get(satisfiableResult);
-            Object[] parameters = res.getEvaluatedParameters();
+            ParsedResult res = evalMap.get(satisfiableResult);
+            Object[] parameters = res.getParsedParameters();
             String paramsString = Arrays.toString(parameters);
+            Object instance = testClass.getDeclaredConstructor().newInstance();
+            overwriteFields(testClass, instance, res.getParsedFields());
 
-            int expected = (int) res.getReturnValue();
-            int actual = (int) testMethod.invoke(
-                    testClass.getDeclaredConstructor().newInstance(), parameters);
+            int expected = (int) res.getParsedReturnValue();
+            int actual = (int) testMethod.invoke(instance, parameters);
             log.debug(String.format("Trying to assert parameters: %s" +
                             " with expected: %s & actual: %s codes",
                     paramsString, expected, actual));
-
 
             assertEquals(expected, actual);
             assertTrue(reachableCodes.contains(expected));
@@ -118,5 +122,26 @@ public class SymbolicTestEngine implements TestEngine {
         }
         reachableCodes.removeAll(reachedCodes);
         assertTrue(reachableCodes.isEmpty());
+    }
+
+    private void overwriteFields(Class testClass, Object instance, List<SVarEvaluated> evaluatedFields)
+            throws IllegalAccessException {
+        Field[] declaredFields = testClass.getDeclaredFields();
+        outer: for (SVarEvaluated sVarEvaluated : evaluatedFields) {
+            for (Field declaredField : declaredFields) {
+                if (equalsField(sVarEvaluated.getSvar(), declaredField)) {
+                    declaredField.setAccessible(true);
+                    declaredField.set(instance, sVarEvaluated.getEvaluated());
+                    continue outer;
+                }
+            }
+        }
+    }
+
+    private boolean equalsField(SVar sVar, Field field) {
+        JInstanceFieldRef fieldRef = (JInstanceFieldRef) sVar.getValue();
+        if (!field.getName().equals(fieldRef.getFieldSignature().getName())) return false;
+        if (!field.getType().equals(sVar.getClassType())) return false;
+        return true;
     }
 }

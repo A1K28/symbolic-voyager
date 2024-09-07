@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
+import com.github.a1k28.evoc.helper.SootHelper;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
@@ -31,11 +32,12 @@ public class SStack implements IStack {
     public SVar add(String name, Value value, Expr expr, VarType type) {
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
+        Class<?> classType = SootHelper.translateType(value.getType());
         if (optional.isPresent()) {
-            sVar = new SVar(name, value, expr, type, false);
+            sVar = new SVar(name, value, expr, type, classType, false);
         }
         else {
-            sVar = new SVar(name, value, expr, type, true);
+            sVar = new SVar(name, value, expr, type, classType, true);
         }
         _add(sVar);
         return sVar;

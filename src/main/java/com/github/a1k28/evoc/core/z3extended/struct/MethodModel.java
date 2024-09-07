@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
+import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
 import lombok.RequiredArgsConstructor;
 import sootup.core.signatures.MethodSignature;
@@ -121,6 +122,7 @@ public enum MethodModel {
     // entry.comparingByValue
     // entry.copyOf
 
+    private static final Logger log = Logger.getInstance(MethodModel.class);
     private static final Map<String, List<MethodModel>> map = new HashMap<>();
 
     static {
@@ -230,7 +232,7 @@ public enum MethodModel {
         try {
             return Class.forName(methodSignature.getDeclClassType().toString());
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            log.error("Class not found: " + e.getMessage());
             return Object.class;
         }
     }
