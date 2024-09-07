@@ -25,16 +25,32 @@ public class Z3ExecutionStackTest {
 
     @SymbolicTest({0,1,2})
     @DisplayName("test_fields_2")
-    public int test_fields_2(int param2) {
-        if (param2 > 10)
+    public int test_fields_2(int param) {
+        if (param > 10)
             field2 = 100;
         if (field2 == 100)
             return 0;
-        if (param2 <= 0)
+        if (param <= 0)
             field2 = 200;
         if (field2 == 200)
             return 1;
         return 2;
+    }
+
+    @SymbolicTest({0,1})
+    @DisplayName("test_recursion_1")
+    public int test_recursion_1(int param) {
+        test_recursion_1_helper(param);
+        if (this.field2 == 5)
+            return 0;
+        return 1;
+    }
+
+    private int test_recursion_1_helper(int param) {
+        if (param > 5)
+            return param;
+        this.field2 = param;
+        return test_recursion_1_helper(param+1);
     }
 
     private int test_fields_1_get_updated_int(int param2) {
