@@ -19,6 +19,12 @@ public class SStack implements IStack {
         this.stack.add(new LinkedHashMap<>());
     }
 
+    public void clear() {
+        this.index = 0;
+        this.stack.clear();
+        this.stack.add(new LinkedHashMap<>());
+    }
+
     public Optional<SVar> get(String key) {
         for (int i = index; i >= 0; i--) {
             if (stack.get(i).containsKey(key)) {

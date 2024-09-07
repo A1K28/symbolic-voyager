@@ -22,12 +22,14 @@ public class SMethodPath {
     private final SNode root;
     private final Method method;
     private final Map<Stmt, SNode> sNodeMap; // used for GOTO tracking
+    private final SClassInstance classInstance;
     private SParamList paramList;
     private SatisfiableResults satisfiableResults;
     private JumpNode jumpNode;
     private SStack symbolicVarStack;
 
-    public SMethodPath(Body body, Method method) {
+    public SMethodPath(SClassInstance classInstance, Body body, Method method) {
+        this.classInstance = classInstance;
         this.body = body;
         this.method = method;
         this.root = new SNode();
@@ -38,6 +40,7 @@ public class SMethodPath {
                        SParamList paramList,
                        JumpNode jumpNode,
                        SStack symbolicVarStack) {
+        this.classInstance = skeleton.classInstance;
         this.body = skeleton.body;
         this.method = skeleton.method;
         this.root = skeleton.root;

@@ -36,6 +36,11 @@ public class SClassInstance {
         return !shouldBreak;
     }
 
+    public void clear() {
+        this.gotoCount.clear();
+        this.symbolicFieldStack.clear();
+    }
+
     public String getClassname() {
         return this.clazz.getName();
     }

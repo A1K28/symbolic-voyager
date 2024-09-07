@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SymbolicTestEngine implements TestEngine {
     private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
-    private final Map<Class, SymbolicExecutor> symbolicExecutorMap = new HashMap<>();
+    private final SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
 
     @Override
     public String getId() {
@@ -91,9 +91,6 @@ public class SymbolicTestEngine implements TestEngine {
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
-        if (!symbolicExecutorMap.containsKey(testClass))
-            symbolicExecutorMap.put(testClass, new SymbolicExecutor(testClass));
-        SymbolicExecutor symbolicExecutor = symbolicExecutorMap.get(testClass);
         symbolicExecutor.refresh();
         SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
         Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
