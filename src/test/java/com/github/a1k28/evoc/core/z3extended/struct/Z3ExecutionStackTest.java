@@ -46,6 +46,28 @@ public class Z3ExecutionStackTest {
         return 1;
     }
 
+    @SymbolicTest({0,2,3})
+    @DisplayName("test_recursion_2")
+    public int test_recursion_2(String param) {
+        String res = test_recursion_2_helper(param);
+        if ("123".equals(res))
+            return 0;
+        if (res.equals("asd000"))
+            return 1;
+        if (res.equals("asd0000000"))
+            return 2;
+        return 3;
+    }
+
+    private String test_recursion_2_helper(String param) {
+        if (param.length() == 10)
+            return param;
+        if (param.length() == 20)
+            return "123";
+        return test_recursion_2_helper(param+"0");
+    }
+
+
     private int test_recursion_1_helper(int param) {
         if (param > 5)
             return param;
