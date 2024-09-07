@@ -222,9 +222,6 @@ public class SymbolicExecutor {
         if (!sClassInstance.incrementGotoCount(jumpNode.getNode()))
             return;
         List<Value> args = methodExpr.getArgs();
-        args.addAll(sClassInstance.getSymbolicFieldStack().getAll().stream()
-                .map(SVar::getValue)
-                .toList());
         List<Expr> exprArgs = args.stream()
                 .map(e -> z3t.translateValue(e, getVarType(e), methodPath.getSymbolicVarStack()))
                 .collect(Collectors.toList());
