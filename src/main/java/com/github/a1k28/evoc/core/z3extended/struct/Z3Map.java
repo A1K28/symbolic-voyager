@@ -18,6 +18,13 @@ public class Z3Map implements IStack {
     private final Z3Stack<Integer, MapModel> stack;
     private final Z3ExtendedSolver solver;
 
+    public Z3Map(Context context, Z3CachingFactory sortState, Z3ExtendedSolver solver) {
+        this.ctx = context;
+        this.sortState = sortState;
+        this.solver = solver;
+        this.stack = new Z3Stack<>();
+    }
+
     @Override
     public void push() {
         stack.push();
@@ -26,17 +33,6 @@ public class Z3Map implements IStack {
     @Override
     public void pop() {
         stack.pop();
-    }
-
-    public Z3Map(Context context, Z3CachingFactory sortState, Z3ExtendedSolver solver) {
-        this.ctx = context;
-        this.sortState = sortState;
-        this.solver = solver;
-        this.stack = new Z3Stack<>();
-    }
-
-    public Optional<MapModel> getInitialMap(Expr var1) {
-        return stack.getFirst(ihc(var1));
     }
 
     public Expr constructor(Expr var1) {
@@ -81,13 +77,8 @@ public class Z3Map implements IStack {
                 hashCode, array, size, isSizeUnknown, sort, sentinel);
     }
 
-    private ArrayExpr mkArray(int hashCode, Sort keySort, Sort valueSort) {
-        ArraySort arraySort = ctx.mkArraySort(keySort, valueSort);
-        return (ArrayExpr) ctx.mkFreshConst("Map"+hashCode, arraySort);
-    }
-
-    private ArrayExpr mkEmptyArray(Sort keySort, Expr sentinel) {
-        return ctx.mkConstArray(keySort, sentinel);
+    public Optional<MapModel> getInitialMap(Expr var1) {
+        return stack.getFirst(ihc(var1));
     }
 
     public Expr get(Expr var1, Expr key) {
@@ -314,6 +305,15 @@ public class Z3Map implements IStack {
                 ctx.mkEq(model.getKey(retrieved), key),
                 ctx.mkEq(model.getValue(retrieved), value)
         );
+    }
+
+    private ArrayExpr mkArray(int hashCode, Sort keySort, Sort valueSort) {
+        ArraySort arraySort = ctx.mkArraySort(keySort, valueSort);
+        return (ArrayExpr) ctx.mkFreshConst("Map"+hashCode, arraySort);
+    }
+
+    private ArrayExpr mkEmptyArray(Sort keySort, Expr sentinel) {
+        return ctx.mkConstArray(keySort, sentinel);
     }
 
     private Expr getValue(MapModel model, Expr expr, Expr defaultValue, boolean valueComparison) {
