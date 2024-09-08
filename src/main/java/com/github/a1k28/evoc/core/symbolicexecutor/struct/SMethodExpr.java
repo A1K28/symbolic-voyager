@@ -18,7 +18,15 @@ public class SMethodExpr extends SExpr {
                        Value base,
                        List<Value> args,
                        boolean shouldPropagate) {
-        super(SType.INVOKE);
+        this(SType.INVOKE, invokeExpr, base, args, shouldPropagate);
+    }
+
+    public SMethodExpr(SType sType,
+                       AbstractInvokeExpr invokeExpr,
+                       Value base,
+                       List<Value> args,
+                       boolean shouldPropagate) {
+        super(sType);
         this.invokeExpr = invokeExpr;
         this.args = args;
         this.base = base;

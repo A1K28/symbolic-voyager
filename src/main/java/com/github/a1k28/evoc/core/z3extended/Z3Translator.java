@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
@@ -161,7 +162,7 @@ public class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    public SExpr wrapMethodCall(AbstractInvokeExpr invoke, SMethodPath methodPath) {
+    public SMethodExpr wrapMethodCall(AbstractInvokeExpr invoke, SMethodPath methodPath) {
         MethodSignature methodSignature = invoke.getMethodSignature();
 
         List<Value> args = new ArrayList<>();
@@ -177,13 +178,10 @@ public class Z3Translator {
         if (MethodModel.get(methodSignature).isPresent()) {
             return new SMethodExpr(invoke, base, args, false);
         } else if (!shouldPropagate(methodPath, methodSignature)) {
-            if (invoke.getMethodSignature().getType().getClass() == VoidType.class) {
-                System.out.println("ignored method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
-                return new SExpr(translateValue(invoke, VarType.METHOD, methodPath));
-            } else {
-                System.out.println("mocked method " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
-                return new SExpr(translateValue(invoke, VarType.METHOD_MOCK, methodPath));
-            }
+            VarType varType = VarType.METHOD_MOCK;
+            SType sType = base == null ? SType.OTHER : SType.ASSIGNMENT;
+            System.out.println("ignored method with varType: " + varType + ", sType: " + sType + " & signature: " + methodSignature + " with params " + Arrays.toString(new List[]{args}));
+            return new SMethodExpr(sType, invoke, base, args, true);
         } else {
             return new SMethodExpr(invoke, base, args, true);
         }
@@ -316,7 +314,11 @@ public class Z3Translator {
     }
 
     private boolean shouldPropagate(SMethodPath methodPath, MethodSignature methodSignature) {
-        if (methodSignature.toString().startsWith("<" + methodPath.getClassInstance().getClassname() + ":"))
+//        if (methodSignature.toString().startsWith("<" + methodPath.getClassInstance().getClassname() + ":"))
+//            return true;
+        if (methodSignature.toString().endsWith("void <init>()>"))
+            return false;
+        if (methodSignature.toString().startsWith("<" + "com.github.a1k28.evoc.core"))
             return true;
         return false;
 
@@ -356,7 +358,11 @@ public class Z3Translator {
                 args.add(0, base);
             return methodModel.apply(ctx, args);
         } else {
-            Sort sort = translateType(invoke.getType());
+            Sort sort;
+            if (invoke.getMethodSignature().toString().contains(": void <init>"))
+                sort = ctx.mkUninterpretedSort(invoke.getMethodSignature().getDeclClassType().toString());
+            else
+                sort = translateType(invoke.getType());
             return ctx.mkFreshConst(invoke.toString(), sort);
         }
     }

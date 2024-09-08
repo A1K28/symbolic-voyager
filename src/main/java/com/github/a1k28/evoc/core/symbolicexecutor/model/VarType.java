@@ -4,6 +4,8 @@ import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.AbstractInstanceInvokeExpr;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.JIdentityStmt;
+import sootup.core.jimple.common.stmt.JInvokeStmt;
+import sootup.core.jimple.common.stmt.JReturnVoidStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 
 public enum VarType {
@@ -11,6 +13,7 @@ public enum VarType {
     PARAMETER,
     LOCAL,
     RETURN_VALUE,
+    INVOKE,
     METHOD,
     METHOD_MOCK,
     BASE_ARG,
@@ -25,6 +28,8 @@ public enum VarType {
             }
             return LOCAL;
         }
+        if (unit instanceof JInvokeStmt)
+            return INVOKE;
         return OTHER;
     }
 

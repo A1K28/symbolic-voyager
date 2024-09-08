@@ -129,13 +129,24 @@ public class SymbolicExecutor {
     private SType handleVoidMethodCall(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
         JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
-        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath);
-        if (wrapped.getSType() != SType.INVOKE) return wrapped.getSType();
+        SMethodExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath);
+        VarType varType = getVarType(sMethodPath, invoke);
+
+        if (wrapped.getSType() == SType.ASSIGNMENT) {
+            Expr value = z3t.translateValue(invoke.getInvokeExpr(), VarType.METHOD, sMethodPath);
+            z3t.updateSymbolicVar(wrapped.getBase(), value, varType, sMethodPath);
+            return wrapped.getSType();
+        }
+
+        if (wrapped.getSType() != SType.INVOKE)
+            return wrapped.getSType();
+
         SMethodExpr method = wrapped.asMethod();
         if (!method.shouldPropagate()) {
-            z3t.callProverMethod(method, getVarType(sMethodPath, invoke), sMethodPath);
+            z3t.callProverMethod(method, varType, sMethodPath);
             return SType.OTHER;
         }
+
         JumpNode jumpNode = new JumpNode(sMethodPath, node);
         propagate(method, sMethodPath, jumpNode);
         return SType.INVOKE;
