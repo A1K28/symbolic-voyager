@@ -130,9 +130,20 @@ public class SymbolicTestEngine implements TestEngine {
     }
 
     private boolean equalsField(SVar sVar, Field field) {
-        JInstanceFieldRef fieldRef = (JInstanceFieldRef) sVar.getValue();
-        if (!field.getName().equals(fieldRef.getFieldSignature().getName())) return false;
-        if (!field.getType().equals(sVar.getClassType())) return false;
-        return true;
+        String name = new StringBuilder("<")
+                .append(field.getDeclaringClass().getName())
+                .append(": ")
+                .append(field.getType().getName())
+                .append(" ")
+                .append(field.getName())
+                .append(">")
+                .toString();
+        return name.equals(sVar.getName());
+//        JInstanceFieldRef fieldRef = (JInstanceFieldRef) sVar.getValue();
+//        if (!field.getName().equals(fieldRef.getFieldSignature().getName())) return false;
+//        if (!field.getType().equals(sVar.getClassType())) return false;
+//        if (!field.getDeclaringClass().getName().equals(
+//                fieldRef.getFieldSignature().getDeclClassType().toString())) return false;
+//        return true;
     }
 }

@@ -9,6 +9,7 @@ public enum SType {
     PARAMETER,
     IDENTITY,
     INVOKE,
+    INVOKE_SPECIAL_CONSTRUCTOR,
     SWITCH,
     THROW,
     ENTER_MONITOR,

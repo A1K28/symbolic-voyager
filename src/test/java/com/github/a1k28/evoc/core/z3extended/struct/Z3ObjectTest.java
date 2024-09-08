@@ -43,4 +43,40 @@ public class Z3ObjectTest {
             return 3;
         return 4;
     }
+
+    @SymbolicTest({0,1,2,3,4})
+    @DisplayName("test_object_nested_with_constructor_1")
+    public int test_object_nested_with_constructor_1(
+            String customerId, int debt, int status, String message) {
+        StatusDTO statusDTO = new StatusDTO();
+        statusDTO.setStatus(status);
+        statusDTO.setMessage(message);
+
+        CustomerInfoDTO customerInfoDTO = new CustomerInfoDTO(customerId);
+        customerInfoDTO.setDebt(debt);
+        customerInfoDTO.setStatus(statusDTO);
+
+        if ("CUSTOMER_ID".equals(customerInfoDTO.getCustomerId()))
+            return 0;
+        if (200 == customerInfoDTO.getDebt())
+            return 1;
+        if (0 == customerInfoDTO.getStatus().getStatus())
+            return 2;
+        if ("SUCCESS".equals(customerInfoDTO.getStatus().getMessage()))
+            return 3;
+        return 4;
+    }
+
+    @SymbolicTest({2})
+    @DisplayName("test_object_uncertain_fields_1")
+    public int test_object_uncertain_fields_1(String customerId, int debt) {
+        CustomerInfoDTO customerInfoDTO = new CustomerInfoDTO();
+        customerInfoDTO.setDebt(debt);
+
+        if (customerId.equals(customerInfoDTO.getCustomerId()))
+            return 0;
+        if (debt != customerInfoDTO.getDebt())
+            return 1;
+        return 2;
+    }
 }

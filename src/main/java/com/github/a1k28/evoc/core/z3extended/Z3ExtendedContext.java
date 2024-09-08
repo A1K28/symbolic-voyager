@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ClassInstance;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Map;
@@ -238,6 +239,18 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public Expr mkMapOf(List<Expr> vars) {
         return z3Map.of(vars.toArray(new Expr[0]));
+    }
+
+    public ClassInstanceModel mkClassInstance(Class<?> clazz) throws ClassNotFoundException {
+        return z3ClassInstance.constructor(clazz);
+    }
+
+    public ClassInstanceModel mkClassInstance(Expr expr, Class<?> clazz) throws ClassNotFoundException {
+        return z3ClassInstance.constructor(expr, clazz);
+    }
+
+    public Expr mkClassInitialize(Expr expr) {
+        return z3ClassInstance.initialize(expr);
     }
 
     // sets

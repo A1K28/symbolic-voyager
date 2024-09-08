@@ -35,15 +35,14 @@ public class SStack implements IStack {
         return Optional.empty();
     }
 
-    public SVar add(String name, Value value, Expr expr, VarType type) {
+    public SVar add(String name, Class<?> classType, Expr expr, VarType type) {
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;
-        Class<?> classType = SootHelper.translateType(value.getType());
         if (optional.isPresent()) {
-            sVar = new SVar(name, value, expr, type, classType, false);
+            sVar = new SVar(name, expr, type, classType, false);
         }
         else {
-            sVar = new SVar(name, value, expr, type, classType, true);
+            sVar = new SVar(name, expr, type, classType, true);
         }
         _add(sVar);
         return sVar;

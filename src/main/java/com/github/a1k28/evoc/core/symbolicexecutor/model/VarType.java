@@ -2,6 +2,7 @@ package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.AbstractInstanceInvokeExpr;
+import sootup.core.jimple.common.expr.JNewExpr;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.JIdentityStmt;
 import sootup.core.jimple.common.stmt.JInvokeStmt;
@@ -14,6 +15,7 @@ public enum VarType {
     LOCAL,
     RETURN_VALUE,
     INVOKE,
+    NEW,
     METHOD,
     METHOD_MOCK,
     BASE_ARG,
@@ -36,6 +38,8 @@ public enum VarType {
     public static VarType getType(Value unit) {
         if (unit instanceof AbstractInstanceInvokeExpr)
             return METHOD;
+        if (unit instanceof JNewExpr)
+            return NEW;
         return OTHER;
     }
 }

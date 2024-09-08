@@ -1,9 +1,8 @@
 package com.github.a1k28.evoc.helper;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
-import com.microsoft.z3.Sort;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
@@ -14,6 +13,7 @@ import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
+import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
@@ -26,7 +26,7 @@ import sootup.java.core.language.JavaLanguage;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
+import java.lang.reflect.Executable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,10 +51,11 @@ public class SootHelper {
         return (SootClass<JavaSootClassSource>) view.getClass(classType).get();
     }
 
-    public static SootMethod getSootMethod(SootClass<JavaSootClassSource> sootClass, Method method) {
+    public static SootMethod getSootMethod(
+            SootClass<JavaSootClassSource> sootClass, Executable method, boolean isConstructor) {
         // Get the method
         outer: for (SootMethod sootMethod : sootClass.getMethods()) {
-            if (!method.getName().equals(sootMethod.getName())) continue;
+            if (!isConstructor && !method.getName().equals(sootMethod.getName())) continue;
             List<Type> sootTypes = sootMethod.getParameterTypes();
             Class<?>[] types = method.getParameterTypes();
             if (types.length != sootTypes.size()) continue;
@@ -66,12 +67,15 @@ public class SootHelper {
         throw new IllegalStateException("Could not match method: " + method);
     }
 
-    public static Method getMethod(AbstractInvokeExpr invokeExpr) throws ClassNotFoundException {
+    public static Executable getMethod(AbstractInvokeExpr invokeExpr) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(invokeExpr.getMethodSignature().getDeclClassType().toString());
+        boolean isConstructorCall = isConstructorCall(invokeExpr.getMethodSignature());
+        Executable[] executables = isConstructorCall ?
+                clazz.getDeclaredConstructors() : clazz.getDeclaredMethods();
         List<Type> sootParamTypes = invokeExpr.getMethodSignature().getParameterTypes();
         String methodName = invokeExpr.getMethodSignature().getName();
-        outer: for (Method method : clazz.getDeclaredMethods()) {
-            if (!method.getName().equals(methodName)) continue;
+        outer: for (Executable method : executables) {
+            if (!isConstructorCall && !method.getName().equals(methodName)) continue;
             Class<?>[] methodParamTypes = method.getParameterTypes();
             if (methodParamTypes.length != sootParamTypes.size()) continue;
             for (int i = 0; i < methodParamTypes.length; i++)
@@ -135,6 +139,10 @@ public class SootHelper {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static boolean isConstructorCall(MethodSignature methodSignature) {
+        return methodSignature.toString().matches(".*<.*: void <init>\\(.*\\)>.*");
     }
 
     private static void addFields(SootClass<?> sootClass, List<JavaSootField> fields) throws ClassNotFoundException {

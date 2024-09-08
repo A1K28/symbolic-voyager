@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
 import lombok.RequiredArgsConstructor;
@@ -140,6 +141,15 @@ public enum MethodModel {
 
     public Expr apply(Z3ExtendedContext ctx, List<Expr> args) {
         System.out.println("APPLYING: " + clazz.getName() + ": " + signature);
+
+        // TODO: maybe change this??
+        if (this.signature.matches("boolean equals\\(.*\\)") && args.size() == 2) {
+            boolean eq1 = SortType.NULL.equals(args.get(0).getSort());
+            boolean eq2 = SortType.NULL.equals(args.get(1).getSort());
+            if (eq1 && eq2) return ctx.mkBool(true);
+            if (eq1 ^ eq2) return ctx.mkBool(false);
+        }
+
         return switch (this) {
 //            case SOOT_COMPARE -> ctx.mkInt(1);
 //            case SOOT_UNARY_OPERATOR_APPLY -> ctx.mkInt(0);
