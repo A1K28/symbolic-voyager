@@ -68,6 +68,10 @@ public class Z3Translator {
         return Arrays.asList(ctx.getSolver().getAssertions()).contains(assertion);
     }
 
+    public static Expr mkNull() {
+        return ctx.mkConst("null", SortType.NULL.value(ctx));
+    }
+
     public IStack getStack() {
         return ctx;
     }
@@ -279,6 +283,8 @@ public class Z3Translator {
                 return translateConditionValue(binop, left, right);
             // handle other binary operations
         }
+        if (value instanceof NullConstant)
+            return mkNull();
 //        else if (value instanceof JInstanceOfExpr)
 //            return ctx.mkMod(left, right);
 //        else if (value instanceof JNewArrayExpr)

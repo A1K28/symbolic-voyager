@@ -79,4 +79,19 @@ public class Z3ObjectTest {
             return 1;
         return 2;
     }
+
+    @SymbolicTest({2})
+    @DisplayName("test_object_uncertain_fields_2")
+    public int test_object_uncertain_fields_2(int debt) {
+        CustomerInfoDTO customerInfoDTO = new CustomerInfoDTO();
+        customerInfoDTO.setDebt(debt);
+
+        if (customerInfoDTO.getCustomerId() != null)
+            return 0;
+        if (debt != customerInfoDTO.getDebt())
+            return 1;
+        if (null == customerInfoDTO.getStatus())
+            return 2;
+        return 3;
+    }
 }

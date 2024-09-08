@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.a1k28.evoc.core.z3extended.Z3Translator.mkNull;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class Z3ClassInstance implements IStack {
@@ -149,10 +150,6 @@ public class Z3ClassInstance implements IStack {
         if (type.getClass() == PrimitiveType.DoubleType.class)
             return ctx.mkInt(0);
         return mkNull();
-    }
-
-    public Expr mkNull() {
-        return ctx.mkConst("null", SortType.NULL.value(ctx));
     }
 
     private static int ihc(Object o) {
