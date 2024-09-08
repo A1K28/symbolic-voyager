@@ -403,7 +403,6 @@ public class Z3Translator {
         try {
             clazz = Class.forName(value);
         } catch (ClassNotFoundException e) {
-//            ("Class not found: " + value, e);
             return SortType.OBJECT.value(ctx);
         }
         if (Boolean.class.isAssignableFrom(clazz))

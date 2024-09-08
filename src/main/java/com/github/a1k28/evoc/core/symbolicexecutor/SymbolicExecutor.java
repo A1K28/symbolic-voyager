@@ -29,7 +29,8 @@ public class SymbolicExecutor {
     private static final Logger log = Logger.getInstance(SymbolicExecutor.class);
     private final Z3Translator z3t;
     private Z3ExtendedSolver solver;
-    private final Map<Class<?>, SClassInstance> classInstanceMap;
+    private final Map<Class<?>, SClassInstance> staticClassInstanceMap;
+    private final Map<Expr, SClassInstance> classInstanceMap;
 
     static {
         System.load(System.getProperty("java.library.path") + File.separator + "libz3.dylib");
@@ -37,6 +38,7 @@ public class SymbolicExecutor {
     }
 
     public SymbolicExecutor() {
+        this.staticClassInstanceMap = new HashMap<>();
         this.classInstanceMap = new HashMap<>();
         this.z3t = new Z3Translator();
         this.solver = z3t.getContext().getSolver();
@@ -45,19 +47,20 @@ public class SymbolicExecutor {
     public void refresh() {
         Z3Translator.initZ3(true);
         this.solver = z3t.getContext().getSolver();
-        for (SClassInstance classInstance : classInstanceMap.values())
+        for (SClassInstance classInstance : staticClassInstanceMap.values())
             classInstance.clear();
     }
 
     public SatisfiableResults analyzeSymbolicPaths(Method method)
             throws ClassNotFoundException {
-        return analyzeSymbolicPaths(method, new SParamList(), null);
+        SClassInstance classInstance = getClassInstance(method.getDeclaringClass());
+        return analyzeSymbolicPaths(classInstance, method, new SParamList(), null);
     }
 
-    public SatisfiableResults analyzeSymbolicPaths(Method method, SParamList paramList, JumpNode jumpNode)
+    public SatisfiableResults analyzeSymbolicPaths(
+            SClassInstance classInstance, Method method, SParamList paramList, JumpNode jumpNode)
             throws ClassNotFoundException {
-        SMethodPath methodPathSkeleton = getClassInstance(method.getDeclaringClass())
-                .getMethodPathSkeletons().get(method);
+        SMethodPath methodPathSkeleton = classInstance.getMethodPathSkeletons().get(method);
         SMethodPath sMethodPath = new SMethodPath(methodPathSkeleton, paramList, jumpNode, new SStack());
         printMethod(method);
         push(sMethodPath);
@@ -132,11 +135,11 @@ public class SymbolicExecutor {
         SMethodExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath);
         VarType varType = getVarType(sMethodPath, invoke);
 
-        if (wrapped.getSType() == SType.ASSIGNMENT) {
-            Expr value = z3t.translateValue(invoke.getInvokeExpr(), VarType.METHOD, sMethodPath);
-            z3t.updateSymbolicVar(wrapped.getBase(), value, varType, sMethodPath);
-            return wrapped.getSType();
-        }
+//        if (wrapped.getSType() == SType.ASSIGNMENT) {
+//            Expr value = z3t.translateValue(invoke.getInvokeExpr(), VarType.METHOD, sMethodPath);
+//            z3t.updateSymbolicVar(wrapped.getBase(), value, varType, sMethodPath);
+//            return wrapped.getSType();
+//        }
 
         if (wrapped.getSType() != SType.INVOKE)
             return wrapped.getSType();
@@ -217,7 +220,9 @@ public class SymbolicExecutor {
                 .map(e -> z3t.translateValue(e, getVarType(methodPath, e), methodPath))
                 .collect(Collectors.toList());
         Method method = SootHelper.getMethod(methodExpr.getInvokeExpr());
-        analyzeSymbolicPaths(method, new SParamList(exprArgs), jumpNode);
+        SVar baseValue = methodPath.getSymbolicVarStack().get(z3t.getValueName(methodExpr.getBase())).orElseThrow();
+        SClassInstance classInstance = getClassInstance(baseValue.getExpr(), method.getDeclaringClass());
+        analyzeSymbolicPaths(classInstance, method, new SParamList(exprArgs), jumpNode);
     }
 
     private Z3Status checkSatisfiability(SMethodPath sMethodPath, SNode node, SType type) {
@@ -312,10 +317,19 @@ public class SymbolicExecutor {
         return new SVarEvaluated(var, map);
     }
 
+    private SClassInstance getClassInstance(Expr base, Class<?> clazz) throws ClassNotFoundException {
+        if (base != null) {
+            if (!classInstanceMap.containsKey(base))
+                classInstanceMap.put(base, createClassInstance(clazz));
+            return classInstanceMap.get(base);
+        }
+        return getClassInstance(clazz);
+    }
+
     private SClassInstance getClassInstance(Class<?> clazz) throws ClassNotFoundException {
-        if (!classInstanceMap.containsKey(clazz))
-            classInstanceMap.put(clazz, createClassInstance(clazz));
-        return classInstanceMap.get(clazz);
+        if (!staticClassInstanceMap.containsKey(clazz))
+            staticClassInstanceMap.put(clazz, createClassInstance(clazz));
+        return staticClassInstanceMap.get(clazz);
     }
 
     private SClassInstance createClassInstance(Class<?> clazz)
