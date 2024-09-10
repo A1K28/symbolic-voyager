@@ -21,7 +21,6 @@ public class SClassInstance {
     private final Map<Executable, SMethodPath> methodPathSkeletons;
     private final CLIOptions cliOptions;
     private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
-    private boolean isUnknown = true;
 
     public SClassInstance(Class<?> clazz, List<JavaSootField> fields, CLIOptions cliOptions) {
         this.clazz = clazz;

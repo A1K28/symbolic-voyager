@@ -84,7 +84,6 @@ public class Z3ClassInstance implements IStack {
         int hashCode = ihc(expr);
         ClassInstanceModel model = stack.get(hashCode).orElseThrow();
         SClassInstance instance = model.getClassInstance();
-        instance.setUnknown(false);
 
         for (JavaSootField field : instance.getFields()) {
             String name = field.toString();
