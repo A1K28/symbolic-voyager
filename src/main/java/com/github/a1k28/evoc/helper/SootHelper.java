@@ -27,6 +27,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Executable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -155,6 +156,17 @@ public class SootHelper {
                 addFields(parent, fields);
             }
         }
+    }
+
+    public static String translateField(Field field) {
+        return new StringBuilder("<")
+                .append(field.getDeclaringClass().getName())
+                .append(": ")
+                .append(field.getType().getName())
+                .append(" ")
+                .append(field.getName())
+                .append(">")
+                .toString();
     }
 
     private static void dfs(StmtGraph<?> cfg, Stmt current, SMethodPath sMethodPath, SNode parent) {

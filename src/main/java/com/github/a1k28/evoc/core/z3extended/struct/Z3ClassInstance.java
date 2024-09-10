@@ -29,16 +29,10 @@ import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class Z3ClassInstance implements IStack {
     private final Context ctx;
-    private final Z3ExtendedSolver solver;
-    private final Z3CachingFactory sortState;
     private final Z3Stack<Integer, ClassInstanceModel> stack;
 
-    public Z3ClassInstance(Context ctx,
-                           Z3CachingFactory sortState,
-                           Z3ExtendedSolver solver) {
+    public Z3ClassInstance(Context ctx) {
         this.ctx = ctx;
-        this.solver = solver;
-        this.sortState = sortState;
         this.stack = new Z3Stack<>();
     }
 
@@ -104,7 +98,7 @@ public class Z3ClassInstance implements IStack {
             throws ClassNotFoundException {
         SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());
         List<JavaSootField> fields = SootHelper.getFields(sootClass);
-        SClassInstance instance = new SClassInstance(clazz, fields, null);
+        SClassInstance instance = new SClassInstance(clazz, fields);
 
         for (Method method : clazz.getDeclaredMethods()) {
             SMethodPath sMethodPath = createMethodPath(sootClass, instance, method, false);
@@ -137,21 +131,22 @@ public class Z3ClassInstance implements IStack {
     }
 
     public Expr getDefaultValue(Type type) {
-        if (type.getClass() == PrimitiveType.BooleanType.class)
+        Class<?> clazz = type.getClass();
+        if (clazz == PrimitiveType.BooleanType.class)
             return ctx.mkBool(false);
-        if (type.getClass() == PrimitiveType.ByteType.class)
+        if (clazz == PrimitiveType.ByteType.class)
             return ctx.mkInt(0);
-        if (type.getClass() == PrimitiveType.ShortType.class)
+        if (clazz == PrimitiveType.ShortType.class)
             return ctx.mkInt(0);
-        if (type.getClass() == PrimitiveType.CharType.class)
+        if (clazz == PrimitiveType.CharType.class)
             return ctx.mkConst("\u0000", ctx.mkCharSort());
-        if (type.getClass() == PrimitiveType.IntType.class)
+        if (clazz == PrimitiveType.IntType.class)
             return ctx.mkInt(0);
-        if (type.getClass() == PrimitiveType.LongType.class)
+        if (clazz == PrimitiveType.LongType.class)
             return ctx.mkInt(0);
-        if (type.getClass() == PrimitiveType.FloatType.class)
+        if (clazz == PrimitiveType.FloatType.class)
             return ctx.mkInt(0);
-        if (type.getClass() == PrimitiveType.DoubleType.class)
+        if (clazz == PrimitiveType.DoubleType.class)
             return ctx.mkInt(0);
         return mkNull();
     }

@@ -1,5 +1,6 @@
 package com.github.a1k28.junitengine;
 
+import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
@@ -12,13 +13,13 @@ import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
-import sootup.core.jimple.common.ref.JInstanceFieldRef;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+import static com.github.a1k28.evoc.helper.SootHelper.translateField;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +27,10 @@ public class SymbolicTestEngine implements TestEngine {
     private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
     private final SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
+
+    static {
+        CLIOptions.whitelistedPackages = Set.of("com.github.a1k28.evoc.core");
+    }
 
     @Override
     public String getId() {
@@ -130,15 +135,7 @@ public class SymbolicTestEngine implements TestEngine {
     }
 
     private boolean equalsField(SVar sVar, Field field) {
-        String name = new StringBuilder("<")
-                .append(field.getDeclaringClass().getName())
-                .append(": ")
-                .append(field.getType().getName())
-                .append(" ")
-                .append(field.getName())
-                .append(">")
-                .toString();
-        return name.equals(sVar.getName());
+        return translateField(field).equals(sVar.getName());
 //        JInstanceFieldRef fieldRef = (JInstanceFieldRef) sVar.getValue();
 //        if (!field.getName().equals(fieldRef.getFieldSignature().getName())) return false;
 //        if (!field.getType().equals(sVar.getClassType())) return false;

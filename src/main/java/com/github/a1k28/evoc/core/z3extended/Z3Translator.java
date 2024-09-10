@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
@@ -16,7 +17,6 @@ import sootup.core.jimple.common.constant.*;
 import sootup.core.jimple.common.expr.*;
 import sootup.core.jimple.common.ref.JArrayRef;
 import sootup.core.jimple.common.ref.JFieldRef;
-import sootup.core.jimple.common.ref.JInstanceFieldRef;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
@@ -91,7 +91,7 @@ public class Z3Translator {
     public SExpr translateAndWrapValue(Value value, VarType varType, SMethodPath methodPath) {
         if (value instanceof AbstractInvokeExpr invoke) {
             return wrapMethodCall(invoke, methodPath);
-        } else if (value instanceof JNewExpr && value.toString().contains("com.github.a1k28.evoc.core")) {
+        } else if (value instanceof JNewExpr && CLIOptions.shouldUsePackage(value.toString())) {
             return new SExpr(translateValue(value, varType, methodPath), SType.INVOKE_SPECIAL_CONSTRUCTOR);
         } else {
             return new SExpr(translateValue(value, varType, methodPath));

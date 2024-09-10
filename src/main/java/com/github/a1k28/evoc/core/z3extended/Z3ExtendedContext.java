@@ -28,7 +28,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.solver = new Z3ExtendedSolver(this, slvr);
 
         this.z3Map = new Z3Map(this, sortState, solver);
-        this.z3ClassInstance = new Z3ClassInstance(this, sortState, solver);
+        this.z3ClassInstance = new Z3ClassInstance(this);
     }
 
     @Override

@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.a1k28.evoc.helper.SootHelper.translateField;
+
 @NoArgsConstructor
 public class SymbolTranslator {
     public static Map<SatisfiableResult, ParsedResult> parse(SatisfiableResults satisfiableResults) {
@@ -95,9 +97,8 @@ public class SymbolTranslator {
 
         try {
             for (Field field : instanceVar.getClazz().getDeclaredFields()) {
-                String translatedFieldName = "<" + field.getDeclaringClass().getName() + ": " + field.getType().getName() + " " + field.getName() + ">";
                 field.setAccessible(true);
-                Object value = instanceVar.getFields().getOrDefault(translatedFieldName, null);
+                Object value = instanceVar.getFields().getOrDefault(translateField(field), null);
                 if (value == null) continue;
                 field.set(object, parse(value, field.getType()));
             }
