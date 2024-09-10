@@ -96,6 +96,11 @@ public class Z3ClassInstance implements IStack {
         return model.getExpr();
     }
 
+    public Optional<ClassInstanceModel> getClassInstance(Expr expr) {
+        int hashCode = ihc(expr);
+        return stack.get(hashCode);
+    }
+
     private SClassInstance createClassInstance(Class<?> clazz)
             throws ClassNotFoundException {
         SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());

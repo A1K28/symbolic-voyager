@@ -1,13 +1,11 @@
 package com.github.a1k28.evoc.core.symbolicexecutor;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import lombok.NoArgsConstructor;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +73,39 @@ public class SymbolTranslator {
             return (T) newMap;
         }
 
+        if (value instanceof ClassInstanceVar v)
+            return (T) parseObject(v);
+
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
+    }
+
+    private static <T> T parseObject(ClassInstanceVar<T> instanceVar) {
+        Object[] constructorArgs = new Object[instanceVar.getConstructorArgs().length];
+        Class[] constructorTypes = instanceVar.getConstructor().getParameterTypes();
+        for (int i = 0; i < instanceVar.getConstructorArgs().length; i++) {
+            constructorArgs[i] = parse(instanceVar.getConstructorArgs()[i], constructorTypes[i]);
+        }
+
+        T object;
+        try {
+            object = instanceVar.getConstructor().newInstance(instanceVar.getConstructorArgs());
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            for (Field field : instanceVar.getClazz().getDeclaredFields()) {
+                String translatedFieldName = "<" + field.getDeclaringClass().getName() + ": " + field.getType().getName() + " " + field.getName() + ">";
+                field.setAccessible(true);
+                Object value = instanceVar.getFields().getOrDefault(translatedFieldName, null);
+                if (value == null) continue;
+                field.set(object, parse(value, field.getType()));
+            }
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        return object;
     }
 
     private static <T> T parseString(Object s) {

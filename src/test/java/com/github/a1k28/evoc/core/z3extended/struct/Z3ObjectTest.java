@@ -21,6 +21,38 @@ public class Z3ObjectTest {
         return 2;
     }
 
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_object_winput_1")
+    public int test_object_winput_1(StatusDTO statusDTO, int expected, String message) {
+        if (statusDTO.getStatus() == expected)
+            return 0;
+        if (statusDTO.getMessage().equals(message))
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0,1,2,3,4,5,6})
+    @DisplayName("test_object_winput_2")
+    public int test_object_winput_2(CustomerInfoDTO customerInfoDTO,
+                                    String customerId,
+                                    int expected,
+                                    String message) {
+        if (customerInfoDTO.getCustomerId().equals(customerId))
+            return 0;
+        if (customerInfoDTO.getCustomerId().equals("ASDAWD"))
+            return 1;
+        String cId = customerInfoDTO.getCustomerId();
+        if ("ASDASDASDADS".equals(cId))
+            return 2;
+        if (customerInfoDTO.getDebt() == 20)
+            return 3;
+        if (customerInfoDTO.getStatus().getStatus() == expected)
+            return 4;
+        if (customerInfoDTO.getStatus().getMessage().equals(message))
+            return 5;
+        return 6;
+    }
+
     @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_object_nested_1")
     public int test_object_nested_1(String customerId, int debt, int status, String message) {

@@ -253,6 +253,11 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3ClassInstance.initialize(expr);
     }
 
+    public Optional<ClassInstanceModel> getClassInstance(Expr expr) {
+        return z3ClassInstance.getClassInstance(expr);
+    }
+
+
     // sets
 //    @Override
 //    public <D extends Sort> ArrayExpr<D, BoolSort> mkSetAdd(Expr<ArraySort<D, BoolSort>> var1, Expr<D> var2) {
