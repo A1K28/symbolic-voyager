@@ -279,15 +279,7 @@ public class SymbolicExecutor {
                     && var.getType() != VarType.FIELD
                     && var.getType() != VarType.METHOD_MOCK) continue;
 
-            SVarEvaluated sVarEvaluated;
-            if (SortType.MAP.equals(var.getExpr().getSort())) {
-                sVarEvaluated = handleMapSatisfiability(var);
-            } else if (SortType.OBJECT.equals(var.getExpr().getSort())) {
-                sVarEvaluated = handleObjectSatisfiability(var);
-            } else {
-                sVarEvaluated = new SVarEvaluated(var, evaluateSatisfiableExpression(var));
-            }
-
+            SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluateSatisfiableExpression(var));
             if (var.getType() == VarType.FIELD) fieldsEvaluated.add(sVarEvaluated);
             else parametersEvaluated.add(sVarEvaluated);
         }
@@ -308,44 +300,44 @@ public class SymbolicExecutor {
         log.empty();
     }
 
-    private Expr evaluateSatisfiableExpression(SVar var) {
+    private Object evaluateSatisfiableExpression(SVar var) {
         if (solver.check() != Status.SATISFIABLE)
             throw new IllegalStateException("Unknown state: " + solver.check());
-
         Model model = solver.getModel();
 
-        Expr evaluated = model.eval(var.getExpr(), true);
+        Object evaluated;
+        if (SortType.MAP.equals(var.getExpr().getSort())) {
+            evaluated = handleMapSatisfiability(var);
+        } else if (SortType.OBJECT.equals(var.getExpr().getSort())) {
+            evaluated = handleObjectSatisfiability(var);
+        } else {
+            evaluated = model.eval(var.getExpr(), true);
+            // this is required to keep an accurate solver state
+            solver.add(z3t.mkEq(var.getExpr(), (Expr) evaluated));
+        }
+
         log.debug(evaluated + " - " + var.getName());
-
-        // this is required to keep an accurate solver state
-        solver.add(z3t.mkEq(var.getExpr(), evaluated));
-
         return evaluated;
     }
 
-    private SVarEvaluated handleMapSatisfiability(SVar var) {
+    private Object handleMapSatisfiability(SVar var) {
         Optional<MapModel> mapModelOptional = z3t.getContext().getInitialMap(var.getExpr());
         if (mapModelOptional.isEmpty()) return new SVarEvaluated(var, new HashMap<>());
         MapModel mapModel = mapModelOptional.get();
         int size = solver.minimizeInteger(mapModel.getSize());
-        Map map = solver.createInitialMap(mapModel, size);
-        return new SVarEvaluated(var, map);
+        return solver.createInitialMap(mapModel, size);
     }
 
-    private SVarEvaluated handleObjectSatisfiability(SVar var) {
+    private Object handleObjectSatisfiability(SVar var) {
         ClassInstanceModel model = z3t.getContext().getClassInstance(var.getExpr()).orElseThrow();
         SClassInstance classInstance = model.getClassInstance();
         ClassInstanceVar classInstanceVar = new ClassInstanceVar(classInstance.getClazz());
         for (SVar sVar : classInstance.getSymbolicFieldStack().getAll()) {
             if (!sVar.isDeclaration()) continue;
-            Object evaluated;
-            if (SortType.OBJECT.equals(sVar.getExpr().getSort()))
-                evaluated = handleObjectSatisfiability(sVar).getEvaluated();
-            else
-                evaluated = evaluateSatisfiableExpression(sVar);
+            Object evaluated = evaluateSatisfiableExpression(sVar);
             classInstanceVar.getFields().put(sVar.getName(), evaluated);
         }
-        return new SVarEvaluated(var, classInstanceVar);
+        return classInstanceVar;
     }
 
     private SClassInstance getClassInstance(Value base, SMethodPath methodPath, Executable method)
