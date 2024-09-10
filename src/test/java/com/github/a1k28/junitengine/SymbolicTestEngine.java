@@ -9,11 +9,13 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.helper.Logger;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -51,6 +53,9 @@ public class SymbolicTestEngine implements TestEngine {
                             .boxed().toList();
                     reachableCodes.put(methodUniqueId, new HashSet<>(rcArr));
                     rootDescriptor.addChild(new TestMethodTestDescriptor(methodUniqueId, testClass, method, null));
+                } else if (method.isAnnotationPresent(BasicTest.class)) {
+                    UniqueId methodUniqueId = uniqueId.append("junit:method", method.getName());
+                    rootDescriptor.addChild(new TestMethodTestDescriptor(methodUniqueId, testClass, method, null));
                 }
             }
         });
@@ -83,15 +88,27 @@ public class SymbolicTestEngine implements TestEngine {
     private void executeMethod(TestMethodTestDescriptor methodDescriptor, EngineExecutionListener listener) {
         try {
             UniqueId uniqueId = methodDescriptor.getUniqueId();
-            assertMethodCorrectness(
-                    methodDescriptor.getTestClass(),
-                    methodDescriptor.getTestMethod(),
-                    reachableCodes.get(uniqueId));
-            // Handle the result as needed
+            if (uniqueId.getLastSegment().getType().startsWith("junit:")) {
+                assertMethodCorrectness(methodDescriptor.getTestClass(), methodDescriptor.getTestMethod());
+            } else {
+                assertMethodCorrectness(
+                        methodDescriptor.getTestClass(),
+                        methodDescriptor.getTestMethod(),
+                        reachableCodes.get(uniqueId));
+            }
         } catch (Throwable e) {
             listener.executionFinished(methodDescriptor, TestExecutionResult.failed(e));
         }
     }
+
+    private void assertMethodCorrectness(Class testClass, Method testMethod)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+        Constructor constructor = testClass.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        Object instance = constructor.newInstance();
+        testMethod.invoke(instance);
+    }
+
 
     private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {

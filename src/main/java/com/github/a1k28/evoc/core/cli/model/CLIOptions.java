@@ -7,8 +7,8 @@ public class CLIOptions {
     public static Set<String> targetPackages = Set.of();
     public static Set<String> whitelistedClasses = Set.of();
     public static Set<String> whitelistedPackages = Set.of();
-    public static Set<String> blacklistedPackages = Set.of();
     public static Set<String> blacklistedClasses = Set.of();
+    public static Set<String> blacklistedPackages = Set.of();
     public static Set<PropagationStrategy> propagationStrategies;
 
     public static boolean shouldUsePackage(String pckg) {
