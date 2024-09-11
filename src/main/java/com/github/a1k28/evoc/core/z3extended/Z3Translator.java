@@ -91,7 +91,7 @@ public class Z3Translator {
     public SExpr translateAndWrapValue(Value value, VarType varType, SMethodPath methodPath) {
         if (value instanceof AbstractInvokeExpr invoke) {
             return wrapMethodCall(invoke, methodPath);
-        } else if (value instanceof JNewExpr && CLIOptions.shouldUsePackage(value.toString())) {
+        } else if (value instanceof JNewExpr && CLIOptions.shouldPropagate(value.toString())) {
             return new SExpr(translateValue(value, varType, methodPath), SType.INVOKE_SPECIAL_CONSTRUCTOR);
         } else {
             return new SExpr(translateValue(value, varType, methodPath));
@@ -181,11 +181,11 @@ public class Z3Translator {
 
         if (MethodModel.get(methodSignature).isPresent()) {
             return new SMethodExpr(invoke, base, args, false);
-        } else if (!shouldPropagate(methodPath, methodSignature)) {
-            return new SMethodExpr(SType.OTHER, invoke, base, args, false);
-        } else {
+        } else if (CLIOptions.shouldPropagate(methodSignature.getDeclClassType().toString())) {
             SType sType = isConstructorCall(methodSignature) ? SType.INVOKE_SPECIAL_CONSTRUCTOR : SType.INVOKE;
             return new SMethodExpr(sType, invoke, base, args, true);
+        } else {
+            return new SMethodExpr(SType.OTHER, invoke, base, args, false);
         }
     }
 
@@ -313,25 +313,6 @@ public class Z3Translator {
         if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
             return ctx.mkLe(e1, e2);
         throw new RuntimeException("Condition could not be translated: " + binop);
-    }
-
-    private boolean shouldPropagate(SMethodPath methodPath, MethodSignature methodSignature) {
-//        if (methodSignature.toString().startsWith("<" + methodPath.getClassInstance().getClassname() + ":"))
-//            return true;
-        if (methodSignature.toString().contains("<com.github.a1k28.evoc.core"))
-            return true;
-        return false;
-
-//        Set<PropagationStrategy> strategies = sClassInstance.getCliOptions().getPropagationStrategies();
-//        Set<PropagationStrategy> strategies = Set.of(PropagationStrategy.PROPAGATE_POJO);
-//        if (strategies.contains(PropagationStrategy.PROPAGATE_POJO) && isPojoClass(methodSignature))
-//            return true;
-//
-//        return false;
-    }
-
-    private boolean isPojoClass(MethodSignature methodSignature) {
-        return false;
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke, SMethodPath methodPath) {

@@ -11,7 +11,7 @@ public class CLIOptions {
     public static Set<String> blacklistedPackages = Set.of();
     public static Set<PropagationStrategy> propagationStrategies;
 
-    public static boolean shouldUsePackage(String pckg) {
+    public static boolean shouldPropagate(String pckg) {
         for (String blacklistedPackage : blacklistedPackages)
             if (pckg.contains(blacklistedPackage)) return false;
         for (String blacklistedClass : blacklistedClasses)
