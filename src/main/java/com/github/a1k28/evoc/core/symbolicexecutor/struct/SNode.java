@@ -33,6 +33,12 @@ public class SNode {
         child.setParent(this);
     }
 
+    public void removeLastChild() {
+        if (this.children.isEmpty()) return;
+        this.children.get(this.children.size()-1).setParent(this);
+        this.children.remove(this.children.size()-1);
+    }
+
     public boolean containsParent(Stmt unit) {
         if (this.unit == null) return false;
         if (this.unit.equals(unit)) return true;
@@ -46,7 +52,10 @@ public class SNode {
 
     public void print(int level) {
         for (int i = 1; i < level; i++) System.out.print("\t");
-        if (this.getType() == SType.BRANCH_FALSE || this.getType() == SType.BRANCH_TRUE)
+        if (this.getType() == SType.BRANCH_FALSE
+                || this.getType() == SType.BRANCH_TRUE
+                || this.getType() == SType.SWITCH
+                || this.getType() == SType.GOTO)
             level++;
         System.out.println(this);
         for (SNode child : getChildren())

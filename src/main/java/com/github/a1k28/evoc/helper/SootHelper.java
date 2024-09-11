@@ -8,8 +8,14 @@ import lombok.NoArgsConstructor;
 import sootup.core.Project;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
+import sootup.core.jimple.Jimple;
+import sootup.core.jimple.common.constant.IntConstant;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
+import sootup.core.jimple.common.expr.JAndExpr;
+import sootup.core.jimple.common.expr.JEqExpr;
+import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
@@ -169,26 +175,47 @@ public class SootHelper {
                 .toString();
     }
 
+    // interpret soot graph
     private static void dfs(StmtGraph<?> cfg, Stmt current, SMethodPath sMethodPath, SNode parent) {
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
-
         if (!cfg.getTails().contains(current)) {
             List<Stmt> succs = cfg.getAllSuccessors(current);
-            if (node.getType() == SType.BRANCH) {
-                if (succs.size() != 2) throw new RuntimeException("Invalid branch successor size");
-                SNode node2 = sMethodPath.createNode(current);
-                parent.addChild(node2);
-
-                node.setType(SType.BRANCH_FALSE);
-                node2.setType(SType.BRANCH_TRUE);
-
-                dfs(cfg, succs.get(0), sMethodPath, node);
-                dfs(cfg, succs.get(1), sMethodPath, node2);
+            if (node.getType() == SType.SWITCH) {
+                parent.removeLastChild();
+                JSwitchStmt switchStmt = (JSwitchStmt) current;
+                List<IntConstant> values = switchStmt.getValues();
+                for (int i = 0; i < values.size(); i++) {
+                    JEqExpr eqExpr = Jimple.newEqExpr(switchStmt.getKey(), values.get(i));
+                    JIfStmt ifStmt = Jimple.newIfStmt(eqExpr, current.getPositionInfo());
+                    SNode ifNode = sMethodPath.createNode(ifStmt);
+                    SNode elseNode = sMethodPath.createNode(ifStmt);
+                    parent.addChild(ifNode);
+                    parent.addChild(elseNode);
+                    ifNode.setType(SType.BRANCH_TRUE);
+                    elseNode.setType(SType.BRANCH_FALSE);
+                    dfs(cfg, succs.get(i), sMethodPath, ifNode);
+                    parent = elseNode;
+                }
+                // has default
+                if (values.size() + 1 == succs.size())
+                    dfs(cfg, succs.get(values.size()), sMethodPath, parent);
             } else {
-                for (Stmt succ : succs) {
-                    if (!node.containsParent(succ)) {
-                        dfs(cfg, succ, sMethodPath, node);
+                if (node.getType() == SType.BRANCH) {
+                    assert succs.size() == 2;
+                    SNode node2 = sMethodPath.createNode(current);
+                    parent.addChild(node2);
+
+                    node.setType(SType.BRANCH_FALSE);
+                    node2.setType(SType.BRANCH_TRUE);
+
+                    dfs(cfg, succs.get(0), sMethodPath, node);
+                    dfs(cfg, succs.get(1), sMethodPath, node2);
+                } else {
+                    for (Stmt succ : succs) {
+                        if (!node.containsParent(succ)) {
+                            dfs(cfg, succ, sMethodPath, node);
+                        }
                     }
                 }
             }

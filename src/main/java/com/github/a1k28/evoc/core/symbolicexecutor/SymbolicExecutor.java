@@ -71,10 +71,7 @@ public class SymbolicExecutor {
 
         // handle node types
         if (node.getType() == SType.PARAMETER) {
-            if (sMethodPath.getParamList().hasNext())
-                updateParameter(sMethodPath, node.getUnit());
-            else
-                saveParameter(sMethodPath, node.getUnit());
+            handleParameter(sMethodPath, node);
         }
         if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE) {
             handleBranch(sMethodPath, node);
@@ -107,6 +104,13 @@ public class SymbolicExecutor {
         if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE) {
             pop(sMethodPath);
         }
+    }
+
+    private void handleParameter(SMethodPath sMethodPath, SNode node) {
+        if (sMethodPath.getParamList().hasNext())
+            updateParameter(sMethodPath, node.getUnit());
+        else
+            saveParameter(sMethodPath, node.getUnit());
     }
 
     private void handleBranch(SMethodPath sMethodPath, SNode node) {

@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.z3extended.struct;
+package com.github.a1k28.evoc.core.symbolicexecutor;
 
 import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
