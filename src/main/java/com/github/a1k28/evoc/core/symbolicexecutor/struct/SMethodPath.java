@@ -1,10 +1,12 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.model.HandlerNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
 import lombok.Getter;
+import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
@@ -12,7 +14,10 @@ import sootup.core.jimple.javabytecode.stmt.*;
 import sootup.core.model.Body;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 public class SMethodPath {
@@ -57,6 +62,29 @@ public class SMethodPath {
         assert !sNodeMap.containsKey(unit) || sNodeMap.get(unit).getUnit() == unit;
         sNodeMap.put(unit, sNode);
         return sNode;
+    }
+
+    public List<Trap> getTraps(SNode node) {
+        if (node == null)
+            return jumpNode == null ?
+                    null : jumpNode.getMethodPath().getTraps(jumpNode.getNode());
+        List<Trap> traps = new ArrayList<>();
+        for (Trap trap : body.getTraps())
+            if (trap.getBeginStmt().equals(node.getUnit()))
+                traps.add(trap);
+        if (traps.isEmpty()) return getTraps(node.getParent());
+        return traps;
+    }
+
+    public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
+        if (node == null)
+            return jumpNode == null ?
+                    null : jumpNode.getMethodPath().getHandlerNode(jumpNode.getNode(), exception);
+        for (Trap trap : body.getTraps())
+            if (trap.getBeginStmt().equals(node.getUnit())
+                    && trap.getExceptionType().getFullyQualifiedName().equals(exception.getName()))
+                return new HandlerNode(this, sNodeMap.get(trap.getHandlerStmt()));
+        return getHandlerNode(node.getParent(), exception);
     }
 
     public void print() {

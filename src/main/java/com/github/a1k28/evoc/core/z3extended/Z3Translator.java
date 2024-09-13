@@ -450,8 +450,13 @@ public class Z3Translator {
 
     public SVar updateSymbolicVar(
             Value variable, Expr expression, VarType varType, SMethodPath methodPath) {
-        SClassInstance classInstance = methodPath.getClassInstance();
         Class<?> classType = SootHelper.translateType(variable.getType());
+        return updateSymbolicVar(variable, expression, varType, methodPath, classType);
+    }
+
+    public SVar updateSymbolicVar(
+            Value variable, Expr expression, VarType varType, SMethodPath methodPath, Class<?> classType) {
+        SClassInstance classInstance = methodPath.getClassInstance();
         if (expression != null) {
             String name = getValueName(variable);
             if (classInstance.getFieldNames().contains(name)) {

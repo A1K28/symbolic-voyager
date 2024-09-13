@@ -9,10 +9,12 @@ import sootup.core.Project;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.Jimple;
+import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.common.constant.IntConstant;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
-import sootup.core.jimple.common.expr.JAndExpr;
 import sootup.core.jimple.common.expr.JEqExpr;
+import sootup.core.jimple.common.ref.JCaughtExceptionRef;
+import sootup.core.jimple.common.stmt.JIdentityStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
@@ -111,7 +113,10 @@ public class SootHelper {
     public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
         StmtGraph<?> cfg = body.getStmtGraph();
         Stmt start = cfg.getStartingStmt();
-        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
+//        print(cfg, start, 0);
+        for (Trap trap : body.getTraps())
+            dfs(cfg, trap.getHandlerStmt(), sMethodPath, new SNode(), false);
+        dfs(cfg, start, sMethodPath, sMethodPath.getRoot(), true);
     }
 
     public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
@@ -175,8 +180,24 @@ public class SootHelper {
                 .toString();
     }
 
+    private static void print(StmtGraph<?> cfg, Stmt current, int level) {
+        for (int i = 1; i < level; i++) System.out.print("\t");
+        System.out.println(current);
+        List<Stmt> succs = cfg.getAllSuccessors(current);
+        succs.forEach(e -> print(cfg, e, level+1));
+    }
+
     // interpret soot graph
-    private static void dfs(StmtGraph<?> cfg, Stmt current, SMethodPath sMethodPath, SNode parent) {
+    private static void dfs(
+            StmtGraph<?> cfg,
+            Stmt current,
+            SMethodPath sMethodPath,
+            SNode parent,
+            boolean ignoreCaughtRefs) {
+        if (ignoreCaughtRefs
+                && current instanceof JIdentityStmt<?> identityStmt
+                && identityStmt.getRightOp() instanceof JCaughtExceptionRef)
+            return;
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
         if (!cfg.getTails().contains(current)) {
@@ -194,27 +215,27 @@ public class SootHelper {
                     parent.addChild(elseNode);
                     ifNode.setType(SType.BRANCH_TRUE);
                     elseNode.setType(SType.BRANCH_FALSE);
-                    dfs(cfg, succs.get(i), sMethodPath, ifNode);
+                    dfs(cfg, succs.get(i), sMethodPath, ifNode, ignoreCaughtRefs);
                     parent = elseNode;
                 }
                 // has default
                 if (values.size() + 1 == succs.size())
-                    dfs(cfg, succs.get(values.size()), sMethodPath, parent);
+                    dfs(cfg, succs.get(values.size()), sMethodPath, parent, ignoreCaughtRefs);
             } else {
                 if (node.getType() == SType.BRANCH) {
-                    assert succs.size() == 2;
+                    // assuming first two values are if & else branches
                     SNode node2 = sMethodPath.createNode(current);
                     parent.addChild(node2);
 
                     node.setType(SType.BRANCH_FALSE);
                     node2.setType(SType.BRANCH_TRUE);
 
-                    dfs(cfg, succs.get(0), sMethodPath, node);
-                    dfs(cfg, succs.get(1), sMethodPath, node2);
+                    dfs(cfg, succs.get(0), sMethodPath, node, ignoreCaughtRefs);
+                    dfs(cfg, succs.get(1), sMethodPath, node2, ignoreCaughtRefs);
                 } else {
                     for (Stmt succ : succs) {
                         if (!node.containsParent(succ)) {
-                            dfs(cfg, succ, sMethodPath, node);
+                            dfs(cfg, succ, sMethodPath, node, ignoreCaughtRefs);
                         }
                     }
                 }

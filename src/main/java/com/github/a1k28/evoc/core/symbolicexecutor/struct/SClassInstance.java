@@ -1,28 +1,35 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
-import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import lombok.Getter;
 import lombok.Setter;
+import sootup.core.model.SootClass;
 import sootup.core.model.SootClassMember;
+import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 
 import java.lang.reflect.Executable;
-import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
 @Setter
 public class SClassInstance {
     private final Class<?> clazz;
+    private final SootClass<JavaSootClassSource> sootClass;
     private final Set<String> fieldNames;
     private final List<JavaSootField> fields;
     private final SStack symbolicFieldStack;
     private final Map<Executable, SMethodPath> methodPathSkeletons;
     private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
 
-    public SClassInstance(Class<?> clazz, List<JavaSootField> fields) {
+    public SClassInstance(Class<?> clazz,
+                          SootClass<JavaSootClassSource> sootClass,
+                          List<JavaSootField> fields) {
         this.clazz = clazz;
+        this.sootClass = sootClass;
         this.fields = fields;
         this.fieldNames = fields.stream().map(SootClassMember::toString).collect(Collectors.toSet());
         this.methodPathSkeletons = new HashMap<>();
@@ -34,7 +41,7 @@ public class SClassInstance {
         if (!this.gotoCount.containsKey(sNode))
             this.gotoCount.put(sNode, 0);
         this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
-        boolean shouldBreak = this.gotoCount.get(sNode) > 10; // limit is 10
+        boolean shouldBreak = this.gotoCount.get(sNode) > 20; // limit is 20
         if (shouldBreak) this.gotoCount.put(sNode, 0);
         return !shouldBreak;
     }

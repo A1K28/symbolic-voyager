@@ -1,6 +1,8 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.microsoft.z3.Expr;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,14 +14,17 @@ public class SParamList {
     private int index = 0;
     private final int size;
     private final List<Expr> expressions;
+    private final List<Class> types;
 
     public SParamList() {
         this.size = 0;
         this.expressions = Collections.emptyList();
+        this.types = Collections.emptyList();
     }
 
-    public SParamList(List<Expr> expressions) {
+    public SParamList(List<Expr> expressions, List<Class> types) {
         this.expressions = expressions;
+        this.types = types;
         this.size = expressions.size();
     }
 
@@ -27,7 +32,16 @@ public class SParamList {
         return index < size;
     }
 
-    public Expr getNext() {
-        return expressions.get(index++);
+    public Param getNext() {
+        Param param = new Param(expressions.get(index), types.get(index));
+        index++;
+        return param;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public static class Param {
+        private final Expr expression;
+        private final Class<?> type;
     }
 }

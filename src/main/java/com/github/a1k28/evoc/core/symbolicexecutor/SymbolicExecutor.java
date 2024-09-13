@@ -17,7 +17,10 @@ import sootup.core.jimple.common.stmt.*;
 import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SymbolicExecutor {
@@ -49,7 +52,7 @@ public class SymbolicExecutor {
     public SatisfiableResults analyzeSymbolicPaths(
             SClassInstance classInstance, Executable method, SParamList paramList, JumpNode jumpNode)
             throws ClassNotFoundException {
-        SMethodPath methodPathSkeleton = classInstance.getMethodPathSkeletons().get(method);
+        SMethodPath methodPathSkeleton = z3t.getContext().getClassMethodPath(classInstance, method);
         SMethodPath sMethodPath = new SMethodPath(methodPathSkeleton, paramList, jumpNode, new SStack());
         printMethod(classInstance, method);
         push(sMethodPath);
@@ -60,7 +63,7 @@ public class SymbolicExecutor {
 
     private void printMethod(SClassInstance classInstance, Executable method) {
         log.debug("Printing method: " + method.getName());
-        classInstance.getMethodPathSkeletons().get(method).print();
+        z3t.getContext().getClassMethodPath(classInstance, method).print();
     }
 
     private void analyzePaths(SMethodPath sMethodPath, SNode node) throws ClassNotFoundException {
@@ -89,12 +92,14 @@ public class SymbolicExecutor {
             // under-approximate
             if (sMethodPath.getClassInstance().incrementGotoCount(node))
                 analyzePaths(sMethodPath, nodes.get(0));
+
+            type = SType.GOTO;
         }
-        if (node.getType() == SType.RETURN
-                || node.getType() == SType.RETURN_VOID
-                || node.getType() == SType.THROW) {
-            // TODO: handle throw clause
+        if (node.getType() == SType.RETURN || node.getType() == SType.RETURN_VOID) {
             type = handleReturn(sMethodPath, node);
+        }
+        if (node.getType() == SType.THROW) {
+            type = handleThrows(sMethodPath, node);
         }
 
         if (Z3Status.SATISFIABLE == checkSatisfiability(sMethodPath, node, type))
@@ -127,20 +132,6 @@ public class SymbolicExecutor {
         JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
         SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath);
         VarType varType = getVarType(sMethodPath, invoke);
-
-//        if (wrapped.getSType() == SType.ASSIGNMENT) {
-//            Expr value = z3t.translateValue(invoke.getInvokeExpr(), VarType.METHOD, sMethodPath);
-//            z3t.updateSymbolicVar(wrapped.getBase(), value, varType, sMethodPath);
-//            return wrapped.getSType();
-//        }
-
-//        if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
-//            SConstructorExpr constructor = wrapped.asConstructor();
-//            Expr expr = sMethodPath.getSymbolicVarStack()
-//                    .get(z3t.getValueName(constructor.getBase())).get().getExpr();
-//            z3t.getContext().mkClassInstanceInit(expr, constructor);
-//            return SType.INVOKE_SPECIAL_CONSTRUCTOR;
-//        }
 
         if (wrapped.getSType() == SType.INVOKE
                 || wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
@@ -180,20 +171,47 @@ public class SymbolicExecutor {
                 propagate(methodExpr, sMethodPath, jumpNode);
                 return SType.INVOKE;
             } else {
+                Class<?> type = SootHelper.translateType(rightOp.getType());
                 Expr expr = z3t.callProverMethod(rightOpHolder.asMethod(), rightOpVarType, sMethodPath);
-                z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath);
+                z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
             }
         } else if (rightOpHolder.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
-            Class<?> clazz = Class.forName(rightOp.getType().toString());
+            Class<?> type = SootHelper.translateType(rightOp.getType());
             Expr leftOpExpr = z3t.translateValue(leftOp, leftOpVarType, sMethodPath);
-            Expr expr = z3t.getContext().mkClassInstance(leftOpExpr, clazz).getExpr();
-            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath);
+            Expr expr = z3t.getContext().mkClassInstance(leftOpExpr, type).getExpr();
+            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
         } else {
             // if method cannot be invoked, then mock it.
+            Class classType = SootHelper.translateType(rightOp.getType());
             if (rightOpVarType == VarType.METHOD) leftOpVarType = VarType.METHOD_MOCK;
-            z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath);
+            z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath, classType);
         }
         return SType.ASSIGNMENT;
+    }
+
+    private SType handleThrows(SMethodPath sMethodPath, SNode node)
+            throws ClassNotFoundException {
+        push(sMethodPath);
+
+        Class exceptionType = sMethodPath.getSymbolicVarStack()
+                .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
+                .getClassType();
+        HandlerNode handlerNode = sMethodPath.getHandlerNode(node, exceptionType);
+        analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
+
+        pop(sMethodPath);
+
+        return SType.THROW;
+    }
+
+    // TODO: implement
+    private SType handleGenericThrows(SMethodPath sMethodPath, SNode node)
+            throws ClassNotFoundException {
+        push(sMethodPath);
+
+        pop(sMethodPath);
+
+        return SType.THROW;
     }
 
     private SType handleReturn(SMethodPath sMethodPath, SNode node)
@@ -213,7 +231,8 @@ public class SymbolicExecutor {
             Value leftOp = assignStmt.getLeftOp();
             VarType leftOpVarType = getVarType(sMethodPath, leftOp);
 
-            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, jn.getMethodPath());
+            Class classType = SootHelper.translateType(assignStmt.getRightOp().getType());
+            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, jn.getMethodPath(), classType);
         }
 
         for (SNode child : jn.getNode().getChildren())
@@ -233,9 +252,12 @@ public class SymbolicExecutor {
         List<Expr> exprArgs = args.stream()
                 .map(e -> z3t.translateValue(e, getVarType(methodPath, e), methodPath))
                 .collect(Collectors.toList());
+        List<Class> types = args.stream()
+                .map(e -> SootHelper.translateType(e.getType()))
+                .collect(Collectors.toList());
         Executable method = SootHelper.getMethod(methodExpr.getInvokeExpr());
         SClassInstance classInstance = getClassInstance(methodExpr.getBase(), methodPath, method);
-        analyzeSymbolicPaths(classInstance, method, new SParamList(exprArgs), jumpNode);
+        analyzeSymbolicPaths(classInstance, method, new SParamList(exprArgs, types), jumpNode);
     }
 
     private Z3Status checkSatisfiability(SMethodPath sMethodPath, SNode node, SType type) {
@@ -243,8 +265,9 @@ public class SymbolicExecutor {
             log.warn("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
         }
-        if (SType.INVOKE == type) return Z3Status.SATISFIABLE_END;
-        if (SType.RETURN == type || SType.RETURN_VOID == type || SType.THROW == type) {
+        if (SType.INVOKE == type || SType.GOTO == type || SType.THROW == type)
+            return Z3Status.SATISFIABLE_END;
+        if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
             if (node.getChildren().isEmpty()) {
                 SVarEvaluated returnValue = null;
@@ -368,8 +391,9 @@ public class SymbolicExecutor {
 
     private void updateParameter(SMethodPath methodPath, Stmt unit) {
         Local ref = ((JIdentityStmt<?>) unit).getLeftOp();
+        SParamList.Param param = methodPath.getParamList().getNext();
         z3t.updateSymbolicVar(ref,
-                methodPath.getParamList().getNext(),
+                param.getExpression(),
                 getVarType(methodPath, unit),
                 methodPath);
     }

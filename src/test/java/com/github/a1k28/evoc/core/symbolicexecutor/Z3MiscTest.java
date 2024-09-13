@@ -13,7 +13,7 @@ public class Z3MiscTest {
         return 1;
     }
 
-//    @SymbolicTest({0,1})
+//    //@SymbolicTest({0,1})
 //    @DisplayName("test_enhanced_for_loop_1")
 //    public int test_enhanced_for_loop_1(int param) {
 //    }
@@ -108,5 +108,72 @@ public class Z3MiscTest {
         if (k > 10)
             return 2;
         return 3;
+    }
+
+    @SymbolicTest({1,2,3})
+    @DisplayName("test_nested_for_loop_1")
+    public int test_nested_for_loop_1(int param) {
+        int k = 0;
+        for (int i = 0; i < param; i++) {
+            if (i == 5) continue;
+            for (int j = 0; j < 3; j++) {
+                k += 1;
+            }
+        }
+        if (k == 5)
+            return 0;
+        if (k == 3)
+            return 1;
+        if (k > 10)
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_try_catch_1")
+    public int test_try_catch_1(int param) {
+        if (param == 10)
+            return 0;
+        try {
+            if (param == 20)
+                throw new IllegalArgumentException("Illegal arguments provided");
+            return 1;
+        } catch (IllegalArgumentException e) {
+            return 2;
+        }
+    }
+
+    @SymbolicTest({0,1,2,3})
+    @DisplayName("test_try_catch_2")
+    public int test_try_catch_2(int param) {
+        try {
+            if (param == 10)
+                return 0;
+            if (param == 20)
+                throw new IllegalArgumentException("Illegal arguments provided");
+            if (param == 30)
+                throw new IllegalStateException("Illegal state exception");
+            return 1;
+        } catch (IllegalArgumentException e) {
+            return 2;
+        } catch (IllegalStateException e) {
+            return 3;
+        }
+    }
+
+    @SymbolicTest({1})
+    @DisplayName("test_try_catch_finally_1")
+    public int test_try_catch_finally_1(int param) {
+        try {
+            if (param == 10)
+                return 0;
+        } catch (IllegalArgumentException e) {
+            return 2;
+        } catch (IllegalStateException e) {
+            return 3;
+        } finally {
+            System.out.println("ASD");
+            return 1;
+        }
     }
 }

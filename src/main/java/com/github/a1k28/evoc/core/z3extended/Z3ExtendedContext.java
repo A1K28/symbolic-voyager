@@ -1,5 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3ClassInstance;
@@ -7,6 +9,7 @@ import com.github.a1k28.evoc.core.z3extended.struct.Z3Map;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Optional;
 
@@ -257,6 +260,9 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3ClassInstance.getClassInstance(expr);
     }
 
+    public SMethodPath getClassMethodPath(SClassInstance instance, Executable method) {
+        return z3ClassInstance.getMethodPath(instance, method);
+    }
 
     // sets
 //    @Override

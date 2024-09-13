@@ -19,6 +19,7 @@ import sootup.core.types.Type;
 import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -94,32 +95,30 @@ public class Z3ClassInstance implements IStack {
         return stack.get(hashCode);
     }
 
+    // lazily initialize methods & constructors
+    public SMethodPath getMethodPath(SClassInstance instance, Executable method) {
+        if (instance.getMethodPathSkeletons().containsKey(method))
+            return instance.getMethodPathSkeletons().get(method);
+        boolean isConstructor = method instanceof Constructor;
+        SMethodPath sMethodPath = createMethodPath(instance, method, isConstructor);
+        instance.getMethodPathSkeletons().put(method, sMethodPath);
+        return sMethodPath;
+    }
+
     private SClassInstance createClassInstance(Class<?> clazz)
             throws ClassNotFoundException {
         SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());
         List<JavaSootField> fields = SootHelper.getFields(sootClass);
-        SClassInstance instance = new SClassInstance(clazz, fields);
-
-        for (Method method : clazz.getDeclaredMethods()) {
-            SMethodPath sMethodPath = createMethodPath(sootClass, instance, method, false);
-            instance.getMethodPathSkeletons().put(method, sMethodPath);
-        }
-
-        for (Executable method : clazz.getDeclaredConstructors()) {
-            SMethodPath sMethodPath = createMethodPath(sootClass, instance, method, true);
-            instance.getMethodPathSkeletons().put(method, sMethodPath);
-        }
-
+        SClassInstance instance = new SClassInstance(clazz, sootClass, fields);
         return instance;
     }
 
     private SMethodPath createMethodPath(
-            SootClass<JavaSootClassSource> sootClass,
             SClassInstance classInstance,
             Executable method,
             boolean isConstructor) {
         // Find all paths
-        SootMethod sootMethod = getSootMethod(sootClass, method, isConstructor);
+        SootMethod sootMethod = getSootMethod(classInstance.getSootClass(), method, isConstructor);
         Body body = sootMethod.getBody();
         SMethodPath sMethodPath;
         if (isConstructor)
