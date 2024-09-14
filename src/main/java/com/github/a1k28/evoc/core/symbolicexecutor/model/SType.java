@@ -10,6 +10,7 @@ public enum SType {
     IDENTITY,
     INVOKE,
     INVOKE_SPECIAL_CONSTRUCTOR,
+    INVOKE_MOCK,
     SWITCH,
     THROW,
     ENTER_MONITOR,
