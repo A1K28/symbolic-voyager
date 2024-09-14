@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class Z3Map implements IStack {
+public class Z3MapInstance implements IStack {
     private final Context ctx;
     private final Z3CachingFactory sortState;
     private final Z3Stack<Integer, MapModel> stack;
     private final Z3ExtendedSolver solver;
 
-    public Z3Map(Context context, Z3CachingFactory sortState, Z3ExtendedSolver solver) {
+    public Z3MapInstance(Context context, Z3CachingFactory sortState, Z3ExtendedSolver solver) {
         this.ctx = context;
         this.sortState = sortState;
         this.solver = solver;

@@ -82,12 +82,10 @@ public class Z3CachingFactory {
                             ctx.mkSymbol("isEmpty")},
                     new Sort[]{key, value, ctx.getBoolSort()}
             );
-            // TODO: fix this
             Expr sentinel = tupleSort.mkDecl().apply(
                     ctx.mkConst("sentinelKey", key),
                     ctx.mkConst("sentinelValue", value),
                     ctx.mkTrue());
-//                    ctx.mkString("sentinelKey"), ctx.mkString("sentinelValue"), ctx.mkTrue());
             SortContainer container = new SortContainer(tupleSort, sentinel);
             mapSorts.get(keyName).put(valueName, container);
         }
