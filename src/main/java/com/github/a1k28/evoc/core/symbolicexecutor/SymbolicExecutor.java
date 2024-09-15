@@ -288,21 +288,7 @@ public class SymbolicExecutor {
         if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
             if (node.getChildren().isEmpty()) {
-                SVarEvaluated returnValue = null;
-                if (node.getType() == SType.RETURN) {
-                    JReturnStmt stmt = (JReturnStmt) node.getUnit();
-                    Expr expr = z3t.translateValue(
-                            stmt.getOp(), VarType.RETURN_VALUE, sMethodPath);
-                    Class<?> classType = SootHelper.translateType(stmt.getOp().getType());
-                    SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
-                            expr,
-                            VarType.RETURN_VALUE,
-                            classType,
-                            true);
-                    returnValue = new SVarEvaluated(
-                            svar,
-                            solver.getModel().eval(expr, true).toString());
-                }
+                SVarEvaluated returnValue = getReturnValue(sMethodPath, node);
                 handleSatisfiability(sMethodPath, returnValue);
                 return Z3Status.SATISFIABLE_END;
             }
@@ -355,6 +341,24 @@ public class SymbolicExecutor {
 
         sMethodPath.getSatisfiableResults().getResults().add(satisfiableResult);
         log.empty();
+    }
+
+    private SVarEvaluated getReturnValue(SMethodPath methodPath, SNode node) {
+        if (node.getType() == SType.RETURN) {
+            JReturnStmt stmt = (JReturnStmt) node.getUnit();
+            Expr expr = z3t.translateValue(
+                    stmt.getOp(), VarType.RETURN_VALUE, methodPath);
+            Class<?> classType = SootHelper.translateType(stmt.getOp().getType());
+            SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
+                    expr,
+                    VarType.RETURN_VALUE,
+                    classType,
+                    true);
+            return new SVarEvaluated(
+                    svar,
+                    solver.getModel().eval(expr, true).toString());
+        }
+        return null;
     }
 
     private SMethodMockEvaluated handleMockExpression(SVar var, Object returnValue) {
