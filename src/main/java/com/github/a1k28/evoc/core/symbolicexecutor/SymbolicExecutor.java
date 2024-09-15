@@ -130,7 +130,7 @@ public class SymbolicExecutor {
     private SType handleVoidMethodCall(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
         JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
-        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), sMethodPath);
+        SExpr wrapped = z3t.wrapMethodCall(invoke.getInvokeExpr(), null);
         VarType varType = getVarType(sMethodPath, invoke);
 
         if (wrapped.getSType() == SType.INVOKE
@@ -180,10 +180,16 @@ public class SymbolicExecutor {
             Expr leftOpExpr = z3t.translateValue(leftOp, leftOpVarType, sMethodPath);
             Expr expr = z3t.getContext().mkClassInstance(leftOpExpr, type).getExpr();
             z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
-        } else {
+        } else if (rightOpHolder.getSType() == SType.INVOKE_MOCK) {
             // if method cannot be invoked, then mock it.
+            SMethodExpr methodExpr = rightOpHolder.asMethod();
             Class classType = SootHelper.translateType(rightOp.getType());
-            if (rightOpVarType == VarType.METHOD) leftOpVarType = VarType.METHOD_MOCK;
+            Expr expr = z3t.translateValue(rightOp, rightOpVarType, sMethodPath);
+            List<Expr> params = translateExpressions(methodExpr, sMethodPath);
+            Method method = (Method) SootHelper.getMethod(methodExpr.getInvokeExpr());
+            z3t.updateSymbolicVar(leftOp, expr, VarType.METHOD_MOCK, sMethodPath, classType, method, params);
+        } else {
+            Class classType = SootHelper.translateType(rightOp.getType());
             z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath, classType);
         }
         return SType.ASSIGNMENT;
@@ -248,6 +254,13 @@ public class SymbolicExecutor {
         // under-approximate
         if (!methodPath.getClassInstance().incrementGotoCount(jumpNode.getNode()))
             return;
+        SParamList paramList = createParamList(methodExpr, methodPath);
+        Executable method = SootHelper.getMethod(methodExpr.getInvokeExpr());
+        SClassInstance classInstance = getClassInstance(methodExpr.getBase(), methodPath, method);
+        analyzeSymbolicPaths(classInstance, method, paramList, jumpNode);
+    }
+
+    private SParamList createParamList(SMethodExpr methodExpr, SMethodPath methodPath) {
         List<Value> args = methodExpr.getArgs();
         List<Expr> exprArgs = args.stream()
                 .map(e -> z3t.translateValue(e, getVarType(methodPath, e), methodPath))
@@ -255,9 +268,14 @@ public class SymbolicExecutor {
         List<Class> types = args.stream()
                 .map(e -> SootHelper.translateType(e.getType()))
                 .collect(Collectors.toList());
-        Executable method = SootHelper.getMethod(methodExpr.getInvokeExpr());
-        SClassInstance classInstance = getClassInstance(methodExpr.getBase(), methodPath, method);
-        analyzeSymbolicPaths(classInstance, method, new SParamList(exprArgs, types), jumpNode);
+        return new SParamList(exprArgs, types);
+    }
+
+    private List<Expr> translateExpressions(SMethodExpr methodExpr, SMethodPath methodPath) {
+        List<Value> args = methodExpr.getArgs();
+        return args.stream()
+                .map(e -> z3t.translateValue(e, getVarType(methodPath, e), methodPath))
+                .collect(Collectors.toList());
     }
 
     private Z3Status checkSatisfiability(SMethodPath sMethodPath, SNode node, SType type) {
@@ -277,7 +295,6 @@ public class SymbolicExecutor {
                             stmt.getOp(), VarType.RETURN_VALUE, sMethodPath);
                     Class<?> classType = SootHelper.translateType(stmt.getOp().getType());
                     SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
-//                            stmt.getOp(),
                             expr,
                             VarType.RETURN_VALUE,
                             classType,
@@ -298,6 +315,7 @@ public class SymbolicExecutor {
 
         List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
         List<SVarEvaluated> parametersEvaluated = new ArrayList<>();
+        List<SMethodMockEvaluated> mockedMethodsEvaluated = new ArrayList<>();
         List<SVar> symbolicVars = sMethodPath.getSymbolicVarStack().getAll();
         symbolicVars.addAll(sMethodPath.getClassInstance().getSymbolicFieldStack().getAll());
         for (SVar var : symbolicVars) {
@@ -306,9 +324,20 @@ public class SymbolicExecutor {
                     && var.getType() != VarType.FIELD
                     && var.getType() != VarType.METHOD_MOCK) continue;
 
-            SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluateSatisfiableExpression(var));
-            if (var.getType() == VarType.FIELD) fieldsEvaluated.add(sVarEvaluated);
-            else parametersEvaluated.add(sVarEvaluated);
+            Object evaluated = evaluateSatisfiableExpression(var.getExpr());
+            log.debug(evaluated + " - " + var.getName());
+
+            if (var.getType() == VarType.FIELD) {
+                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
+                fieldsEvaluated.add(sVarEvaluated);
+            } else if (var.getType() == VarType.METHOD_MOCK) {
+                SMethodMockEvaluated sVarEvaluated = handleMockExpression(var, evaluated);
+                mockedMethodsEvaluated.add(sVarEvaluated);
+            } else {
+                // parameter
+                SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
+                parametersEvaluated.add(sVarEvaluated);
+            }
         }
 
         if (returnValue != null)
@@ -319,6 +348,7 @@ public class SymbolicExecutor {
                 solver.getAssertions(),
                 fieldsEvaluated,
                 parametersEvaluated,
+                mockedMethodsEvaluated,
                 returnValue,
                 true
         );
@@ -327,41 +357,49 @@ public class SymbolicExecutor {
         log.empty();
     }
 
-    private Object evaluateSatisfiableExpression(SVar var) {
+    private SMethodMockEvaluated handleMockExpression(SVar var, Object returnValue) {
+        SMethodMockVar sMethodMockVar = (SMethodMockVar) var;
+        List<Object> evaluatedParams = sMethodMockVar.getArguments().stream()
+                .map(this::evaluateSatisfiableExpression)
+                .collect(Collectors.toList());
+        // TODO: handle exception type
+        return new SMethodMockEvaluated(var, returnValue, evaluatedParams, null, sMethodMockVar.getMethod());
+    }
+
+    private Object evaluateSatisfiableExpression(Expr expr) {
         if (solver.check() != Status.SATISFIABLE)
             throw new IllegalStateException("Unknown state: " + solver.check());
         Model model = solver.getModel();
 
         Object evaluated;
-        if (SortType.MAP.equals(var.getExpr().getSort())) {
-            evaluated = handleMapSatisfiability(var);
-        } else if (SortType.OBJECT.equals(var.getExpr().getSort())) {
-            evaluated = handleObjectSatisfiability(var);
+        if (SortType.MAP.equals(expr.getSort())) {
+            evaluated = handleMapSatisfiability(expr);
+        } else if (SortType.OBJECT.equals(expr.getSort())) {
+            evaluated = handleObjectSatisfiability(expr);
         } else {
-            evaluated = model.eval(var.getExpr(), true);
+            evaluated = model.eval(expr, true);
             // this is required to keep an accurate solver state
-            solver.add(z3t.mkEq(var.getExpr(), (Expr) evaluated));
+            BoolExpr assertion = z3t.mkEq(expr, (Expr) evaluated);
+            if (!z3t.containsAssertion(assertion))
+                solver.add(assertion);
         }
 
-        log.debug(evaluated + " - " + var.getName());
         return evaluated;
     }
 
-    private Object handleMapSatisfiability(SVar var) {
-        Optional<MapModel> mapModelOptional = z3t.getContext().getInitialMap(var.getExpr());
-        if (mapModelOptional.isEmpty()) return new SVarEvaluated(var, new HashMap<>());
-        MapModel mapModel = mapModelOptional.get();
+    private Object handleMapSatisfiability(Expr expr) {
+        MapModel mapModel = z3t.getContext().getInitialMap(expr).orElseThrow();
         int size = solver.minimizeInteger(mapModel.getSize());
         return solver.createInitialMap(mapModel, size);
     }
 
-    private Object handleObjectSatisfiability(SVar var) {
-        ClassInstanceModel model = z3t.getContext().getClassInstance(var.getExpr()).orElseThrow();
+    private Object handleObjectSatisfiability(Expr expr) {
+        ClassInstanceModel model = z3t.getContext().getClassInstance(expr).orElseThrow();
         SClassInstance classInstance = model.getClassInstance();
         ClassInstanceVar classInstanceVar = new ClassInstanceVar(classInstance.getClazz());
         for (SVar sVar : classInstance.getSymbolicFieldStack().getAll()) {
             if (!sVar.isDeclaration()) continue;
-            Object evaluated = evaluateSatisfiableExpression(sVar);
+            Object evaluated = evaluateSatisfiableExpression(sVar.getExpr());
             classInstanceVar.getFields().put(sVar.getName(), evaluated);
         }
         return classInstanceVar;

@@ -22,11 +22,6 @@
       <name>Maven central</name>
       <url>https://repo.maven.apache.org/maven2/</url>
     </repository>
-<!--    <repository>-->
-<!--      <id>sosy-lab</id>-->
-<!--      <name>SoSy-Lab Repository</name>-->
-<!--      <url>https://packages.sosy-lab.org/repository/maven-releases/</url>-->
-<!--    </repository>-->
     <repository>
       <id>itemis-maven-mps</id>
       <name>itemis Maven MPS Repository</name>
@@ -67,38 +62,11 @@
       <version>5.10.2</version>
     </dependency>
     <dependency>
-      <groupId>org.pitest</groupId>
-      <artifactId>pitest</artifactId>
-      <version>1.16.1</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/org/pitest/pitest-dev-SNAPSHOT.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>org.pitest</groupId>
-      <artifactId>pitest-entry</artifactId>
-      <version>1.16.1</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/org/pitest/pitest-entry-dev-SNAPSHOT.jar</systemPath>
-    </dependency>
-    <dependency>
       <groupId>com.github.a1k28</groupId>
-      <artifactId>dynamic-classloader-agent</artifactId>
+      <artifactId>supermock</artifactId>
       <version>1.0-SNAPSHOT</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/libs/com/github/a1k28/dclagent/dynamic-classloader-agent-1.0-SNAPSHOT.jar</systemPath>
-    </dependency>
-<!--    <dependency>-->
-<!--      <groupId>com.microsoft.z3</groupId>-->
-<!--      <artifactId>z3</artifactId>-->
-<!--      <version>1.0</version>-->
-<!--      <scope>system</scope>-->
-<!--      <systemPath>${project.basedir}/libs/com/microsoft/z3/com.microsoft.z3.jar</systemPath>-->
-<!--    </dependency>-->
-    <!-- https://mvnrepository.com/artifact/org.pitest/pitest-junit5-plugin -->
-    <dependency>
-      <groupId>org.pitest</groupId>
-      <artifactId>pitest-junit5-plugin</artifactId>
-      <version>1.2.1</version>
+      <systemPath>${project.basedir}/libs/supermock/supermock-1.0-SNAPSHOT-jar-with-dependencies.jar</systemPath>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.github.javaparser/javaparser-core -->
     <dependency>

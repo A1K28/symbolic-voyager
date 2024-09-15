@@ -4,6 +4,7 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
+import com.microsoft.z3.SeqSort;
 import lombok.RequiredArgsConstructor;
 import sootup.core.signatures.MethodSignature;
 
@@ -22,7 +23,8 @@ public enum MethodModel {
     // strings
     STRING_EQUALS(String.class,"boolean equals(java.lang.Object)",true),
     STRING_LEN(String.class,"int length()",true),
-    STRING_SOOT_CONCAT(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
+    STRING_SOOT_CONCAT_STRING(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
+    STRING_SOOT_CONCAT_INT(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(int)>", false),
 
     // --- lists ---
 //    LIST_INIT(List.class,"void <init>()", true),
@@ -159,7 +161,8 @@ public enum MethodModel {
 
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
             case STRING_LEN -> ctx.mkLength(args.get(0));
-            case STRING_SOOT_CONCAT -> ctx.mkConcat(args.get(0), ctx.mkString(args.get(1).getString()));
+            case STRING_SOOT_CONCAT_STRING -> ctx.mkStringConcatString(args.get(0), args.get(1));
+            case STRING_SOOT_CONCAT_INT -> ctx.mkStringConcatInt(args.get(0), args.get(1));
 
 //            case LIST_INIT, LIST_OF_OBJECT_ARR -> ctx.mkList(args.get(0));
 //            case LIST_INIT_WITH_CAPACITY -> ctx.mkListWithCapacity(args.get(0), (IntExpr) args.get(1));

@@ -6,6 +6,7 @@ import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,19 @@ public class SStack implements IStack {
         }
         else {
             sVar = new SVar(name, expr, type, classType, true);
+        }
+        _add(sVar);
+        return sVar;
+    }
+
+    public SVar add(String name, Class<?> classType, Expr expr, VarType type, Method method, List<Expr> params) {
+        Optional<SVar> optional = getDeclaration(name);
+        SVar sVar;
+        if (optional.isPresent()) {
+            sVar = new SMethodMockVar(name, expr, type, classType, false, method, params);
+        }
+        else {
+            sVar = new SMethodMockVar(name, expr, type, classType, true, method, params);
         }
         _add(sVar);
         return sVar;

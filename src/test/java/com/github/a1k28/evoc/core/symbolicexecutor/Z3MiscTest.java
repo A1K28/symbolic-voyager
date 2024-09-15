@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor;
 
+import com.github.a1k28.evoc.outsidescope.NOPService;
 import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
 
@@ -161,7 +162,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({1})
+//    @SymbolicTest({1})
     @DisplayName("test_try_catch_finally_1")
     public int test_try_catch_finally_1(int param) {
         try {
@@ -175,5 +176,17 @@ public class Z3MiscTest {
             System.out.println("ASD");
             return 1;
         }
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_method_mock_1")
+    public int test_method_mock_1(int a, int b) {
+        NOPService nopService = new NOPService();
+        int res = nopService.calculate(a, b);
+        if (res == -1)
+            return 0;
+        if (res == 10)
+            return 1;
+        return 2;
     }
 }

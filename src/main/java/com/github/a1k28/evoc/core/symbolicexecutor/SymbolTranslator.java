@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.symbolicexecutor;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodMockEvaluated;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import lombok.NoArgsConstructor;
 
@@ -27,34 +28,53 @@ public class SymbolTranslator {
                 int j = 0;
                 for (SVarEvaluated key : res.getSymbolicParameterValues()) {
                     // TODO: handle mocked params
-                    if (key.getSvar().getType() != VarType.PARAMETER)
+                    if (key.getSvar().getType() == VarType.METHOD_MOCK)
                         throw new RuntimeException("MOCKED METHOD INBOUND");
                     paramNames[j] = key.getSvar().getName();
                     j++;
                 }
             }
 
+            // params
             Object[] parameters = new Object[paramNames.length];
             for (int j = 0; j < paramNames.length; j++)
                 parameters[j] = parse(res.getParameter(paramNames[j]), paramTypes[j]);
 
+            // return val
             Object returnVal = null;
             if (returnType != Void.class)
                 returnVal = parse(res.getReturnValue().getEvaluated(), returnType);
 
+            // fields
             List<SVarEvaluated> parsedFields = new ArrayList<>();
             for (SVarEvaluated sVarEvaluated : res.getSymbolicFieldValues()) {
                 Object parsed = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
                 parsedFields.add(new SVarEvaluated(sVarEvaluated.getSvar(), parsed));
             }
 
-            ParsedResult parsedResult = new ParsedResult(returnVal, parameters, parsedFields);
+            // method mocks
+            List<MethodMockResult> mockedMethodValues = new ArrayList<>();
+            for (SMethodMockEvaluated sVarEvaluated : res.getMockedMethodValues()) {
+                Class[] mockParamClassTypes = sVarEvaluated.getMethod().getParameterTypes();
+                assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();
+                List<Object> mockParams = new ArrayList<>();
+                Object mockRetVal = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
+                for (int i = 0; i < mockParamClassTypes.length; i++) {
+                    mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
+                }
+                MethodMockResult mockResult = new MethodMockResult(
+                        sVarEvaluated.getMethod(), mockRetVal, sVarEvaluated.getExceptionType(), mockParams);
+                mockedMethodValues.add(mockResult);
+            }
+
+            ParsedResult parsedResult = new ParsedResult(
+                    returnVal, parameters, parsedFields, mockedMethodValues);
             evalMap.put(res, parsedResult);
         }
         return evalMap;
     }
 
-    private static <T> T parse(Object value, Class<T> type) {
+    private static <T> T parse(Object value, Class type) {
         if (type == Integer.class || type == int.class)
             return (T) Integer.valueOf(value.toString());
 

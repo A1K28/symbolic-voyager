@@ -3,13 +3,16 @@ package com.github.a1k28.junitengine;
 import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodMockResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.helper.Logger;
-import org.junit.jupiter.api.Test;
+//import com.github.a1k28.supermock.MockAPI;
+import com.github.a1k28.evoc.outsidescope.NOPService;
+import com.github.a1k28.supermock.MockAPI;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
 import org.junit.platform.engine.discovery.ClassSelector;
@@ -22,6 +25,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.github.a1k28.evoc.helper.SootHelper.translateField;
+import static com.github.a1k28.supermock.MockAPI.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,7 +71,7 @@ public class SymbolicTestEngine implements TestEngine {
     public void execute(ExecutionRequest request) {
         TestDescriptor root = request.getRootTestDescriptor();
         EngineExecutionListener listener = request.getEngineExecutionListener();
-
+        MockAPI.attachAgentToThisJVM();
         listener.executionStarted(root);
         executeChildren(root, listener);
         listener.executionFinished(root, TestExecutionResult.successful());
@@ -122,6 +126,7 @@ public class SymbolicTestEngine implements TestEngine {
             String paramsString = Arrays.toString(parameters);
             Object instance = testClass.getDeclaredConstructor().newInstance();
             overwriteFields(testClass, instance, res.getParsedFields());
+            createMocks(res.getMethodMockValues());
 
             int expected = (int) res.getParsedReturnValue();
             int actual = (int) testMethod.invoke(instance, parameters);
@@ -132,9 +137,22 @@ public class SymbolicTestEngine implements TestEngine {
             assertEquals(expected, actual);
             assertTrue(reachableCodes.contains(expected));
             reachedCodes.add(expected);
+            MockAPI.resetMockState();
         }
         reachableCodes.removeAll(reachedCodes);
         assertTrue(reachableCodes.isEmpty());
+    }
+
+    private void createMocks(List<MethodMockResult> mockResults) {
+        for (MethodMockResult mockResult : mockResults) {
+            Class type = mockResult.getMethod().getDeclaringClass();
+            String methodName = mockResult.getMethod().getName();
+            Object[] args = mockResult.getParsedParameters().toArray();
+            Object retVal = mockResult.getParsedReturnValue();
+            Class exceptionType = mockResult.getExceptionType();
+            if (exceptionType != null) when(type, methodName, args).thenThrow(exceptionType);
+            else when(type, methodName, args).thenReturn(retVal);
+        }
     }
 
     private void overwriteFields(Class testClass, Object instance, List<SVarEvaluated> evaluatedFields)

@@ -54,6 +54,21 @@ public class Z3ExtendedContext extends Context implements IStack {
         return this.solver;
     }
 
+    // strings
+    public <R extends Sort> SeqExpr<R> mkStringConcatString(Expr expr1, Expr expr2) {
+        Expr<SeqSort<R>> e1 = (Expr<SeqSort<R>>) expr1;
+        Expr<SeqSort<R>> e2 = (Expr<SeqSort<R>>) expr2;
+        return this.mkConcat(e1, e2);
+    }
+
+    public <R extends Sort> SeqExpr<R> mkStringConcatInt(Expr expr1, Expr expr2) {
+        Expr<SeqSort<R>> e1 = expr1.getSort().getClass() == IntSort.class ?
+                this.intToString(expr1) : (Expr<SeqSort<R>>) expr1;
+        Expr<SeqSort<R>> e2 = expr2.getSort().getClass() == IntSort.class ?
+                this.intToString(expr2) : (Expr<SeqSort<R>>) expr2;
+        return this.mkConcat(e1, e2);
+    }
+
     // lists
 //    public Expr mkList(Expr var1) {
 //        return z3ListCollection.constructor(var1);

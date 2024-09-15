@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodMockEvaluated;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.microsoft.z3.BoolExpr;
 import lombok.Getter;
@@ -12,17 +13,20 @@ public class SatisfiableResult {
     private final List<BoolExpr> z3Assertions;
     private final List<SVarEvaluated> symbolicFieldValues;
     private final List<SVarEvaluated> symbolicParameterValues;
+    private final List<SMethodMockEvaluated> mockedMethodValues;
     private final SVarEvaluated returnValue;
     private final boolean continuable;
 
     public SatisfiableResult(BoolExpr[] z3Assertions,
                              List<SVarEvaluated> symbolicFieldValues,
                              List<SVarEvaluated> symbolicParameterValues,
+                             List<SMethodMockEvaluated> mockedMethodValues,
                              SVarEvaluated returnValue,
                              boolean continuable) {
         this.z3Assertions = Arrays.asList(z3Assertions);
         this.symbolicFieldValues = symbolicFieldValues;
         this.symbolicParameterValues = symbolicParameterValues;
+        this.mockedMethodValues = mockedMethodValues;
         this.returnValue = returnValue;
         this.continuable = continuable;
     }

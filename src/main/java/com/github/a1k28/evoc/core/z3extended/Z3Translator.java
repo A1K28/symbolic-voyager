@@ -21,6 +21,7 @@ import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.github.a1k28.evoc.helper.SootHelper.isConstructorCall;
@@ -80,7 +81,7 @@ public class Z3Translator {
         return ctx.mkNot(expr);
     }
 
-    public Expr mkEq(Expr expr, Expr val) {
+    public BoolExpr mkEq(Expr expr, Expr val) {
         return ctx.mkEq(expr, val);
     }
 
@@ -89,8 +90,9 @@ public class Z3Translator {
     }
 
     public SExpr translateAndWrapValue(Value value, VarType varType, SMethodPath methodPath) {
+//        Expr translateValue = translateValue(value, varType, methodPath);
         if (value instanceof AbstractInvokeExpr invoke) {
-            return wrapMethodCall(invoke, methodPath);
+            return wrapMethodCall(invoke, null);
         } else if (value instanceof JNewExpr && CLIOptions.shouldPropagate(value.toString())) {
             return new SExpr(translateValue(value, varType, methodPath), SType.INVOKE_SPECIAL_CONSTRUCTOR);
         } else {
@@ -102,7 +104,7 @@ public class Z3Translator {
             Value value1, Value value2, VarType varType, SMethodPath methodPath) {
         SExpr right;
         if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke, methodPath);
+            right = wrapMethodCall(invoke, translateValue(value1, varType, methodPath));
         } else {
             right = new SExpr(translateValue(value2, varType, methodPath));
         }
@@ -166,7 +168,7 @@ public class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + condition);
     }
 
-    public SExpr wrapMethodCall(AbstractInvokeExpr invoke, SMethodPath methodPath) {
+    public SExpr wrapMethodCall(AbstractInvokeExpr invoke, Expr val) {
         MethodSignature methodSignature = invoke.getMethodSignature();
 
         List<Value> args = new ArrayList<>();
@@ -180,12 +182,13 @@ public class Z3Translator {
                 args.add(arg);
 
         if (MethodModel.get(methodSignature).isPresent()) {
-            return new SMethodExpr(invoke, base, args, false);
+            return new SMethodExpr(val, invoke, base, args, false);
         } else if (CLIOptions.shouldPropagate(methodSignature.getDeclClassType().toString())) {
-            SType sType = isConstructorCall(methodSignature) ? SType.INVOKE_SPECIAL_CONSTRUCTOR : SType.INVOKE;
-            return new SMethodExpr(sType, invoke, base, args, true);
+            SType sType = isConstructorCall(methodSignature) ?
+                    SType.INVOKE_SPECIAL_CONSTRUCTOR : SType.INVOKE;
+            return new SMethodExpr(val, sType, invoke, base, args, true);
         } else {
-            return new SMethodExpr(SType.OTHER, invoke, base, args, false);
+            return new SMethodExpr(val, SType.INVOKE_MOCK, invoke, base, args, false);
         }
     }
 
@@ -466,6 +469,12 @@ public class Z3Translator {
             return methodPath.getSymbolicVarStack().add(name, classType, expression, varType);
         }
         return null;
+    }
+
+    public SVar updateSymbolicVar(
+            Value variable, Expr expression, VarType varType, SMethodPath methodPath, Class<?> classType, Method method, List<Expr> params) {
+        String name = getValueName(variable);
+        return methodPath.getSymbolicVarStack().add(name, classType, expression, varType, method, params);
     }
 
     public String getValueName(Value value) {
