@@ -180,7 +180,19 @@ public class Z3MiscTest {
 
     @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
-    public int test_method_mock_1(int a, int b) {
+    public int test_method_mock_1() {
+        NOPService nopService = new NOPService();
+        int res = nopService.calculate();
+        if (res == -1)
+            return 0;
+        if (res == 10)
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({0,1,2})
+    @DisplayName("test_method_mock_2")
+    public int test_method_mock_2(int a, int b) {
         NOPService nopService = new NOPService();
         int res = nopService.calculate(a, b);
         if (res == -1)
