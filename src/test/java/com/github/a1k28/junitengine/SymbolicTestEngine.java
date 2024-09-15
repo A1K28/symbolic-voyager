@@ -145,6 +145,8 @@ public class SymbolicTestEngine implements TestEngine {
 
     private void createMocks(List<MethodMockResult> mockResults) {
         for (MethodMockResult mockResult : mockResults) {
+            log.info("Mocking: " + mockResult.getMethod() + " with args: "
+                    + Arrays.toString(mockResult.getParsedParameters().toArray(new Object[0])));
             Class type = mockResult.getMethod().getDeclaringClass();
             String methodName = mockResult.getMethod().getName();
             Object[] args = mockResult.getParsedParameters().toArray();

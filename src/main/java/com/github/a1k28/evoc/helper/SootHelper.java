@@ -37,10 +37,14 @@ import java.io.InputStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootHelper {
+    private static final Map<String, Class<?>> cachedMap = new HashMap<>();
+
     public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
         int javaVersion = getJavaVersion(Class.forName(className));
 
@@ -110,13 +114,24 @@ public class SootHelper {
         }
     }
 
+    public static Class<?> getClass(ClassType classType) {
+        try {
+            String name = classType.getFullyQualifiedName();
+            if (!cachedMap.containsKey(name)) {
+                Class clazz = Class.forName(name);
+                cachedMap.put(name, clazz);
+            }
+            return cachedMap.get(name);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
         StmtGraph<?> cfg = body.getStmtGraph();
         Stmt start = cfg.getStartingStmt();
 //        print(cfg, start, 0);
-        for (Trap trap : body.getTraps())
-            dfs(cfg, trap.getHandlerStmt(), sMethodPath, new SNode(), false);
-        dfs(cfg, start, sMethodPath, sMethodPath.getRoot(), true);
+        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
     }
 
     public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
@@ -192,12 +207,7 @@ public class SootHelper {
             StmtGraph<?> cfg,
             Stmt current,
             SMethodPath sMethodPath,
-            SNode parent,
-            boolean ignoreCaughtRefs) {
-        if (ignoreCaughtRefs
-                && current instanceof JIdentityStmt<?> identityStmt
-                && identityStmt.getRightOp() instanceof JCaughtExceptionRef)
-            return;
+            SNode parent) {
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
         if (!cfg.getTails().contains(current)) {
@@ -215,12 +225,12 @@ public class SootHelper {
                     parent.addChild(elseNode);
                     ifNode.setType(SType.BRANCH_TRUE);
                     elseNode.setType(SType.BRANCH_FALSE);
-                    dfs(cfg, succs.get(i), sMethodPath, ifNode, ignoreCaughtRefs);
+                    dfs(cfg, succs.get(i), sMethodPath, ifNode);
                     parent = elseNode;
                 }
                 // has default
                 if (values.size() + 1 == succs.size())
-                    dfs(cfg, succs.get(values.size()), sMethodPath, parent, ignoreCaughtRefs);
+                    dfs(cfg, succs.get(values.size()), sMethodPath, parent);
             } else {
                 if (node.getType() == SType.BRANCH) {
                     // assuming first two values are if & else branches
@@ -230,12 +240,12 @@ public class SootHelper {
                     node.setType(SType.BRANCH_FALSE);
                     node2.setType(SType.BRANCH_TRUE);
 
-                    dfs(cfg, succs.get(0), sMethodPath, node, ignoreCaughtRefs);
-                    dfs(cfg, succs.get(1), sMethodPath, node2, ignoreCaughtRefs);
+                    dfs(cfg, succs.get(0), sMethodPath, node);
+                    dfs(cfg, succs.get(1), sMethodPath, node2);
                 } else {
                     for (Stmt succ : succs) {
                         if (!node.containsParent(succ)) {
-                            dfs(cfg, succ, sMethodPath, node, ignoreCaughtRefs);
+                            dfs(cfg, succ, sMethodPath, node);
                         }
                     }
                 }

@@ -15,10 +15,12 @@ public class SNode {
     private SType type;
     private SNode parent;
     private final List<SNode> children;
+    private final List<SNode> catchBlocks;
 
     public SNode() {
         this.unit = null;
         this.children = new ArrayList<>();
+        this.catchBlocks = new ArrayList<>();
         this.type = SType.ROOT;
     }
 
@@ -26,11 +28,16 @@ public class SNode {
         this.unit = unit;
         this.type = sType;
         this.children = new ArrayList<>();
+        this.catchBlocks = new ArrayList<>();
     }
 
     public void addChild(SNode child) {
-        this.children.add(child);
-        child.setParent(this);
+        if (child.getType() == SType.CATCH) {
+            this.catchBlocks.add(child);
+        } else {
+            this.children.add(child);
+            child.setParent(this);
+        }
     }
 
     public void removeLastChild() {

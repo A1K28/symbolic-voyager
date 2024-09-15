@@ -5,9 +5,11 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
+import com.github.a1k28.evoc.helper.SootHelper;
 import lombok.Getter;
 import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.basic.Value;
+import sootup.core.jimple.common.ref.JCaughtExceptionRef;
 import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
@@ -80,10 +82,15 @@ public class SMethodPath {
         if (node == null)
             return jumpNode == null ?
                     null : jumpNode.getMethodPath().getHandlerNode(jumpNode.getNode(), exception);
-        for (Trap trap : body.getTraps())
-            if (trap.getBeginStmt().equals(node.getUnit())
-                    && trap.getExceptionType().getFullyQualifiedName().equals(exception.getName()))
-                return new HandlerNode(this, sNodeMap.get(trap.getHandlerStmt()));
+
+        if (node.getParent() != null) {
+            for (SNode catchBlock : node.getParent().getCatchBlocks()) {
+                Trap handlerTrap = getHandlerTrap(catchBlock, exception);
+                if (handlerTrap != null)
+                    return new HandlerNode(this, catchBlock);
+            }
+        }
+
         return getHandlerNode(node.getParent(), exception);
     }
 
@@ -99,6 +106,17 @@ public class SMethodPath {
             sNodes.add(sNodeMap.get(target));
         }
         return sNodes;
+    }
+
+    private Trap getHandlerTrap(SNode node, Class<?> exception) {
+        for (Trap trap : body.getTraps()) {
+            if (trap.getHandlerStmt().equals(node.getUnit())) {
+                Class<?> trapClass = SootHelper.getClass(trap.getExceptionType());
+                if (trapClass.isAssignableFrom(exception))
+                    return trap;
+            }
+        }
+        return null;
     }
 
     private static SType getType(Stmt unit) {
@@ -119,9 +137,8 @@ public class SMethodPath {
         if (clazz == JBreakpointStmt.class) return SType.BREAKPOINT;
         if (unit instanceof JIdentityStmt u) {
             Value val = u.getRightOp();
-            if (val instanceof JParameterRef) {
-                return SType.PARAMETER;
-            }
+            if (val instanceof JParameterRef) return SType.PARAMETER;
+            if (val instanceof JCaughtExceptionRef) return SType.CATCH;
             return SType.IDENTITY;
         }
         log.warn("Could not identify: " + unit);

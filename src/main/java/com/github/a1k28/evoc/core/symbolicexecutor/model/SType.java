@@ -13,6 +13,7 @@ public enum SType {
     INVOKE_MOCK,
     SWITCH,
     THROW,
+    CATCH,
     ENTER_MONITOR,
     EXIT_MONITOR,
     GOTO,
