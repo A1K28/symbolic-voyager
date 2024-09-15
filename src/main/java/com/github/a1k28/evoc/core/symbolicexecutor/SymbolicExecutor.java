@@ -86,14 +86,7 @@ public class SymbolicExecutor {
             type = handleVoidMethodCall(sMethodPath, node);
         }
         if (node.getType() == SType.GOTO) {
-            List<SNode> nodes = sMethodPath.getSNodes(node.getUnit());
-            assert nodes.size() == 1; // TODO: is this always 1??
-
-            // under-approximate
-            if (sMethodPath.getClassInstance().incrementGotoCount(node))
-                analyzePaths(sMethodPath, nodes.get(0));
-
-            type = SType.GOTO;
+            type = handleGoto(sMethodPath, node);
         }
         if (node.getType() == SType.RETURN || node.getType() == SType.RETURN_VOID) {
             type = handleReturn(sMethodPath, node);
@@ -193,6 +186,25 @@ public class SymbolicExecutor {
             z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath, classType);
         }
         return SType.ASSIGNMENT;
+    }
+
+    private SType handleGoto(SMethodPath methodPath, SNode node) throws ClassNotFoundException {
+        List<SNode> nodes = methodPath.getSNodes(node.getUnit());
+        assert nodes.size() == 1; // TODO: is this always 1??
+
+        node.getChildren().forEach(e -> {
+            if (!nodes.contains(e))
+                nodes.add(e);
+        });
+
+        // under-approximate
+        for (SNode n : nodes) {
+            if (methodPath.getClassInstance().incrementGotoCount(node)) {
+                analyzePaths(methodPath, n);
+            }
+        }
+
+        return SType.GOTO;
     }
 
     private SType handleThrows(SMethodPath sMethodPath, SNode node)
@@ -354,9 +366,8 @@ public class SymbolicExecutor {
                     VarType.RETURN_VALUE,
                     classType,
                     true);
-            return new SVarEvaluated(
-                    svar,
-                    solver.getModel().eval(expr, true).toString());
+            Object evaluated = evaluateSatisfiableExpression(expr);
+            return new SVarEvaluated(svar, evaluated);
         }
         return null;
     }
