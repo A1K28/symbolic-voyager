@@ -9,7 +9,7 @@ import java.util.List;
 public class SMethodMockEvaluated extends SVarEvaluated {
     private final Method method;
     private final Class exceptionType;
-    private final List<Object> parametersEvaluated; // in case of method mocks
+    private final List<Object> parametersEvaluated;
 
     public SMethodMockEvaluated(SVar sVar,
                                 Object returnValue,

@@ -6,6 +6,10 @@ public class NOPService {
         return 20;
     }
 
+    public void calculate(int a) {
+        System.out.println("ASD");
+    }
+
     public Integer calculate(Integer a, Integer b) {
         return a * b;
     }

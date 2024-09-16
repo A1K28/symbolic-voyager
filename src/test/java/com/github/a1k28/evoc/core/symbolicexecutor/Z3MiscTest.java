@@ -156,6 +156,35 @@ public class Z3MiscTest {
         return 2;
     }
 
+    @SymbolicTest({0,1,2,3})
+    @DisplayName("test_method_mock_with_try_catch_1")
+    public int test_method_mock_with_try_catch_1(int a, int b) {
+        NOPService nopService = new NOPService();
+        try {
+            int res = nopService.calculate(a, b);
+            if (res == -1)
+                return 0;
+            if (res == 10)
+                return 1;
+            return 2;
+        } catch (RuntimeException e) {
+            return 3;
+        }
+    }
+
+//    @SymbolicTest({0,1,2})
+    @DisplayName("test_method_mock_with_nested_try_catch_1")
+    public int test_method_mock_with_nested_try_catch_1(int a) {
+        try {
+            if (a % 20 == 12)
+                return 0;
+            test_method_mock_with_nested_try_catch_1_helper(a);
+            return 1;
+        } catch (RuntimeException e) {
+            return 2;
+        }
+    }
+
     @SymbolicTest({0,1,2})
     @DisplayName("test_try_catch_1")
     public int test_try_catch_1(int param) {
@@ -352,5 +381,10 @@ public class Z3MiscTest {
         } finally {
             return 0;
         }
+    }
+
+    private void test_method_mock_with_nested_try_catch_1_helper(int a) {
+        NOPService nopService = new NOPService();
+        nopService.calculate(a);
     }
 }

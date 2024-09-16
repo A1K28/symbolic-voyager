@@ -11,8 +11,8 @@ public enum CommandFlag {
     TARGET_PACKAGES("tp", "target-packages"),
     WHITELISTED_CLASSES("wc", "whitelisted-classes"),
     WHITELISTED_PACKAGES("wp", "whitelisted-packages"),
-    BLACKLISTED_CLASSES("bc", "blacklisted-classes"),
-    BLACKLISTED_PACKAGES("bp", "blacklisted-packages"),
+    MOCKABLE_CLASSES("mc", "mockable-classes"),
+    MOCKABLE_PACKAGES("mp", "mockable-packages"),
     PROPAGATION_STRATEGY("pg", "propagation-strategies");
 
     private static final Logger log = Logger.getInstance(CommandFlag.class);

@@ -34,8 +34,8 @@ public class CommandLineParserTest {
                 -target-classes com.github.a1k28.evoc.core2,ge.asd.awd.123.core2
                 -wc    com.github.a1k28.evoc.core3,ge.asd.awd.123.core3
                 -wp com.github.a1k28.evoc.core4,ge.asd.awd.123.core4
-                -bc   com.github.a1k28.evoc.core5    
-                -bp com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
+                -mc   com.github.a1k28.evoc.core5    
+                -mp com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
                 -pg PROPAGATE_POJO, PROPAGATE_STRUCT,MOCK_ALL_NOT_MODELLED,,,
                 """;
         boolean thrown = false;
@@ -56,8 +56,8 @@ public class CommandLineParserTest {
                 -tp com.github.a1k28.evoc.core2,ge.asd.awd.123.core2
                 -wc    com.github.a1k28.evoc.core3,ge.asd.awd.123.core3
                 -wp com.github.a1k28.evoc.core4,ge.asd.awd.123.core4
-                -bc   com.github.a1k28.evoc.core5    
-                -bp com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
+                -mc   com.github.a1k28.evoc.core5    
+                -mp com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
                 -pg PROPAGATE_POJO, PROPAGATE_STRUCT,MOCK_ALL_NOT_MODELLED,,,
                 """;
         CommandLineParser.setCLIOptions(cmd);
@@ -74,11 +74,11 @@ public class CommandLineParserTest {
         assertTrue(CLIOptions.whitelistedPackages.contains("com.github.a1k28.evoc.core4"));
         assertTrue(CLIOptions.whitelistedPackages.contains("ge.asd.awd.123.core4"));
         assertEquals(2, CLIOptions.whitelistedPackages.size());
-        assertTrue(CLIOptions.blacklistedClasses.contains("com.github.a1k28.evoc.core5"));
-        assertEquals(1, CLIOptions.blacklistedClasses.size());
-        assertTrue(CLIOptions.blacklistedPackages.contains("com.github.a1k28.evoc.core6"));
-        assertTrue(CLIOptions.blacklistedPackages.contains("ge.asd.awd.123.core6"));
-        assertEquals(2, CLIOptions.blacklistedPackages.size());
+        assertTrue(CLIOptions.mockableClasses.contains("com.github.a1k28.evoc.core5"));
+        assertEquals(1, CLIOptions.mockableClasses.size());
+        assertTrue(CLIOptions.mockablePackages.contains("com.github.a1k28.evoc.core6"));
+        assertTrue(CLIOptions.mockablePackages.contains("ge.asd.awd.123.core6"));
+        assertEquals(2, CLIOptions.mockablePackages.size());
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_POJO));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_STRUCT));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.MOCK_ALL_NOT_MODELLED));
@@ -94,8 +94,8 @@ public class CommandLineParserTest {
                 --target-packages com.github.a1k28.evoc.core2,ge.asd.awd.123.core2
                 --whitelisted-classes    com.github.a1k28.evoc.core3,ge.asd.awd.123.core3
                 --whitelisted-packages com.github.a1k28.evoc.core4,ge.asd.awd.123.core4
-                --blacklisted-classes   com.github.a1k28.evoc.core5    
-                --blacklisted-packages com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
+                --mockable-classes   com.github.a1k28.evoc.core5    
+                --mockable-packages com.github.a1k28.evoc.core6,ge.asd.awd.123.core6
                 --propagation-strategies PROPAGATE_POJO, PROPAGATE_STRUCT,MOCK_ALL_NOT_MODELLED,,,
                 """;
         CommandLineParser.setCLIOptions(cmd);
@@ -112,11 +112,11 @@ public class CommandLineParserTest {
         assertTrue(CLIOptions.whitelistedPackages.contains("com.github.a1k28.evoc.core4"));
         assertTrue(CLIOptions.whitelistedPackages.contains("ge.asd.awd.123.core4"));
         assertEquals(2, CLIOptions.whitelistedPackages.size());
-        assertTrue(CLIOptions.blacklistedClasses.contains("com.github.a1k28.evoc.core5"));
-        assertEquals(1, CLIOptions.blacklistedClasses.size());
-        assertTrue(CLIOptions.blacklistedPackages.contains("com.github.a1k28.evoc.core6"));
-        assertTrue(CLIOptions.blacklistedPackages.contains("ge.asd.awd.123.core6"));
-        assertEquals(2, CLIOptions.blacklistedPackages.size());
+        assertTrue(CLIOptions.mockableClasses.contains("com.github.a1k28.evoc.core5"));
+        assertEquals(1, CLIOptions.mockableClasses.size());
+        assertTrue(CLIOptions.mockablePackages.contains("com.github.a1k28.evoc.core6"));
+        assertTrue(CLIOptions.mockablePackages.contains("ge.asd.awd.123.core6"));
+        assertEquals(2, CLIOptions.mockablePackages.size());
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_POJO));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_STRUCT));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.MOCK_ALL_NOT_MODELLED));
@@ -150,11 +150,11 @@ public class CommandLineParserTest {
         assertTrue(CLIOptions.whitelistedPackages.contains("com.github.a1k28.evoc.core4"));
         assertTrue(CLIOptions.whitelistedPackages.contains("ge.asd.awd.123.core4"));
         assertEquals(2, CLIOptions.whitelistedPackages.size());
-        assertTrue(CLIOptions.blacklistedClasses.contains("com.github.a1k28.evoc.core5"));
-        assertEquals(1, CLIOptions.blacklistedClasses.size());
-        assertTrue(CLIOptions.blacklistedPackages.contains("com.github.a1k28.evoc.core6"));
-        assertTrue(CLIOptions.blacklistedPackages.contains("ge.asd.awd.123.core6"));
-        assertEquals(2, CLIOptions.blacklistedPackages.size());
+        assertTrue(CLIOptions.mockableClasses.contains("com.github.a1k28.evoc.core5"));
+        assertEquals(1, CLIOptions.mockableClasses.size());
+        assertTrue(CLIOptions.mockablePackages.contains("com.github.a1k28.evoc.core6"));
+        assertTrue(CLIOptions.mockablePackages.contains("ge.asd.awd.123.core6"));
+        assertEquals(2, CLIOptions.mockablePackages.size());
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_POJO));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.PROPAGATE_STRUCT));
         assertTrue(CLIOptions.propagationStrategies.contains(PropagationStrategy.MOCK_ALL_NOT_MODELLED));

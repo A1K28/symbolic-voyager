@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.microsoft.z3.Expr;
 import lombok.Getter;
@@ -13,14 +14,14 @@ public class SMethodExpr extends SExpr {
     private final AbstractInvokeExpr invokeExpr;
     private final Value base;
     private final List<Value> args;
-    private final boolean shouldPropagate; // false means modelled, true means propagation
+    private final MethodPropagationType propagationType;
 
     public SMethodExpr(Expr value,
                        AbstractInvokeExpr invokeExpr,
                        Value base,
                        List<Value> args,
-                       boolean shouldPropagate) {
-        this(value, SType.INVOKE, invokeExpr, base, args, shouldPropagate);
+                       MethodPropagationType propagationType) {
+        this(value, SType.INVOKE, invokeExpr, base, args, propagationType);
     }
 
     public SMethodExpr(Expr value,
@@ -28,15 +29,11 @@ public class SMethodExpr extends SExpr {
                        AbstractInvokeExpr invokeExpr,
                        Value base,
                        List<Value> args,
-                       boolean shouldPropagate) {
+                       MethodPropagationType propagationType) {
         super(value, sType);
         this.invokeExpr = invokeExpr;
         this.args = args;
         this.base = base;
-        this.shouldPropagate = shouldPropagate;
-    }
-
-    public boolean shouldPropagate() {
-        return this.shouldPropagate;
+        this.propagationType = propagationType;
     }
 }

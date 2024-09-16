@@ -7,19 +7,27 @@ public class CLIOptions {
     public static Set<String> targetPackages = Set.of();
     public static Set<String> whitelistedClasses = Set.of();
     public static Set<String> whitelistedPackages = Set.of();
-    public static Set<String> blacklistedClasses = Set.of();
-    public static Set<String> blacklistedPackages = Set.of();
+    public static Set<String> mockableClasses = Set.of();
+    public static Set<String> mockablePackages = Set.of();
     public static Set<PropagationStrategy> propagationStrategies;
 
     public static boolean shouldPropagate(String pckg) {
-        for (String blacklistedPackage : blacklistedPackages)
-            if (pckg.contains(blacklistedPackage)) return false;
-        for (String blacklistedClass : blacklistedClasses)
-            if (pckg.equals(blacklistedClass)) return false;
+        for (String mockablePackage : mockablePackages)
+            if (pckg.contains(mockablePackage)) return false;
+        for (String mockableClass : mockableClasses)
+            if (pckg.equals(mockableClass)) return false;
         for (String whitelistedPackage : whitelistedPackages)
             if (pckg.contains(whitelistedPackage)) return true;
         for (String whitelistedClass : whitelistedClasses)
             if (pckg.equals(whitelistedClass)) return true;
+        return false;
+    }
+
+    public static boolean shouldMock(String pckg) {
+        for (String mockablePackage : mockablePackages)
+            if (pckg.contains(mockablePackage)) return true;
+        for (String mockableClass : mockableClasses)
+            if (pckg.equals(mockableClass)) return true;
         return false;
     }
 }

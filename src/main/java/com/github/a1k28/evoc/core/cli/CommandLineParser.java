@@ -63,10 +63,10 @@ public class CommandLineParser {
             CLIOptions.whitelistedClasses = Set.of(split(cmd));
         } else if (CommandFlag.WHITELISTED_PACKAGES == flag) {
             CLIOptions.whitelistedPackages = Set.of(split(cmd));
-        } else if (CommandFlag.BLACKLISTED_CLASSES == flag) {
-            CLIOptions.blacklistedClasses = Set.of(split(cmd));
-        } else if (CommandFlag.BLACKLISTED_PACKAGES == flag) {
-            CLIOptions.blacklistedPackages = Set.of(split(cmd));
+        } else if (CommandFlag.MOCKABLE_CLASSES == flag) {
+            CLIOptions.mockableClasses = Set.of(split(cmd));
+        } else if (CommandFlag.MOCKABLE_PACKAGES == flag) {
+            CLIOptions.mockablePackages = Set.of(split(cmd));
         } else if (CommandFlag.PROPAGATION_STRATEGY == flag) {
             Set<PropagationStrategy> propagationStrategies = new HashSet<>();
             for (String val : split(cmd))

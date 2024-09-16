@@ -5,16 +5,18 @@ import com.microsoft.z3.Expr;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
-@Setter
 @Getter
+@Setter
 @ToString
 public class SMethodMockVar extends SVar {
     private final Method method;
     private final List<Expr> arguments;
+    private ClassType throwType;
 
     public SMethodMockVar(String name, Expr expr, VarType type, Class<?> classType,
                           boolean isDeclaration, Method method, List<Expr> arguments) {

@@ -14,12 +14,11 @@ import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
 import sootup.core.model.Body;
+import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 public class SMethodPath {
@@ -66,32 +65,24 @@ public class SMethodPath {
         return sNode;
     }
 
-    public List<Trap> getTraps(SNode node) {
-        if (node == null)
-            return jumpNode == null ?
-                    null : jumpNode.getMethodPath().getTraps(jumpNode.getNode());
-        List<Trap> traps = new ArrayList<>();
-        for (Trap trap : body.getTraps())
-            if (trap.getBeginStmt().equals(node.getUnit()))
-                traps.add(trap);
-        if (traps.isEmpty()) return getTraps(node.getParent());
-        return traps;
-    }
-
     public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
         if (node == null)
             return jumpNode == null ?
                     null : jumpNode.getMethodPath().getHandlerNode(jumpNode.getNode(), exception);
 
-        if (node.getParent() != null) {
-            for (SNode catchBlock : node.getParent().getCatchBlocks()) {
-                Trap handlerTrap = getHandlerTrap(catchBlock, exception);
-                if (handlerTrap != null)
-                    return new HandlerNode(this, catchBlock);
-            }
+        for (SNode catchBlock : node.getCatchBlocks()) {
+            Trap handlerTrap = getHandlerTrap(catchBlock, exception);
+            if (handlerTrap != null)
+                return new HandlerNode(this, catchBlock, handlerTrap);
         }
 
         return getHandlerNode(node.getParent(), exception);
+    }
+
+    public List<HandlerNode> getHandlerNodes(SNode node) {
+        List<HandlerNode> handlerNodes = new ArrayList<>();
+        getHandlerNodesHelper(node, handlerNodes);
+        return handlerNodes;
     }
 
     public void print() {
@@ -106,6 +97,26 @@ public class SMethodPath {
             sNodes.add(sNodeMap.get(target));
         }
         return sNodes;
+    }
+
+    private void getHandlerNodesHelper(SNode node, List<HandlerNode> handlerNodes) {
+        for (SNode catchNode : node.getCatchBlocks()) {
+            HandlerNode handlerNode = new HandlerNode(this, catchNode, getTrap(catchNode));
+            handlerNodes.add(handlerNode);
+        }
+
+        // TODO: reconsider this
+//        if (jumpNode != null) {
+//            jumpNode.getMethodPath().getHandlerNodesHelper(jumpNode.getNode(), handlerNodes);
+//        }
+    }
+
+    private Trap getTrap(SNode node) {
+        for (Trap trap : body.getTraps()) {
+            if (trap.getHandlerStmt().equals(node.getUnit()))
+                return trap;
+        }
+        throw new IllegalStateException("Trap not found");
     }
 
     private Trap getHandlerTrap(SNode node, Class<?> exception) {

@@ -10,8 +10,6 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.evoc.helper.Logger;
-//import com.github.a1k28.supermock.MockAPI;
-import com.github.a1k28.evoc.outsidescope.NOPService;
 import com.github.a1k28.supermock.MockAPI;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
@@ -36,6 +34,7 @@ public class SymbolicTestEngine implements TestEngine {
 
     static {
         CLIOptions.whitelistedPackages = Set.of("com.github.a1k28.evoc.core");
+        CLIOptions.mockablePackages = Set.of("com.github.a1k28.evoc.outsidescope");
     }
 
     @Override

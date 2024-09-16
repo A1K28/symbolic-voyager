@@ -58,7 +58,10 @@ public class SymbolTranslator {
                 Class[] mockParamClassTypes = sVarEvaluated.getMethod().getParameterTypes();
                 assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();
                 List<Object> mockParams = new ArrayList<>();
-                Object mockRetVal = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
+                Object mockRetVal = null;
+                if (sVarEvaluated.getExceptionType() == null) {
+                    mockRetVal = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
+                }
                 for (int i = 0; i < mockParamClassTypes.length; i++) {
                     mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
                 }

@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.helper.SootHelper;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
+import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.*;

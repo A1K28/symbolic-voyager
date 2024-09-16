@@ -74,10 +74,10 @@ public class SymbolicExecutor {
 
         // handle node types
         if (node.getType() == SType.PARAMETER) {
-            handleParameter(sMethodPath, node);
+            type = handleParameter(sMethodPath, node);
         }
         if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE) {
-            handleBranch(sMethodPath, node);
+            type = handleBranch(sMethodPath, node);
         }
         if (node.getType() == SType.ASSIGNMENT) {
             type = handleAssignment(sMethodPath, node);
@@ -95,6 +95,11 @@ public class SymbolicExecutor {
             type = handleThrows(sMethodPath, node);
         }
 
+        // expand paths by allowing method mocks to throw exceptions
+        if (type == SType.INVOKE_MOCK) {
+            mockThrowsAndPropagate(sMethodPath, node);
+        }
+
         if (Z3Status.SATISFIABLE == checkSatisfiability(sMethodPath, node, type))
             for (SNode child : node.getChildren())
                 analyzePaths(sMethodPath, child);
@@ -104,20 +109,22 @@ public class SymbolicExecutor {
         }
     }
 
-    private void handleParameter(SMethodPath sMethodPath, SNode node) {
+    private SType handleParameter(SMethodPath sMethodPath, SNode node) {
         if (sMethodPath.getParamList().hasNext())
             updateParameter(sMethodPath, node.getUnit());
         else
             saveParameter(sMethodPath, node.getUnit());
+        return SType.PARAMETER;
     }
 
-    private void handleBranch(SMethodPath sMethodPath, SNode node) {
+    private SType handleBranch(SMethodPath sMethodPath, SNode node) {
         JIfStmt ifStmt = (JIfStmt) node.getUnit();
         Value condition = ifStmt.getCondition();
         BoolExpr z3Condition = (BoolExpr) z3t.translateCondition(
                 condition, getVarType(sMethodPath, ifStmt), sMethodPath);
         BoolExpr assertion = node.getType() == SType.BRANCH_TRUE ? z3Condition : z3t.mkNot(z3Condition);
         solver.add(assertion);
+        return SType.BRANCH;
     }
 
     private SType handleVoidMethodCall(SMethodPath sMethodPath, SNode node)
@@ -127,11 +134,22 @@ public class SymbolicExecutor {
         VarType varType = getVarType(sMethodPath, invoke);
 
         if (wrapped.getSType() == SType.INVOKE
+                || wrapped.getSType() == SType.INVOKE_MOCK
                 || wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
             SMethodExpr method = wrapped.asMethod();
-            if (!method.shouldPropagate()) {
+            if (method.getPropagationType() == MethodPropagationType.MODELLED) {
                 z3t.callProverMethod(method, varType, sMethodPath);
                 return SType.OTHER;
+            }
+
+            // handle mocks
+            if (wrapped.getSType() == SType.INVOKE_MOCK) {
+                String name = node.getUnit().toString();
+                List<Expr> params = translateExpressions(method, sMethodPath);
+                Method javaMethod = (Method) SootHelper.getMethod(method.getInvokeExpr());
+                sMethodPath.getSymbolicVarStack().add(
+                        name, null, null, VarType.METHOD_MOCK, javaMethod, params);
+                return SType.INVOKE_MOCK;
             }
 
             // set all values to default
@@ -159,7 +177,7 @@ public class SymbolicExecutor {
 
         if (rightOpHolder.getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = rightOpHolder.asMethod();
-            if (methodExpr.shouldPropagate()) {
+            if (methodExpr.getPropagationType() == MethodPropagationType.PROPAGATE) {
                 JumpNode jumpNode = new JumpNode(sMethodPath, node);
                 propagate(methodExpr, sMethodPath, jumpNode);
                 return SType.INVOKE;
@@ -181,6 +199,7 @@ public class SymbolicExecutor {
             List<Expr> params = translateExpressions(methodExpr, sMethodPath);
             Method method = (Method) SootHelper.getMethod(methodExpr.getInvokeExpr());
             z3t.updateSymbolicVar(leftOp, expr, VarType.METHOD_MOCK, sMethodPath, classType, method, params);
+            return SType.INVOKE_MOCK;
         } else {
             Class classType = SootHelper.translateType(rightOp.getType());
             z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath, classType);
@@ -222,14 +241,27 @@ public class SymbolicExecutor {
         return SType.THROW;
     }
 
-    // TODO: implement
-    private SType handleGenericThrows(SMethodPath sMethodPath, SNode node)
+    private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        push(sMethodPath);
+        SMethodMockVar methodMockVar;
 
-        pop(sMethodPath);
+        if (node.getUnit() instanceof JAssignStmt assignStmt) {
+            methodMockVar = (SMethodMockVar) sMethodPath.getSymbolicVarStack()
+                    .get(z3t.getValueName(assignStmt.getLeftOp())).orElseThrow();
+        } else {
+            methodMockVar = (SMethodMockVar) sMethodPath.getSymbolicVarStack()
+                    .get(node.getUnit().toString()).orElseThrow();
+        }
 
-        return SType.THROW;
+        for (HandlerNode handlerNode : sMethodPath.getHandlerNodes(node)) {
+            push(sMethodPath);
+            methodMockVar.setThrowType(handlerNode.getTrap().getExceptionType());
+            analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
+            pop(sMethodPath);
+        }
+
+        // clear throws so that further paths assume a return value (if non-void)
+        methodMockVar.setThrowType(null);
     }
 
     private SType handleReturn(SMethodPath sMethodPath, SNode node)
@@ -322,17 +354,16 @@ public class SymbolicExecutor {
                     && var.getType() != VarType.FIELD
                     && var.getType() != VarType.METHOD_MOCK) continue;
 
-            Object evaluated = evaluateSatisfiableExpression(var.getExpr());
-            log.debug(evaluated + " - " + var.getName());
-
             if (var.getType() == VarType.FIELD) {
+                Object evaluated = evaluateSatisfiableExpression(var.getExpr(), var.getName());
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
                 fieldsEvaluated.add(sVarEvaluated);
             } else if (var.getType() == VarType.METHOD_MOCK) {
-                SMethodMockEvaluated sVarEvaluated = handleMockExpression(var, evaluated);
-                mockedMethodsEvaluated.add(sVarEvaluated);
+                SMethodMockEvaluated sVarEvaluated = handleMockExpression(var, var.getExpr());
+                if (sVarEvaluated != null) mockedMethodsEvaluated.add(sVarEvaluated);
             } else {
                 // parameter
+                Object evaluated = evaluateSatisfiableExpression(var.getExpr(), var.getName());
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
                 parametersEvaluated.add(sVarEvaluated);
             }
@@ -372,14 +403,32 @@ public class SymbolicExecutor {
         return null;
     }
 
-    private SMethodMockEvaluated handleMockExpression(SVar var, Object returnValue) {
+    private SMethodMockEvaluated handleMockExpression(SVar var, Expr returnExpr) {
         SMethodMockVar sMethodMockVar = (SMethodMockVar) var;
         List<Object> evaluatedParams = sMethodMockVar.getArguments().stream()
                 .map(this::evaluateSatisfiableExpression)
                 .collect(Collectors.toList());
-        // TODO: handle exception type
-        return new SMethodMockEvaluated(var, returnValue, evaluatedParams, null, sMethodMockVar.getMethod());
+        if (sMethodMockVar.getThrowType() != null)
+            return new SMethodMockEvaluated(var,
+                    null,
+                    evaluatedParams,
+                    SootHelper.getClass(sMethodMockVar.getThrowType()),
+                    sMethodMockVar.getMethod());
+        if (returnExpr == null) return null;
+        Object returnValue = evaluateSatisfiableExpression(returnExpr);
+        return new SMethodMockEvaluated(var,
+                returnValue,
+                evaluatedParams,
+                null,
+                sMethodMockVar.getMethod());
     }
+
+    private Object evaluateSatisfiableExpression(Expr expr, String name) {
+        Object evaluated = evaluateSatisfiableExpression(expr);
+        log.debug(evaluated + " - " + name);
+        return evaluated;
+    }
+
 
     private Object evaluateSatisfiableExpression(Expr expr) {
         if (solver.check() != Status.SATISFIABLE)

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import sootup.core.jimple.basic.Trap;
 
 @Getter
 @Setter
@@ -14,4 +15,5 @@ import lombok.Setter;
 public class HandlerNode {
     private SMethodPath methodPath;
     private SNode node;
+    private Trap trap;
 }

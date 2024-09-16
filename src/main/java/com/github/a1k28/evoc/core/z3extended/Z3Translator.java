@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.cli.model.CLIOptions;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
@@ -182,13 +183,17 @@ public class Z3Translator {
                 args.add(arg);
 
         if (MethodModel.get(methodSignature).isPresent()) {
-            return new SMethodExpr(val, invoke, base, args, false);
+            return new SMethodExpr(val, invoke, base, args, MethodPropagationType.MODELLED);
         } else if (CLIOptions.shouldPropagate(methodSignature.getDeclClassType().toString())) {
             SType sType = isConstructorCall(methodSignature) ?
                     SType.INVOKE_SPECIAL_CONSTRUCTOR : SType.INVOKE;
-            return new SMethodExpr(val, sType, invoke, base, args, true);
+            return new SMethodExpr(val, sType, invoke, base, args, MethodPropagationType.PROPAGATE);
+        } else if (CLIOptions.shouldMock(methodSignature.getDeclClassType().toString())) {
+            SType sType = isConstructorCall(methodSignature) ?
+                    SType.INVOKE_MOCK_SPECIAL_CONSTRUCTOR : SType.INVOKE_MOCK;
+            return new SMethodExpr(val, sType, invoke, base, args, MethodPropagationType.MOCKED);
         } else {
-            return new SMethodExpr(val, SType.INVOKE_MOCK, invoke, base, args, false);
+            return new SMethodExpr(val, SType.OTHER, invoke, base, args, MethodPropagationType.IGNORED);
         }
     }
 
