@@ -453,7 +453,8 @@ public class SymbolicExecutor {
 
     private Object handleMapSatisfiability(Expr expr) {
         MapModel mapModel = z3t.getContext().getInitialMap(expr).orElseThrow();
-        int size = solver.minimizeInteger(mapModel.getSize());
+        int size = solver.minimizeInteger(z3t.getContext().mkInitialMapLength(mapModel.getArray()));
+//        int size = solver.minimizeInteger(mapModel.getSize());
         return solver.createInitialMap(mapModel, size);
     }
 

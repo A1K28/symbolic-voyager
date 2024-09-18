@@ -11,34 +11,40 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Z3CachingFactory {
+    private final Context ctx;
     private final Map<String, SortContainer> listSorts = new HashMap<>();
     private final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
 
-    public TupleSort mkMapSort(Context ctx, Sort key, Sort value) {
-        return getMapSort(ctx, key, value).getSort();
+    public Z3CachingFactory(Context ctx) {
+        this.ctx = ctx;
     }
 
-    public Expr mkMapSentinel(Context ctx, Sort key, Sort value) {
-        return getMapSort(ctx, key, value).getSentinel();
+
+    public TupleSort mkMapSort(Sort key, Sort value) {
+        return getMapSort(key, value).getSort();
     }
 
-    public TupleSort mkListSort(Context ctx, Sort sort) {
-        return getListSort(ctx, sort).getSort();
+    public Expr mkMapSentinel(Sort key, Sort value) {
+        return getMapSort(key, value).getSentinel();
     }
 
-    public Expr mkListSentinel(Context ctx, Sort sort) {
-        return getListSort(ctx, sort).getSentinel();
+    public TupleSort mkListSort(Sort sort) {
+        return getListSort(sort).getSort();
     }
 
-    public Sort getSort(Context ctx, Expr expr) {
-        return getSort(ctx, List.of(expr));
+    public Expr mkListSentinel(Sort sort) {
+        return getListSort(sort).getSentinel();
     }
 
-    public Sort getSort(Context ctx, Expr[] expr) {
-        return getSort(ctx, Arrays.stream(expr).collect(Collectors.toList()));
+    public Sort getSort(Expr expr) {
+        return getSort(List.of(expr));
     }
 
-    public Sort getSort(Context ctx, List<Expr> exprs) {
+    public Sort getSort(Expr[] expr) {
+        return getSort(Arrays.stream(expr).collect(Collectors.toList()));
+    }
+
+    public Sort getSort(List<Expr> exprs) {
         if (exprs == null || exprs.isEmpty())
             return SortType.OBJECT.value(ctx);
         Sort sort = exprs.get(0).getSort();
@@ -51,7 +57,7 @@ public class Z3CachingFactory {
         return sort;
     }
 
-    private SortContainer getListSort(Context ctx, Sort sort) {
+    private SortContainer getListSort(Sort sort) {
         String name = sort.getName().toString();
         if (!listSorts.containsKey(name)) {
             TupleSort tupleSort = ctx.mkTupleSort(
@@ -69,7 +75,7 @@ public class Z3CachingFactory {
         return listSorts.get(name);
     }
 
-    private SortContainer getMapSort(Context ctx, Sort key, Sort value) {
+    private SortContainer getMapSort(Sort key, Sort value) {
         String keyName = key.getName().toString();
         String valueName = value.getName().toString();
         if (!mapSorts.containsKey(keyName)) mapSorts.put(keyName, new HashMap<>());

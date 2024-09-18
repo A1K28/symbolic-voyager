@@ -190,6 +190,20 @@ public class Z3MapTest {
         return 3;
     }
 
+    @SymbolicTest({0,1,2,3})
+    @DisplayName("test_get_or_default_2")
+    public int test_get_or_default_2(int a) {
+        Map<String, Integer> map1 = new HashMap<>();
+        map1.put("KEY1", a);
+        if (0 == map1.get("KEY1"))
+            return 0;
+        if (1 == map1.getOrDefault("KEY1", 2))
+            return 1;
+        if (2 == map1.getOrDefault("KEY1", 3))
+            return 2;
+        return 3;
+    }
+
     @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_get_or_default_winput_1")
     public int test_get_or_default_winput_1(Map map1, String a) {

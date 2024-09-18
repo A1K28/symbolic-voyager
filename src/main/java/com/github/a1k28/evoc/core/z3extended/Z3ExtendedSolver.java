@@ -1,6 +1,8 @@
 package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.core.z3extended.model.Tuple;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ public class Z3ExtendedSolver {
 
     private final Z3ExtendedContext ctx;
     private final Solver solver;
+    private final Z3SortUnion sortUnion;
 
     public void push() {
         solver.push();
@@ -47,6 +50,13 @@ public class Z3ExtendedSolver {
         return getSatisfiableStatus(x) == Status.UNSATISFIABLE;
     }
 
+    // TODO: fix this
+    public <T> T deserialize(Expr expr) {
+        if (SortType.NULL.equals(expr.getSort()))
+            return (T) "null";
+        return (T) expr.toString();
+    }
+
     public int minimizeInteger(Expr x) {
         // Binary search for the minimum value of x
         int low = 0;
@@ -75,9 +85,11 @@ public class Z3ExtendedSolver {
 
     public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
-        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
-            Expr key = mapModel.getDiscoveredKeys().get(i);
-            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsKey(mapModel, key));
+        Queue<Expr> discoveredValues = new LinkedList<>();
+        for (Tuple<Expr> tuple : mapModel.getDiscoveredKeys()) {
+            Expr key = tuple.getO1();
+            Expr keyWrapped = tuple.getO2();
+            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsWrappedKey(mapModel, keyWrapped));
 
             // only continue if the condition is UNSATISFIABLE
             if (!isUnsatisfiable(condition)) {
@@ -85,37 +97,53 @@ public class Z3ExtendedSolver {
                 continue;
             };
 
+            Expr retrieved = ctx.mkSelect(mapModel.getArray(), keyWrapped);
+            if (key == null) {
+                discoveredValues.add(retrieved);
+                continue;
+            }
+//            key = sortUnion.unwrapValue(keyWrapped).get();
+//            Optional<Expr> keyOpt = sortUnion.unwrapValue(keyWrapped);
+//            if (keyOpt.isEmpty()) {
+//                discoveredValues.add(retrieved);
+//                continue;
+//            }
+
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
 
-            Expr retrieved = ctx.mkSelect(mapModel.getArray(), key);
             key = model.eval(key, true);
-            Expr value = model.eval(mapModel.getValue(retrieved), true);
-            target.put(key.toString(), value.toString());
+            Expr valueWrapped = mapModel.getValue(retrieved);
+            Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
+                    .orElseGet(Z3Translator::mkNull);
+            Expr value = model.eval(unwrappedValue, true);
+            target.put(deserialize(key), deserialize(value));
             log.debug("(filled) Key:Value " + key + ":" + value);
 
             // update solver state
-            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, key, value));
+            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
         }
 
         if (target.size() < size)
-            fillUnknownMapKeys(target, mapModel, size-target.size());
+            fillUnknownMapKeys(target, mapModel, size-target.size(), discoveredValues);
 
         return target;
     }
 
-    private void fillUnknownMapKeys(Map target, MapModel mapModel, int size) {
+    private void fillUnknownMapKeys(
+            Map target, MapModel mapModel, int size, Queue<Expr> discoveredValues) {
         ArrayExpr map = mapModel.getArray();
-        SeqSort stringSort = ctx.getStringSort();
 
         // Create a symbolic key
-        Expr<SeqSort> symbolicKey = ctx.mkConst("symbolicKey", stringSort);
+        Expr symbolicKey = ctx.mkConst("symbolicKey", mapModel.getKeySort());
 
         // Create a constraint: there exists a key where map[key] == targetValue
         Expr<BoolSort>[] boolExprs = new BoolExpr[mapModel.getDiscoveredKeys().size()];
         for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
-            Expr unknownKey = mapModel.getDiscoveredKeys().get(i);
-            BoolExpr c = ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), unknownKey));
+//            Expr key = mapModel.getDiscoveredKeysTuple().get(i).getO1();
+            Expr keyWrapped = mapModel.getDiscoveredKeys().get(i).getO2();
+
+            BoolExpr c = ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), keyWrapped));
             boolExprs[i] = c;
         }
 
@@ -144,16 +172,27 @@ public class Z3ExtendedSolver {
             // assuming that all keys are unique across different maps
             String uuid = UUID.randomUUID().toString();
             uuid = uuid.substring(uuid.lastIndexOf("-")+1);
-            Expr key = ctx.mkString(uuid);
+            Expr key = ctx.mkString(uuid); // TODO: string??
+            Expr keyWrapped = sortUnion.wrapValue(key);
 
-            Expr retrieved = ctx.mkSelect(mapModel.getArray(), key);
-            Expr value = model.eval(mapModel.getValue(retrieved), true);
-            target.put(key.toString(), value.toString());
+            Expr retrieved;
+            if (discoveredValues.isEmpty()) {
+                retrieved = ctx.mkSelect(mapModel.getArray(), keyWrapped);
+            } else {
+                System.out.println("HEREEE");
+                retrieved = discoveredValues.poll();
+            }
+
+            Expr valueWrapped = mapModel.getValue(retrieved);
+            Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
+                    .orElseGet(Z3Translator::mkNull);
+            Expr value = model.eval(unwrappedValue, true);
+            target.put(deserialize(key), deserialize(value));
             log.debug("(filled unknown) Key:Value " + key + ":" + value);
 
             // Add a constraint to exclude this key in the next iteration
-            add(ctx.mkNot(ctx.mkEq(symbolicKey, key)));
-            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, key, value));
+            add(ctx.mkNot(ctx.mkEq(symbolicKey, keyWrapped)));
+            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
         }
         solver.pop();
     }

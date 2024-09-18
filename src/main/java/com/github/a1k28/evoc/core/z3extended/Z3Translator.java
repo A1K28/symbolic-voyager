@@ -370,7 +370,7 @@ public class Z3Translator {
         if (type instanceof PrimitiveType.LongType)
             return ctx.mkIntSort();
         if (type instanceof PrimitiveType.FloatType)
-            return ctx.mkFPSort32();
+            return ctx.mkFPSort64();
         if (type instanceof PrimitiveType.DoubleType)
             return ctx.mkFPSort64();
         if (type instanceof ArrayType) {
@@ -401,7 +401,7 @@ public class Z3Translator {
         if (Long.class.isAssignableFrom(clazz))
             return ctx.mkIntSort();
         if (Float.class.isAssignableFrom(clazz))
-            return ctx.mkFPSort32();
+            return ctx.mkFPSort64();
         if (Double.class.isAssignableFrom(clazz))
             return ctx.mkFPSort64();
         if (Number.class.isAssignableFrom(clazz))
@@ -409,9 +409,11 @@ public class Z3Translator {
         if (String.class.isAssignableFrom(clazz))
             return ctx.mkStringSort();
         if (Set.class.isAssignableFrom(clazz))
-            return ctx.mkSetSort(SortType.OBJECT.value(ctx));
+            return SortType.SET.value(ctx);
+//            return ctx.mkSetSort(SortType.OBJECT.value(ctx));
         if (List.class.isAssignableFrom(clazz))
-            return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
+            return SortType.ARRAY.value(ctx);
+//            return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
         if (Map.class.isAssignableFrom(clazz))
             return SortType.MAP.value(ctx);
 

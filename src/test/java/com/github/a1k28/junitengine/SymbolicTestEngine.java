@@ -128,10 +128,12 @@ public class SymbolicTestEngine implements TestEngine {
             createMocks(res.getMethodMockValues());
 
             int expected = (int) res.getParsedReturnValue();
-            int actual = (int) testMethod.invoke(instance, parameters);
+
             log.debug(String.format("Trying to assert parameters: %s" +
-                            " with expected: %s & actual: %s codes",
-                    paramsString, expected, actual));
+                            " with expected: %s",
+                    paramsString, expected));
+
+            int actual = (int) testMethod.invoke(instance, parameters);
 
             assertEquals(expected, actual);
             assertTrue(reachableCodes.contains(expected));

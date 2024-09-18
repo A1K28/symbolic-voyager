@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class Z3ExtendedContext extends Context implements IStack {
-    private final Z3CachingFactory sortState;
+//    private final Z3CachingFactory sortState;
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
     private final Z3MapInstance z3MapInstance;
@@ -23,14 +23,15 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public Z3ExtendedContext() {
         super();
-        this.sortState = new Z3CachingFactory();
+        Z3CachingFactory sortState = new Z3CachingFactory(this);
+        Z3SortUnion sortUnion = new Z3SortUnion(this);
 //        this.z3ListCollection = new Z3ListCollection(this);
 //        this.z3SetCollection = new Z3SetCollection(this);
 
         Solver slvr = this.mkSolver();
-        this.solver = new Z3ExtendedSolver(this, slvr);
+        this.solver = new Z3ExtendedSolver(this, slvr, sortUnion);
 
-        this.z3MapInstance = new Z3MapInstance(this, sortState, solver);
+        this.z3MapInstance = new Z3MapInstance(this, sortState, sortUnion, solver);
         this.z3ClassInstance = new Z3ClassInstance(this);
     }
 
@@ -191,6 +192,10 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapInstance.size(var1);
     }
 
+    public Expr mkInitialMapLength(Expr var1) {
+        return z3MapInstance.initialSize(var1);
+    }
+
     public BoolExpr mkMapIsEmpty(Expr var1) {
         return z3MapInstance.isEmpty(var1);
     }
@@ -203,9 +208,10 @@ public class Z3ExtendedContext extends Context implements IStack {
         return z3MapInstance.containsKey(model, key);
     }
 
-    public BoolExpr mkMapContainsKeyValuePair(MapModel model, Expr key, Expr value) {
-        return z3MapInstance.containsKeyValuePair(model, key, value);
+    public BoolExpr mkMapContainsWrappedKey(MapModel model, Expr key) {
+        return z3MapInstance.containsWrappedKey(model, key);
     }
+
 
     public BoolExpr mkMapExistsByKeyAndValueCondition(MapModel model, Expr retrieved, Expr key, Expr value) {
         return z3MapInstance.existsByKeyAndValueCondition(model, retrieved, key, value);
@@ -303,7 +309,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         return Integer.parseInt(expr.toString());
     }
 
-    private Sort getSort(List<Expr> exprs) {
-        return sortState.getSort(this, exprs);
-    }
+//    private Sort getSort(List<Expr> exprs) {
+//        return sortState.getSort(exprs);
+//    }
 }
