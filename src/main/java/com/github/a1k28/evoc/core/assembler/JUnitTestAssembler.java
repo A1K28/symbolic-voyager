@@ -1,10 +1,8 @@
 package com.github.a1k28.evoc.core.assembler;
 
-import com.github.a1k28.evoc.core.assembler.model.ClassModel;
-import com.github.a1k28.evoc.core.assembler.model.MapModel;
-import com.github.a1k28.evoc.core.assembler.model.MethodCallModel;
-import com.github.a1k28.evoc.core.assembler.model.MethodMockModel;
+import com.github.a1k28.evoc.core.assembler.model.*;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodMockResult;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.supermock.Parser;
 import freemarker.template.Configuration;
@@ -22,55 +20,69 @@ public class JUnitTestAssembler {
     private static final Logger log = Logger.getInstance(JUnitTestAssembler.class);
 
     public static void assembleTest(Class<?> clazz,
-                                    String methodName,
-                                    Object returnValue,
-                                    List<Object> params,
-                                    List<MethodMockResult> methodMocks)
+                                    List<TestGeneratorModel> testGeneratorModels)
             throws IOException, TemplateException {
-        if (params.isEmpty()) {
-            log.warn("No arguments passed for java test assembly");
-            return;
-        }
-
-        Method method = findMethod(clazz, methodName, params);
         String className = clazz.getSimpleName();
         String testClassName = className + "Test";
-        String fileName = clazz.getProtectionDomain().getCodeSource().getLocation().getPath().replace("/target/classes", "/src/test/java/") + clazz.getPackageName().replace(".", File.separator) + File.separator + testClassName + ".java";
-        List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
-                .map(Class::getSimpleName).toList();
-
-        List<Object> parameters = new ArrayList<>();
-        for (int i = 0; i < params.size(); i++) {
-            parameters.add(parse(params.get(i), method.getParameterTypes()[i]));
-        }
-
+        String targetPath = clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String testPath = targetPath.replace(File.separator+"target"+File.separator+"classes", File.separator+"src"+File.separator+"test"+File.separator+"java"+File.separator);
+        String fileName = testPath + clazz.getPackageName().replace(".", File.separator) + File.separator + testClassName + ".java";
         Set<String> imports = new HashSet<>();
-        for (Class parameterType : method.getParameterTypes()) {
-            if (!parameterType.isPrimitive())
-                imports.add(parameterType.getPackageName());
+        List<MethodCallModel> methodCallModels = new ArrayList<>();
+        Map<String, Integer> nameCount = new HashMap<>();
+
+        for (TestGeneratorModel testGeneratorModel : testGeneratorModels) {
+            Method method = testGeneratorModel.getMethod();
+            ParsedResult res = testGeneratorModel.getParsedResult();
+            if (res.getParsedParameters().length != method.getParameterCount()) {
+                log.warn("Invalid number of arguments passed for java test assembly");
+                return;
+            }
+
+//            Method method = findMethod(clazz, methodName, params);
+            List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
+                    .map(Class::getSimpleName).toList();
+
+            List<Object> parameters = new ArrayList<>();
+            for (int i = 0; i < res.getParsedParameters().length; i++) {
+                parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
+            }
+
+            for (Class parameterType : method.getParameterTypes()) {
+                if (!parameterType.isPrimitive())
+                    imports.add(parameterType.getPackageName());
+            }
+
+    //        for (MethodMockResult mockResult : methodMocks) {
+    //            imports.add(mockResult.getExceptionType().getPackageName());
+    //            for (Object param : mockResult.getParsedParameters())
+    //                imports.add(param.getClass().getPackageName());
+    //        }
+
+            if (!nameCount.containsKey(method.getName()))
+                nameCount.put(method.getName(), 0);
+            nameCount.put(method.getName(), nameCount.get(method.getName())+1);
+            String testName = method.getName()+"_"+nameCount.get(method.getName());
+
+            // Prepare the data for the template
+            MethodCallModel methodCallModel = new MethodCallModel(
+                    testName,
+                    method.getName(),
+                    method.getReturnType().getSimpleName(),
+                    parse(res.getParsedReturnValue(), method.getReturnType()),
+                    res.getParsedParameters().length,
+                    parameters,
+                    parameterTypes,
+                    mapMocks(res.getMethodMockValues()));
+            methodCallModels.add(methodCallModel);
         }
 
-//        for (MethodMockResult mockResult : methodMocks) {
-//            imports.add(mockResult.getExceptionType().getPackageName());
-//            for (Object param : mockResult.getParsedParameters())
-//                imports.add(param.getClass().getPackageName());
-//        }
-
-        // Prepare the data for the template
-        MethodCallModel methodCallModel = new MethodCallModel(
-                methodName,
-                method.getReturnType().getSimpleName(),
-                returnValue,
-                params.size(),
-                parameters,
-                parameterTypes,
-                mapMocks(methodMocks));
 
         ClassModel classModel = new ClassModel(
                 clazz.getPackageName(),
-                className,
+                clazz.getSimpleName(),
                 new ArrayList<>(imports),
-                List.of(methodCallModel));
+                methodCallModels);
 
         Map<String, Object> data = new HashMap<>();
         data.put("cm", classModel);
@@ -165,23 +177,23 @@ public class JUnitTestAssembler {
         return false;
     }
 
-    public static void main(String[] args) throws Exception {
-        List<Object> params = new ArrayList<>(2);
-        Map map = new HashMap();
-        map.put("ASD", "Ads");
-        map.put("ASawdawdD", "A1242d214s");
-        map.put("ASadwadawdD", "124Aawdds");
-        map.put("AawdawdSD", "Aawdds");
-        map.put("Asad1231231SD", "awdawdAds");
-        map.put("A214SD", "Adawdawds");
-        map.put("ASDadawdawd", "Aawdawds");
-        params.add(0, "ASD");
-        params.add(1, map);
-        Class<?> clazz = Class.forName("com.github.a1k28.Stack");
-        JUnitTestAssembler assembler = new JUnitTestAssembler();
-        MethodMockResult methodMockResult = new MethodMockResult(
-                null, null, null, null);
-        assembler.assembleTest(clazz, "test_method_call_with_map",
-                "null", params, List.of(methodMockResult));
-    }
+//    public static void main(String[] args) throws Exception {
+//        List<Object> params = new ArrayList<>(2);
+//        Map map = new HashMap();
+//        map.put("ASD", "Ads");
+//        map.put("ASawdawdD", "A1242d214s");
+//        map.put("ASadwadawdD", "124Aawdds");
+//        map.put("AawdawdSD", "Aawdds");
+//        map.put("Asad1231231SD", "awdawdAds");
+//        map.put("A214SD", "Adawdawds");
+//        map.put("ASDadawdawd", "Aawdawds");
+//        params.add(0, "ASD");
+//        params.add(1, map);
+//        Class<?> clazz = Class.forName("com.github.a1k28.Stack");
+//        JUnitTestAssembler assembler = new JUnitTestAssembler();
+//        MethodMockResult methodMockResult = new MethodMockResult(
+//                null, null, null, null);
+//        assembler.assembleTest(clazz, "test_method_call_with_map",
+//                "null", params, List.of(methodMockResult));
+//    }
 }

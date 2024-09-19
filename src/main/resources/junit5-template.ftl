@@ -23,7 +23,7 @@ public class ${cm.className}Test {
 
 <#list cm.methodCallModels as mm>
     @Test
-    public void test_${mm.methodName}() throws Throwable {
+    public void test_${mm.testName}() throws Throwable {
         // define mocks
 <#--        <#list mocks as mock>-->
 <#--            ${mock.o}-->
@@ -47,11 +47,14 @@ public class ${cm.className}Test {
 
         // call method
         <#if mm.returnType != "void">
-        ${mm.returnType} result = </#if>instance.${mm.methodName}(
+        ${mm.returnType} actual = </#if>instance.${mm.methodName}(
             <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
 
+        <#if mm.returnType != "void">
         // assert
-        com.github.a1k28.supermock.Assertions.assertEquals(${mm.returnValue}, result);
+        ${mm.returnType} expected = deserialize(${mm.returnValue}, ${mm.returnType}.class);
+        com.github.a1k28.supermock.Assertions.assertEquals(expected, actual);
+        </#if>
     }
 
 </#list>

@@ -1,6 +1,7 @@
 package com.github.a1k28.evoc.core.cli;
 
 import com.github.a1k28.evoc.core.assembler.JUnitTestAssembler;
+import com.github.a1k28.evoc.core.assembler.model.TestGeneratorModel;
 import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import com.github.a1k28.evoc.core.cli.model.CommandFlag;
 import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
@@ -8,12 +9,11 @@ import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.supermock.Parser;
 import org.apache.commons.cli.*;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class CommandLineRunner {
     public static void main(String[] args) throws Exception {
@@ -22,33 +22,46 @@ public class CommandLineRunner {
 
         Class clazz = Class.forName(CLIOptions.targetClass);
         SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
+        List<TestGeneratorModel> testGeneratorModels = new ArrayList<>();
         for (Method method : clazz.getDeclaredMethods()) {
+            // skip if void
+            if ("void".equals(method.getReturnType().getName())) continue;
+
             // TODO: skip if private
 
             symbolicExecutor.refresh();
             SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
             Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
 
+            Set<String> set = new HashSet<>();
             for (SatisfiableResult satisfiableResult : sr.getResults()) {
                 ParsedResult res = evalMap.get(satisfiableResult);
-                JUnitTestAssembler.assembleTest(clazz,
-                        method.getName(),
-                        res.getParsedReturnValue(),
-                        Arrays.asList(res.getParsedParameters()),
-                        res.getMethodMockValues());
+                String uniqueKey = Parser.serialize(res.getParsedReturnValue());
+                if (set.contains(uniqueKey)) continue;
+                set.add(uniqueKey);
+                testGeneratorModels.add(new TestGeneratorModel(method, res));
+
             }
         }
+
+        JUnitTestAssembler.assembleTest(clazz, testGeneratorModels);
+
+//        JUnitTestAssembler.assembleTest(clazz,
+//                method.getName(),
+//                res.getParsedReturnValue(),
+//                Arrays.asList(res.getParsedParameters()),
+//                res.getMethodMockValues());
     }
 
     private static void promptUserForPropagation() {
         if (CLIOptions.mockableClasses.isEmpty() || CLIOptions.mockablePackages.isEmpty()) {
-            try (final Scanner reader = new Scanner(System.in)) {
-                System.out.println("You have not provided any classes" +
-                        " that should be targeted by supermock." +
-                        " Would you like me to list the possible classes? (Y/n)");
-                String res = reader.next();
-                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
-            }
+//            try (final Scanner reader = new Scanner(System.in)) {
+//                System.out.println("You have not provided any classes" +
+//                        " that should be targeted by supermock." +
+//                        " Would you like me to list the possible classes? (Y/n)");
+//                String res = reader.next();
+//                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
+//            }
         }
     }
 

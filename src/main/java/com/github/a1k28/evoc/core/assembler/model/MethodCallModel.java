@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MethodCallModel {
+    private String testName;
     private String methodName;
 
     private String returnType;
