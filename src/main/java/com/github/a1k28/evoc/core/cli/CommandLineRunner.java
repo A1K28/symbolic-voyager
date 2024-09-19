@@ -49,12 +49,6 @@ public class CommandLineRunner {
         }
 
         JUnitTestAssembler.assembleTest(clazz, testGeneratorModels);
-
-//        JUnitTestAssembler.assembleTest(clazz,
-//                method.getName(),
-//                res.getParsedReturnValue(),
-//                Arrays.asList(res.getParsedParameters()),
-//                res.getMethodMockValues());
     }
 
     private static void promptUserForPropagation() throws ClassNotFoundException {
