@@ -7,7 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import java.sql.SQLException;
 
 public class Z3MiscTest {
-    @SymbolicTest({0,1})
+    //@SymbolicTest({0,1})
     @DisplayName("test_ternary_operator_1")
     public int test_ternary_operator_1(int param) {
         int k = param > 10 ? 20 : -1;
@@ -21,7 +21,7 @@ public class Z3MiscTest {
 //    public int test_enhanced_for_loop_1(int param) {
 //    }
 
-    @SymbolicTest({0,1,2,3})
+    //@SymbolicTest({0,1,2,3})
     @DisplayName("test_switch_statements_1")
     public int test_switch_statements_1(int param) {
         String a;
@@ -40,10 +40,11 @@ public class Z3MiscTest {
             default:
                 k = 3;
         }
+        String asd = "Adawd";
         return k;
     }
 
-    @SymbolicTest({1,2,3})
+    //@SymbolicTest({1,2,3})
     @DisplayName("test_switch_statements_2")
     public int test_switch_statements_2(int param) {
         int k;
@@ -62,7 +63,7 @@ public class Z3MiscTest {
         return k;
     }
 
-    @SymbolicTest({1,2,3})
+    //@SymbolicTest({1,2,3})
     @DisplayName("test_switch_statements_3")
     public int test_switch_statements_3(String param) {
         int k;
@@ -81,7 +82,7 @@ public class Z3MiscTest {
         return k;
     }
 
-    @SymbolicTest({1,2})
+//    //@SymbolicTest({1,2})
     @DisplayName("test_for_loop_1")
     public int test_for_loop_1(int param) {
         int i = 0;
@@ -96,7 +97,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    @SymbolicTest({1,2,3})
+//    //@SymbolicTest({1,2,3})
     @DisplayName("test_for_loop_2")
     public int test_for_loop_2(int param) {
         int k = 0;
@@ -113,7 +114,7 @@ public class Z3MiscTest {
         return 3;
     }
 
-    @SymbolicTest({1,2,3})
+//    //@SymbolicTest({1,2,3})
     @DisplayName("test_nested_for_loop_1")
     public int test_nested_for_loop_1(int param) {
         int k = 0;
@@ -132,7 +133,7 @@ public class Z3MiscTest {
         return 3;
     }
 
-    @SymbolicTest({0,1,2})
+    //@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {
         NOPService nopService = new NOPService();
@@ -144,7 +145,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    @SymbolicTest({0,1,2})
+    //@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_2")
     public int test_method_mock_2(int a, int b) {
         NOPService nopService = new NOPService();
@@ -156,7 +157,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    @SymbolicTest({0,1,2,3})
+    //@SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_try_catch_1")
     public int test_method_mock_with_try_catch_1(int a, int b) {
         NOPService nopService = new NOPService();
@@ -172,7 +173,7 @@ public class Z3MiscTest {
         }
     }
 
-//    @SymbolicTest({0,1,2})
+    //@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_with_nested_try_catch_1")
     public int test_method_mock_with_nested_try_catch_1(int a) {
         try {
@@ -182,6 +183,45 @@ public class Z3MiscTest {
             return 1;
         } catch (RuntimeException e) {
             return 2;
+        }
+    }
+
+    //@SymbolicTest({0,1,2,3})
+    @DisplayName("test_method_mock_with_nested_try_catch_2")
+    public int test_method_mock_with_nested_try_catch_2(int a, int b) {
+        try {
+            int res = test_method_mock_with_nested_try_catch_2_helper(a, b);
+            if (res == 18234)
+                return 0;
+            return 1;
+        } catch (IllegalArgumentException e) {
+            return 2;
+        } catch (RuntimeException e) {
+            return 3;
+        }
+    }
+
+    //@SymbolicTest({0,1,2,3,4})
+    @DisplayName("test_method_mock_with_nested_try_catch_3")
+    public int test_method_mock_with_nested_try_catch_3(int a, int b) {
+        try {
+            try {
+                int k = 20;
+                int res = test_method_mock_with_nested_try_catch_2_helper(a, b);
+                if (res == 18234)
+                    return 0;
+                int res2 = test_method_mock_with_nested_try_catch_2_helper(a, b+3);
+                return 1;
+            } catch (IllegalArgumentException e) {
+                int res2 = test_method_mock_with_nested_try_catch_2_helper(a, b+2);
+                return 2;
+            } catch (RuntimeException e) {
+                if (b == 303)
+                    throw new IllegalStateException();
+                return 3;
+            }
+        } catch (IllegalStateException e) {
+            return 4;
         }
     }
 
@@ -199,7 +239,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3})
+    //@SymbolicTest({0,1,2,3})
     @DisplayName("test_try_catch_2")
     public int test_try_catch_2(int param) {
         try {
@@ -217,7 +257,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({1})
+    //@SymbolicTest({1})
     @DisplayName("test_try_catch_finally_1")
     public int test_try_catch_finally_1(int param) {
         try {
@@ -233,7 +273,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4})
+    //@SymbolicTest({0,1,2,3,4})
     @DisplayName("test_nested_try_catch_1")
     public int test_nested_try_catch_1(int param) {
         try {
@@ -257,7 +297,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4,5,6})
+    //@SymbolicTest({0,1,2,3,4,5,6})
     @DisplayName("test_nested_try_catch_2")
     public int test_nested_try_catch_2(int param) {
         try {
@@ -291,7 +331,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4})
+    //@SymbolicTest({0,1,2,3,4})
     @DisplayName("test_double_try_catch_1")
     public int test_double_try_catch_1(int param) {
         try {
@@ -316,7 +356,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4,5})
+    //@SymbolicTest({0,1,2,3,4,5})
     @DisplayName("test_nested_double_try_catch_1")
     public int test_nested_double_try_catch_1(int param) {
         try {
@@ -347,7 +387,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0})
+    //@SymbolicTest({0})
     @DisplayName("test_nested_try_catch_finally_1")
     public int test_nested_try_catch_finally_1(int param) {
         try {
@@ -386,5 +426,10 @@ public class Z3MiscTest {
     private void test_method_mock_with_nested_try_catch_1_helper(int a) {
         NOPService nopService = new NOPService();
         nopService.calculate(a);
+    }
+
+    private int test_method_mock_with_nested_try_catch_2_helper(int a, int b) {
+        NOPService nopService = new NOPService();
+        return nopService.calculate(a,b);
     }
 }

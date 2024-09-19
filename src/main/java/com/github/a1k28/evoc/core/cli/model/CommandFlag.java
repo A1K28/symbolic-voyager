@@ -1,31 +1,34 @@
 package com.github.a1k28.evoc.core.cli.model;
 
-import com.github.a1k28.evoc.helper.Logger;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Optional;
 
 @RequiredArgsConstructor
 public enum CommandFlag {
-    TARGET_CLASSES("tc", "target-classes"),
-    TARGET_PACKAGES("tp", "target-packages"),
-    WHITELISTED_CLASSES("wc", "whitelisted-classes"),
-    WHITELISTED_PACKAGES("wp", "whitelisted-packages"),
-    MOCKABLE_CLASSES("mc", "mockable-classes"),
-    MOCKABLE_PACKAGES("mp", "mockable-packages"),
-    PROPAGATION_STRATEGY("pg", "propagation-strategies");
+    TARGET_CLASS("tc", "target-class", true, "The target class, against which the test methods will be generated."),
+    WHITELISTED_CLASSES("wc", "whitelisted-classes", true, "Whitelisted classes that are allowed to be propagated (comma separated list)."),
+    WHITELISTED_PACKAGES("wp", "whitelisted-packages", true, "Whitelisted packages that are allowed to be propagated (comma separated list)."),
+    MOCKABLE_CLASSES("mc", "mockable-classes", true, "Classes that should be mocked (comma separated list)."),
+    MOCKABLE_PACKAGES("mp", "mockable-packages", true, "Packages that should be mocked (comma separated list)."),
+    RECURSION_LIMIT("rc", "recursion-limit", true, "Recursion/Loop limit. Default value is 20.");
 
-    private static final Logger log = Logger.getInstance(CommandFlag.class);
+    private final String option;
+    private final String longOption;
+    private final boolean hasArg;
+    private final String description;
 
-    private final String shortValue;
-    private final String fullValue;
+    public String option() {
+        return this.option;
+    }
 
-    public static Optional<CommandFlag> findByFlag(String cmd, boolean isShortCut) {
-        for (CommandFlag commandFlag : CommandFlag.values()) {
-            if (isShortCut && commandFlag.shortValue.equals(cmd)) return Optional.of(commandFlag);
-            if (!isShortCut && commandFlag.fullValue.equals(cmd)) return Optional.of(commandFlag);
-        }
-        log.error("Could not find flag with command: " + cmd + " & isShortCut: " + isShortCut);
-        return Optional.empty();
+    public String longOption() {
+        return this.longOption;
+    }
+
+    public boolean hasArg() {
+        return this.hasArg;
+    }
+
+    public String description() {
+        return this.description;
     }
 }
