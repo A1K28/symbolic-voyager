@@ -1,13 +1,14 @@
 package com.github.a1k28.evoc.core.cli.model;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class CLIOptions {
     public static String targetClass = null;
-    public static Set<String> whitelistedClasses = Set.of();
-    public static Set<String> whitelistedPackages = Set.of();
-    public static Set<String> mockableClasses = Set.of();
-    public static Set<String> mockablePackages = Set.of();
+    public static Set<String> whitelistedClasses = new HashSet<>();
+    public static Set<String> whitelistedPackages = new HashSet<>();
+    public static Set<String> mockableClasses = new HashSet<>();
+    public static Set<String> mockablePackages = new HashSet<>();
     public static Integer gotoLimit = 20;
 
     public static boolean shouldPropagate(String pckg) {

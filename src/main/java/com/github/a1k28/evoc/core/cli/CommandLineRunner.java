@@ -72,8 +72,11 @@ public class CommandLineRunner {
                     System.out.println("(" + i + "/" + variableTypes.size() + ")"
                             + " Mock: " + type + "? (y/N)");
                     res = reader.next();
-                    if (!res.equalsIgnoreCase("Y")) continue;
-                    CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                    if (!res.equalsIgnoreCase("Y")) {
+                        CLIOptions.set(CommandFlag.WHITELISTED_CLASSES, type);
+                    } else {
+                        CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                    }
                 }
             }
         }
