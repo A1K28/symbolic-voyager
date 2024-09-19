@@ -13,6 +13,7 @@ import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.stmt.*;
+import sootup.core.types.ClassType;
 
 import java.io.File;
 import java.lang.reflect.Executable;
@@ -160,8 +161,10 @@ public class SymbolicExecutor {
 
             // set all values to default
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
+                ClassType classType = method.getInvokeExpr().getMethodSignature().getDeclClassType();
                 Expr leftOpExpr = z3t.translateValue(method.getBase(), varType, sMethodPath);
-                z3t.getContext().mkClassInitialize(leftOpExpr);
+                Expr expr = z3t.getContext().mkClassInstance(leftOpExpr, SootHelper.getClass(classType)).getExpr();
+                z3t.getContext().mkClassInitialize(expr);
             }
 
             JumpNode jumpNode = new JumpNode(sMethodPath, node);
