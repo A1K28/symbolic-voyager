@@ -7,7 +7,6 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
 import lombok.Getter;
-import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JCaughtExceptionRef;
 import sootup.core.jimple.common.ref.JParameterRef;
@@ -18,7 +17,6 @@ import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 public class SMethodPath {
@@ -27,7 +25,7 @@ public class SMethodPath {
     private final Body body;
     private final SNode root;
     private final Method method;
-    private final Map<Stmt, SNode> sNodeMap; // used for GOTO tracking
+    private final Map<Stmt, List<SNode>> sNodeMap; // used for GOTO tracking
     private final SClassInstance classInstance;
     private SParamList paramList;
     private SatisfiableResults satisfiableResults;
@@ -57,31 +55,73 @@ public class SMethodPath {
         this.symbolicVarStack = symbolicVarStack;
     }
 
-    public SNode createNode(Stmt unit) {
-        SType type = getType(unit);
-        SNode sNode = new SNode(unit, type);
-        assert !sNodeMap.containsKey(unit) || sNodeMap.get(unit).getUnit() == unit;
-        sNodeMap.put(unit, sNode);
+    public SNode getNode(Stmt unit) {
+        if (sNodeMap.containsKey(unit))
+            return sNodeMap.get(unit).get(0);
+        return createNode(unit);
+    }
+
+    public SNode getNode(Stmt unit, SType type) {
+        return getNodeOptional(unit, type).orElseGet(() -> createNode(unit, type));
+    }
+
+    public Optional<SNode> getNodeOptional(Stmt unit, SType type) {
+        if (sNodeMap.containsKey(unit)) {
+            for (SNode node : sNodeMap.get(unit)) {
+                if (node.getType() == type)
+                    return Optional.of(node);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public SNode createNode(Stmt unit, SType type) {
+        SNode sNode;
+        if (type == SType.CATCH)
+            sNode = new SCatchNode(unit, type);
+        else
+            sNode = new SNode(unit, type);
+        if (!sNodeMap.containsKey(unit))
+            sNodeMap.put(unit, new ArrayList<>());
+        sNodeMap.get(unit).add(sNode);
         return sNode;
     }
 
-    public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
-        if (node == null)
-            return jumpNode == null ?
-                    null : jumpNode.getMethodPath().getHandlerNode(jumpNode.getNode(), exception);
 
-        for (SNode catchBlock : node.getCatchBlocks()) {
-            Trap handlerTrap = getHandlerTrap(catchBlock, exception);
-            if (handlerTrap != null)
-                return new HandlerNode(this, catchBlock, handlerTrap);
+    public SNode createNode(Stmt unit) {
+        SType type = getType(unit);
+        SNode sNode;
+        if (type == SType.CATCH)
+            sNode = new SCatchNode(unit, type);
+        else
+            sNode = new SNode(unit, type);
+        if (!sNodeMap.containsKey(unit))
+            sNodeMap.put(unit, new ArrayList<>());
+        sNodeMap.get(unit).add(sNode);
+        return sNode;
+    }
+
+    public SMethodPath getTopMethodPath() {
+        if (jumpNode != null) {
+            return jumpNode.getMethodPath().getTopMethodPath();
         }
+        return this;
+    }
 
-        return getHandlerNode(node.getParent(), exception);
+    public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
+        List<HandlerNode> handlerNodes = new ArrayList<>();
+        findHandlerNodes(node, handlerNodes, true);
+        for (HandlerNode handlerNode : handlerNodes) {
+            Class handlerType = SootHelper.getClass(handlerNode.getNode().getExceptionType());
+            if (handlerType.isAssignableFrom(exception))
+                return handlerNode;
+        }
+        return null;
     }
 
     public List<HandlerNode> getHandlerNodes(SNode node) {
         List<HandlerNode> handlerNodes = new ArrayList<>();
-        getHandlerNodesHelper(node, handlerNodes);
+        findHandlerNodes(node, handlerNodes, false);
         return handlerNodes;
     }
 
@@ -90,52 +130,73 @@ public class SMethodPath {
         log.empty();
     }
 
-    public List<SNode> getSNodes(Stmt unit) {
+    public List<SNode> getTargetNodes(Stmt unit) {
         List<SNode> sNodes = new ArrayList<>();
         for (Stmt target : ((JGotoStmt)unit).getTargetStmts(body)) {
-            assert sNodeMap.containsKey(target);
-            sNodes.add(sNodeMap.get(target));
+            for (Stmt child : body.getStmtGraph().getBlockOf(target).getStmts()) {
+                assert sNodeMap.containsKey(child);
+                sNodes.addAll(sNodeMap.get(child));
+            }
         }
         return sNodes;
     }
 
-    private void getHandlerNodesHelper(SNode node, List<HandlerNode> handlerNodes) {
-        for (SNode catchNode : node.getCatchBlocks()) {
-            HandlerNode handlerNode = new HandlerNode(this, catchNode, getTrap(catchNode));
-            handlerNodes.add(handlerNode);
+    private void findHandlerNodes(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
+        findHandlerNodesHelper(node, handlerNodes, findAll);
+        if (jumpNode != null && handlerNodes.isEmpty()) {
+            jumpNode.getMethodPath().findHandlerNodes(jumpNode.getNode(), handlerNodes, findAll);
         }
-
-        // TODO: reconsider this
-//        if (jumpNode != null) {
-//            jumpNode.getMethodPath().getHandlerNodesHelper(jumpNode.getNode(), handlerNodes);
-//        }
     }
 
-    private Trap getTrap(SNode node) {
-        for (Trap trap : body.getTraps()) {
-            if (trap.getHandlerStmt().equals(node.getUnit()))
-                return trap;
+    private void findHandlerNodesHelper(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
+        if (node == null) return;
+        if (node.getCatchBlocks().isEmpty())
+            findHandlerNodesHelper(node.getParent(), handlerNodes, findAll);
+        else {
+            getTopLevelCatchBlocks(node, findAll).forEach(catchNode ->
+                    handlerNodes.add(new HandlerNode(this, catchNode)));
         }
-        throw new IllegalStateException("Trap not found");
     }
 
-    private Trap getHandlerTrap(SNode node, Class<?> exception) {
-        for (Trap trap : body.getTraps()) {
-            if (trap.getHandlerStmt().equals(node.getUnit())) {
-                Class<?> trapClass = SootHelper.getClass(trap.getExceptionType());
-                if (trapClass.isAssignableFrom(exception))
-                    return trap;
-            }
+    private static List<SCatchNode> getTopLevelCatchBlocks(SNode node, boolean findAll) {
+        List<SCatchNode> nodes = new ArrayList<>();
+        Map<SCatchNode, Integer> depthMap = new HashMap<>();
+        int maxDepth = 0;
+        for (SCatchNode catchNode : node.getCatchBlocks()) {
+            int depth = getExceptionDepth(catchNode);
+            maxDepth = Math.max(depth, maxDepth);
+            depthMap.put(catchNode, getExceptionDepth(catchNode));
         }
-        return null;
+        if (findAll) {
+            // sort
+            List<Map.Entry<SCatchNode, Integer>> list = new ArrayList<>(depthMap.entrySet());
+            list.sort(Map.Entry.comparingByValue());
+            for (int i = list.size()-1; i >= 0; i--)
+                nodes.add(list.get(i).getKey());
+        } else {
+            int finalMaxDepth = maxDepth;
+            depthMap.entrySet().stream()
+                    .filter(e -> e.getValue() == finalMaxDepth)
+                    .forEach(e -> nodes.add(e.getKey()));
+        }
+        return nodes;
+    }
+
+    private static int getExceptionDepth(SNode node) {
+        if (node.getCatchBlocks().isEmpty()) return 0;
+        int max = 0;
+        for (SNode catchBlock : node.getCatchBlocks()) {
+            int res = 1 + getExceptionDepth(catchBlock);
+            max = Math.max(res, max);
+        }
+        return max;
     }
 
     private static SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();
         if (clazz == JIfStmt.class) return SType.BRANCH;
         if (clazz == JRetStmt.class) return SType.RETURN;
-        if (clazz == JGotoStmt.class)
-            return SType.GOTO;
+        if (clazz == JGotoStmt.class) return SType.GOTO;
         if (clazz == JAssignStmt.class) return SType.ASSIGNMENT;
         if (clazz == JReturnStmt.class) return SType.RETURN;
         if (clazz == JInvokeStmt.class) return SType.INVOKE;

@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.cli.model.CLIOptions;
 import lombok.Getter;
 import lombok.Setter;
 import sootup.core.model.SootClass;
@@ -41,17 +42,17 @@ public class SClassInstance {
         if (!this.gotoCount.containsKey(sNode))
             this.gotoCount.put(sNode, 0);
         this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
-        boolean shouldBreak = this.gotoCount.get(sNode) > 20; // limit is 20
-        if (shouldBreak) this.gotoCount.put(sNode, 0);
+        boolean shouldBreak = this.gotoCount.get(sNode) >= CLIOptions.gotoLimit;
+//        if (shouldBreak) this.gotoCount.put(sNode, 0);
         return !shouldBreak;
     }
 
-    public void clear() {
-        this.gotoCount.clear();
-        this.symbolicFieldStack.clear();
-    }
-
-    public String getClassname() {
-        return this.clazz.getName();
-    }
+//    public void clear() {
+//        this.gotoCount.clear();
+//        this.symbolicFieldStack.clear();
+//    }
+//
+//    public String getClassname() {
+//        return this.clazz.getName();
+//    }
 }

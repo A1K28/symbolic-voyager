@@ -6,15 +6,13 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
+import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.Jimple;
-import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.common.constant.IntConstant;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 import sootup.core.jimple.common.expr.JEqExpr;
-import sootup.core.jimple.common.ref.JCaughtExceptionRef;
-import sootup.core.jimple.common.stmt.JIdentityStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
@@ -36,10 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootHelper {
@@ -129,9 +124,11 @@ public class SootHelper {
 
     public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
         StmtGraph<?> cfg = body.getStmtGraph();
-        Stmt start = cfg.getStartingStmt();
+//        Stmt start = cfg.getStartingStmt();
+        BasicBlock<?> block = cfg.getStartingStmtBlock();
 //        print(cfg, start, 0);
-        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
+//        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
+        interpretSoot(block, sMethodPath, sMethodPath.getRoot());
     }
 
     public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
@@ -202,12 +199,170 @@ public class SootHelper {
         succs.forEach(e -> print(cfg, e, level+1));
     }
 
+//    private static void interpretSoot(BasicBlock<?> block,
+//                                      SMethodPath sMethodPath,
+//                                      SBlock parentBlock,
+//                                      Map<BasicBlock<?>, List<SNode>> visited) {
+//        for (Stmt current : block.getStmts()) {
+//            SNode node = sMethodPath.getNode(current);
+//            parentBlock.add(node);
+//        }
+//
+//        SNode nextParent = sMethodPath.getSNodeMap().get(block.getTail()).get(0);
+//        if (nextParent.getType() == SType.GOTO)
+//            return;
+//
+//        if (nextParent.getType() == SType.BRANCH) {
+//            parentBlock.removeLastStmt();
+//
+//            List<BasicBlock<?>> successors = (List<BasicBlock<?>>) block.getSuccessors();
+//            assert successors.size() == 2;
+//
+//            Optional<SNode> ifOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_FALSE);
+//            Optional<SNode> elseOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_TRUE);
+//
+//            if (ifOpt.isPresent()) {
+//                parentBlock.addSucc(sMethodPath.getBlock(ifOpt.get()).get());
+//            } else {
+//                SBlock ifBlock = new SBlock(BlockType.BRANCH_BLOCK);
+//                SNode ifNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_FALSE);
+//                ifBlock.add(ifNode);
+//                parentBlock.addSucc(ifBlock);
+//                interpretSoot(successors.get(0), sMethodPath, ifBlock, visited);
+//            }
+//
+//            if (elseOpt.isPresent()) {
+//                parentBlock.addSucc(sMethodPath.getBlock(elseOpt.get()).get());
+//            } else {
+//                SBlock elseBlock = new SBlock(BlockType.BRANCH_BLOCK);
+//                SNode elseNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_TRUE);
+//                elseBlock.add(elseNode);
+//                parentBlock.addSucc(elseBlock);
+//                interpretSoot(successors.get(1), sMethodPath, elseBlock, visited);
+//            }
+//        } else {
+//            for (BasicBlock<?> successor : block.getSuccessors()) {
+//                SBlock childBlock = new SBlock();
+//                parentBlock.addSucc(childBlock);
+//                interpretSoot(successor, sMethodPath, childBlock, visited);
+//            }
+//        }
+//
+//        // handle catch blocks
+////        Map<ClassType, BasicBlock> catchBlocks
+////                = (Map<ClassType, BasicBlock>) block.getExceptionalSuccessors();
+////        for (Map.Entry<ClassType, BasicBlock> entry : catchBlocks.entrySet()) {
+////            ClassType exceptionType = entry.getKey();
+////            BasicBlock<?> catchBlock = entry.getValue();
+////            Optional<SBlock> optional = sMethodPath.getRootBlock().getExceptionBlock(catchBlock.getHead());
+////            if (optional.isPresent()) {
+//////                parentBlock.addSucc(optional.get());
+////                continue;
+////            }
+////            SBlock catchChild = new SBlock(exceptionType);
+//////            parentBlock.addSucc(catchChild);
+////            interpretSoot(catchBlock, sMethodPath, catchChild, visited);
+////        }
+//    }
+
+    private static void interpretSoot(BasicBlock<?> block,
+                                      SMethodPath sMethodPath,
+                                      SNode parent) {
+        List<Stmt> stmts = block.getStmts();
+        int i = 0;
+        if (parent.getType() == SType.CATCH) i = 1;
+
+        for (;i < stmts.size(); i++) {
+            Stmt current = stmts.get(i);
+            if (parent.containsParent(current)) continue;
+            SNode node = sMethodPath.getNode(current);
+            parent.addChild(node);
+            parent = node;
+        }
+
+        if (parent.getType() == SType.GOTO)
+            return;
+
+        if (parent.getType() == SType.SWITCH) {
+            JSwitchStmt switchStmt = (JSwitchStmt) parent.getUnit();
+            List<IntConstant> values = switchStmt.getValues();
+            parent = parent.getParent();
+            parent.removeLastChild();
+            for (int k = 0; k < values.size(); k++) {
+                JEqExpr eqExpr = Jimple.newEqExpr(switchStmt.getKey(), values.get(k));
+                JIfStmt ifStmt = Jimple.newIfStmt(eqExpr, switchStmt.getPositionInfo());
+                SNode ifNode = sMethodPath.createNode(ifStmt);
+                SNode elseNode = sMethodPath.createNode(ifStmt);
+                parent.addChild(ifNode);
+                parent.addChild(elseNode);
+                ifNode.setType(SType.BRANCH_TRUE);
+                elseNode.setType(SType.BRANCH_FALSE);
+                interpretSoot(block.getSuccessors().get(k), sMethodPath, ifNode);
+                parent = elseNode;
+            }
+            if (values.size() + 1 == block.getSuccessors().size())
+                interpretSoot(block.getSuccessors().get(values.size()), sMethodPath, parent);
+        } else if (parent.getType() == SType.BRANCH) {
+            parent = parent.getParent();
+            parent.removeLastChild();
+
+            List<BasicBlock<?>> successors = (List<BasicBlock<?>>) block.getSuccessors();
+            assert successors.size() == 2;
+
+            Optional<SNode> ifOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_FALSE);
+            Optional<SNode> elseOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_TRUE);
+
+            if (ifOpt.isPresent()) {
+                parent.addChild(ifOpt.get());
+            } else {
+                SNode ifNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_FALSE);
+                parent.addChild(ifNode);
+                interpretSoot(successors.get(0), sMethodPath, ifNode);
+            }
+
+            if (elseOpt.isPresent()) {
+                parent.addChild(elseOpt.get());
+            } else {
+                SNode elseNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_TRUE);
+                parent.addChild(elseNode);
+                interpretSoot(successors.get(1), sMethodPath, elseNode);
+            }
+        } else {
+            for (BasicBlock<?> successor : block.getSuccessors()) {
+                interpretSoot(successor, sMethodPath, parent);
+            }
+        }
+
+        // handle catch blocks
+//        Map<ClassType, BasicBlock> catchBlocks
+//                = (Map<ClassType, BasicBlock>) block.getExceptionalSuccessors();
+//        for (Map.Entry<ClassType, BasicBlock> entry : catchBlocks.entrySet()) {
+//            ClassType classType = entry.getKey();
+//            BasicBlock<?> catchBlock = entry.getValue();
+//            Optional<SNode> optional = sMethodPath.getNodeOptional(catchBlock.getHead(), SType.CATCH);
+//            if (optional.isPresent()) {
+//                if (parent.containsParent(optional.get().getUnit())) continue;
+//                parent.addChild(optional.get());
+//                continue;
+//            }
+//            SCatchNode node = (SCatchNode) sMethodPath.createNode(catchBlock.getHead());
+//            if (parent.containsParent(node.getUnit())) continue;
+//            node.setExceptionType(classType);
+//            parent.addChild(node);
+//            interpretSoot(catchBlock, sMethodPath, node);
+//        }
+    }
+
     // interpret soot graph
     private static void dfs(
             StmtGraph<?> cfg,
             Stmt current,
             SMethodPath sMethodPath,
             SNode parent) {
+        if (sMethodPath.getSNodeMap().containsKey(current)) {
+            parent.addChild(sMethodPath.getSNodeMap().get(current).get(0));
+            return;
+        }
         SNode node = sMethodPath.createNode(current);
         parent.addChild(node);
         if (!cfg.getTails().contains(current)) {
@@ -242,9 +397,18 @@ public class SootHelper {
 
                     dfs(cfg, succs.get(0), sMethodPath, node);
                     dfs(cfg, succs.get(1), sMethodPath, node2);
+
+                    // handle catch blocks
+                    for (int i = 2;i<succs.size();i++) {
+                        Stmt succ = succs.get(i);
+                        if (current == succ) continue;
+                        if (!node.containsParent(succ)) dfs(cfg, succ, sMethodPath, node);
+                        if (!node2.containsParent(succ)) dfs(cfg, succ, sMethodPath, node2);
+                    }
                 } else {
-                    for (Stmt succ : succs) {
-                        if (!node.containsParent(succ)) {
+                    for (int i = 0; i < succs.size(); i++) {
+                        Stmt succ = succs.get(i);
+                        if (current != succ && !node.containsParent(succ)) {
                             dfs(cfg, succ, sMethodPath, node);
                         }
                     }

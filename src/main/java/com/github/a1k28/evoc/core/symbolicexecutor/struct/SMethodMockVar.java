@@ -24,4 +24,9 @@ public class SMethodMockVar extends SVar {
         this.method = method;
         this.arguments = arguments;
     }
+
+    public SMethodMockVar copy() {
+        return new SMethodMockVar(this.getName(), this.getExpr(), this.getType(),
+                this.getClassType(), this.isDeclaration(), this.getMethod(), this.getArguments());
+    }
 }

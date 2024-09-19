@@ -1,11 +1,8 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.evoc.helper.SootHelper;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
-import sootup.core.jimple.basic.Value;
-import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -46,7 +43,7 @@ public class SStack implements IStack {
         else {
             sVar = new SVar(name, expr, type, classType, true);
         }
-        _add(sVar);
+        add(sVar);
         return sVar;
     }
 
@@ -59,8 +56,14 @@ public class SStack implements IStack {
         else {
             sVar = new SMethodMockVar(name, expr, type, classType, true, method, params);
         }
-        _add(sVar);
+        add(sVar);
         return sVar;
+    }
+
+    public void add(SVar sVar) {
+        if (!stack.get(index).containsKey(sVar.getName()))
+            stack.get(index).put(sVar.getName(), new ArrayList<>());
+        stack.get(index).get(sVar.getName()).add(sVar);
     }
 
     public List<SVar> getAll() {
@@ -81,12 +84,6 @@ public class SStack implements IStack {
     public void pop() {
         stack.remove(index);
         index--;
-    }
-
-    private void _add(SVar sVar) {
-        if (!stack.get(index).containsKey(sVar.getName()))
-            stack.get(index).put(sVar.getName(), new ArrayList<>());
-        stack.get(index).get(sVar.getName()).add(sVar);
     }
 
     public Optional<SVar> getDeclaration(String key) {

@@ -91,7 +91,6 @@ public class Z3Translator {
     }
 
     public SExpr translateAndWrapValue(Value value, VarType varType, SMethodPath methodPath) {
-//        Expr translateValue = translateValue(value, varType, methodPath);
         if (value instanceof AbstractInvokeExpr invoke) {
             return wrapMethodCall(invoke, null);
         } else if (value instanceof JNewExpr && CLIOptions.shouldPropagate(value.toString())) {
@@ -152,17 +151,29 @@ public class Z3Translator {
                 int val = ((IntNum) e1).getInt();
                 e1 = ctx.mkBool(val == 1);
             }
+
+            boolean e1IsNull = SortType.NULL.equals(e1.getSort());
+            boolean e2IsNull = SortType.NULL.equals(e2.getSort());
+
             if (condition instanceof JEqExpr) {
+                if (e1IsNull && e2IsNull) return ctx.mkBool(true);
+                if (e1IsNull ^ e2IsNull) return ctx.mkBool(false);
                 return ctx.mkEq(e1, e2);
             } else if (condition instanceof JNeExpr) {
+                if (e1IsNull && e2IsNull) return ctx.mkBool(false);
+                if (e1IsNull ^ e2IsNull) return ctx.mkBool(true);
                 return ctx.mkNot(ctx.mkEq(e1, e2));
             } else if (condition instanceof JGtExpr) {
+                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkGt(e1, e2);
             } else if (condition instanceof JGeExpr) {
+                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkGe(e1, e2);
             } else if (condition instanceof JLtExpr) {
+                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkLt(e1, e2);
             } else if (condition instanceof JLeExpr) {
+                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkLe(e1, e2);
             }
         }
@@ -198,14 +209,18 @@ public class Z3Translator {
     }
 
     public Expr translateValue(Value value, VarType varType, SMethodPath methodPath) {
+        return translateValue(value, value.getType(), varType, methodPath);
+    }
+
+    public Expr translateValue(Value value, Type type, VarType varType, SMethodPath methodPath) {
         if (value instanceof Local) {
-            return getSymbolicValue(value, varType, methodPath);
+            return getSymbolicValue(value, type, varType, methodPath);
         }
         if (value instanceof JFieldRef) {
-            return getSymbolicValue(value, varType, methodPath);
+            return getSymbolicValue(value, type, varType, methodPath);
         }
         else if (value instanceof JCastExpr v) {
-            return getSymbolicValue(v.getOp(), varType, methodPath);
+            return getSymbolicValue(v.getOp(), type, varType, methodPath);
         }
         if (value instanceof IntConstant v) {
             return ctx.mkInt(v.getValue());
@@ -422,13 +437,13 @@ public class Z3Translator {
         return SortType.OBJECT.value(ctx);
     }
 
-    private Expr getSymbolicValue(Value value, VarType varType, SMethodPath methodPath) {
+    private Expr getSymbolicValue(Value value, Type type, VarType varType, SMethodPath methodPath) {
         String key = getValueName(value);
         Optional<SVar> optional = varType == VarType.FIELD ?
                 methodPath.getClassInstance().getSymbolicFieldStack().get(key)
                 : methodPath.getSymbolicVarStack().get(key);
         return optional.orElseGet(() -> saveSymbolicVar(
-                value, value.getType(), varType, methodPath)).getExpr();
+                value, type, varType, methodPath)).getExpr();
     }
 
     private Expr getSymbolicValue(Value value, Sort sort, VarType varType, SMethodPath methodPath) {
@@ -443,17 +458,13 @@ public class Z3Translator {
     public SVar saveSymbolicVar(Value value, Type type, VarType varType, SMethodPath methodPath) {
         String name = getValueName(value);
         if (type == null) type = value.getType();
-//        boolean isClassUnknown = varType == VarType.FIELD && methodPath.getClassInstance().isUnknown();
         Sort sort = translateType(type);
         Expr expr = mkExpr(name, sort);
-//        Expr expr = isClassUnknown ? mkExpr(name, sort) : getDefaultValue(type, sort);
         return updateSymbolicVar(value, expr, varType, methodPath);
     }
 
     public SVar saveSymbolicVar(Value value, Sort sort, VarType varType, SMethodPath methodPath) {
         String name = getValueName(value);
-//        boolean isClassUnknown = varType == VarType.FIELD && methodPath.getClassInstance().isUnknown();
-//        Expr expr = isClassUnknown ? mkExpr(name, sort) : getDefaultValue(value.getType(), sort);
         Expr expr = mkExpr(name, sort);
         return updateSymbolicVar(value, expr, varType, methodPath);
     }

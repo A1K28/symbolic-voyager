@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.model;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SCatchNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,5 @@ import sootup.core.jimple.basic.Trap;
 @AllArgsConstructor
 public class HandlerNode {
     private SMethodPath methodPath;
-    private SNode node;
-    private Trap trap;
+    private SCatchNode node;
 }

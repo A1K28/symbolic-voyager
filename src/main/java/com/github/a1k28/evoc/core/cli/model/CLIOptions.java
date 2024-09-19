@@ -10,6 +10,7 @@ public class CLIOptions {
     public static Set<String> mockableClasses = Set.of();
     public static Set<String> mockablePackages = Set.of();
     public static Set<PropagationStrategy> propagationStrategies;
+    public static Integer gotoLimit = 20;
 
     public static boolean shouldPropagate(String pckg) {
         for (String mockablePackage : mockablePackages)

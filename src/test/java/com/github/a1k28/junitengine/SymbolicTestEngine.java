@@ -147,13 +147,16 @@ public class SymbolicTestEngine implements TestEngine {
     private void createMocks(List<MethodMockResult> mockResults) {
         for (MethodMockResult mockResult : mockResults) {
             log.info("Mocking: " + mockResult.getMethod() + " with args: "
-                    + Arrays.toString(mockResult.getParsedParameters().toArray(new Object[0])));
+                    + Arrays.toString(mockResult.getParsedParameters().toArray(new Object[0]))
+                    + " and return val: " + mockResult.getParsedReturnValue()
+                    + " & exception type: " + mockResult.getExceptionType());
             Class type = mockResult.getMethod().getDeclaringClass();
             String methodName = mockResult.getMethod().getName();
             Object[] args = mockResult.getParsedParameters().toArray();
             Object retVal = mockResult.getParsedReturnValue();
             Class exceptionType = mockResult.getExceptionType();
             if (exceptionType != null) when(type, methodName, args).thenThrow(exceptionType);
+            else if (retVal == null) when(type, methodName, args).thenReturnVoid();
             else when(type, methodName, args).thenReturn(retVal);
         }
     }
