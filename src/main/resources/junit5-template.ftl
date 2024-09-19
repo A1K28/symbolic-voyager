@@ -24,24 +24,28 @@ public class ${cm.className}Test {
 <#list cm.methodCallModels as mm>
     @Test
     public void test_${mm.testName}() throws Throwable {
+        <#if mm.mockCount != 0 >
         // define mocks
 <#--        <#list mocks as mock>-->
 <#--            ${mock.o}-->
 <#--        </#list>-->
 
+        </#if>
+        <#if mm.paramCount != 0 >
         // define parameters
         Object[] params = new Object[${mm.paramCount}];
-        <#list mm.parameters as param>
-<#--        <#if mm.parameterTypes[param?index] == 'Map' || mm.parameterTypes[param?index] == 'HashMap'>-->
-<#--        Map map${param?index} = new HashMap();-->
-<#--        <#list param.entries as entry>-->
-<#--        map${param?index}.put(deserialize(${entry.key}), deserialize(${entry.value}));-->
-<#--        </#list>-->
-<#--        <#else>-->
+            <#list mm.parameters as param>
+            <#--        <#if mm.parameterTypes[param?index] == 'Map' || mm.parameterTypes[param?index] == 'HashMap'>-->
+            <#--        Map map${param?index} = new HashMap();-->
+            <#--        <#list param.entries as entry>-->
+            <#--        map${param?index}.put(deserialize(${entry.key}), deserialize(${entry.value}));-->
+            <#--        </#list>-->
+            <#--        <#else>-->
         params[${param?index}] = deserialize(${param}, ${mm.parameterTypes[param?index]}.class);
-<#--        </#if>-->
-        </#list>
+            <#--        </#if>-->
+            </#list>
 
+        </#if>
         // assuming default constructor
         ${cm.className} instance = new ${cm.className}();
 

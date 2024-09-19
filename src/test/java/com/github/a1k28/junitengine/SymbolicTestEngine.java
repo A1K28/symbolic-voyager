@@ -117,6 +117,7 @@ public class SymbolicTestEngine implements TestEngine {
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
         symbolicExecutor.refresh();
+        CLIOptions.targetClass = testClass.getName();
         SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
         Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
         for (SatisfiableResult satisfiableResult : sr.getResults()) {

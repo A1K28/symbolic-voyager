@@ -13,6 +13,7 @@ import com.github.a1k28.supermock.Parser;
 import org.apache.commons.cli.*;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class CommandLineRunner {
@@ -27,7 +28,8 @@ public class CommandLineRunner {
             // skip if void
             if ("void".equals(method.getReturnType().getName())) continue;
 
-            // TODO: skip if private
+            // skip if non-public
+            if (!Modifier.isPublic(method.getModifiers())) continue;
 
             symbolicExecutor.refresh();
             SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);

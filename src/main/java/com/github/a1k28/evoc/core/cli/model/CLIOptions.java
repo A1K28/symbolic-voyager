@@ -11,20 +11,22 @@ public class CLIOptions {
     public static Integer gotoLimit = 20;
 
     public static boolean shouldPropagate(String pckg) {
+        if (targetClass.startsWith(pckg)) return true;
         for (String mockablePackage : mockablePackages)
-            if (pckg.contains(mockablePackage)) return false;
+            if (pckg.startsWith(mockablePackage)) return false;
         for (String mockableClass : mockableClasses)
             if (pckg.equals(mockableClass)) return false;
         for (String whitelistedPackage : whitelistedPackages)
-            if (pckg.contains(whitelistedPackage)) return true;
+            if (pckg.startsWith(whitelistedPackage)) return true;
         for (String whitelistedClass : whitelistedClasses)
             if (pckg.equals(whitelistedClass)) return true;
         return false;
     }
 
     public static boolean shouldMock(String pckg) {
+        if (targetClass.startsWith(pckg)) return false;
         for (String mockablePackage : mockablePackages)
-            if (pckg.contains(mockablePackage)) return true;
+            if (pckg.startsWith(mockablePackage)) return true;
         for (String mockableClass : mockableClasses)
             if (pckg.equals(mockableClass)) return true;
         return false;

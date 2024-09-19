@@ -22,5 +22,6 @@ public class MethodCallModel {
     private List<Object> parameters;
     private List<String> parameterTypes;
 
+    private int mockCount;
     private List<MethodMockModel> methodMocks;
 }

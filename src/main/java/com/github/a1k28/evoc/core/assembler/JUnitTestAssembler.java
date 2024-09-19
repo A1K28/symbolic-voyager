@@ -63,6 +63,8 @@ public class JUnitTestAssembler {
             nameCount.put(method.getName(), nameCount.get(method.getName())+1);
             String testName = method.getName()+"_"+nameCount.get(method.getName());
 
+            List<MethodMockModel> mockModels = mapMocks(res.getMethodMockValues());
+
             // Prepare the data for the template
             MethodCallModel methodCallModel = new MethodCallModel(
                     testName,
@@ -72,7 +74,8 @@ public class JUnitTestAssembler {
                     res.getParsedParameters().length,
                     parameters,
                     parameterTypes,
-                    mapMocks(res.getMethodMockValues()));
+                    mockModels.size(),
+                    mockModels);
             methodCallModels.add(methodCallModel);
         }
 
