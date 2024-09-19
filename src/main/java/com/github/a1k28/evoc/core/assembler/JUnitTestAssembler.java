@@ -39,7 +39,6 @@ public class JUnitTestAssembler {
                 return;
             }
 
-//            Method method = findMethod(clazz, methodName, params);
             List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
                     .map(Class::getSimpleName).toList();
 
@@ -53,11 +52,11 @@ public class JUnitTestAssembler {
                     imports.add(parameterType.getPackageName());
             }
 
-    //        for (MethodMockResult mockResult : methodMocks) {
-    //            imports.add(mockResult.getExceptionType().getPackageName());
-    //            for (Object param : mockResult.getParsedParameters())
-    //                imports.add(param.getClass().getPackageName());
-    //        }
+            for (MethodMockResult mockResult : res.getMethodMockValues()) {
+                imports.add(mockResult.getExceptionType().getPackageName());
+                for (Object param : mockResult.getParsedParameters())
+                    imports.add(param.getClass().getPackageName());
+            }
 
             if (!nameCount.containsKey(method.getName()))
                 nameCount.put(method.getName(), 0);
@@ -102,6 +101,7 @@ public class JUnitTestAssembler {
         log.info("Test file generated: " + fileName);
     }
 
+    // TODO: beautify certain types of object creation
     private static Object parse(Object object, Class<?> clazz) {
 //        if (Map.class.isAssignableFrom(clazz)) {
 //            List<MapModel.Entry> entries = new ArrayList<>();
@@ -120,14 +120,14 @@ public class JUnitTestAssembler {
         if (methodMocks == null || methodMocks.isEmpty()) Collections.emptyList();
         List<MethodMockModel> result = new ArrayList<>(methodMocks.size());
         for (MethodMockResult mockResult : methodMocks) {
-//            Class type = mockResult.getMethod().getDeclaringClass();
-//            String methodName = mockResult.getMethod().getName();
-//            Object[] args = mockResult.getParsedParameters().toArray();
-//            Object retVal = mockResult.getParsedReturnValue();
-//            Class exceptionType = mockResult.getExceptionType();
-//            MethodMockModel model = new MethodMockModel(
-//                    type.getCanonicalName(), methodName, args, retVal, exceptionType);
-//            result.add(model);
+            Class type = mockResult.getMethod().getDeclaringClass();
+            String methodName = mockResult.getMethod().getName();
+            Object[] args = mockResult.getParsedParameters().toArray();
+            Object retVal = mockResult.getParsedReturnValue();
+            Class exceptionType = mockResult.getExceptionType();
+            MethodMockModel model = new MethodMockModel(
+                    type.getCanonicalName(), methodName, args, retVal, exceptionType);
+            result.add(model);
         }
         return result;
     }
