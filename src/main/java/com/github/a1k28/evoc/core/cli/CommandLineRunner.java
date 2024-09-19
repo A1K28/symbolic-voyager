@@ -15,13 +15,15 @@ import org.apache.commons.cli.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CommandLineRunner {
     public static void main(String[] args) throws Exception {
         parseCliArgs(args);
+        Class clazz = Class.forName(CLIOptions.targetClass);
+
         promptUserForPropagation();
 
-        Class clazz = Class.forName(CLIOptions.targetClass);
         SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
         List<TestGeneratorModel> testGeneratorModels = new ArrayList<>();
         for (Method method : clazz.getDeclaredMethods()) {
@@ -55,16 +57,42 @@ public class CommandLineRunner {
 //                res.getMethodMockValues());
     }
 
-    private static void promptUserForPropagation() {
+    private static void promptUserForPropagation() throws ClassNotFoundException {
         if (CLIOptions.mockableClasses.isEmpty() || CLIOptions.mockablePackages.isEmpty()) {
-//            try (final Scanner reader = new Scanner(System.in)) {
-//                System.out.println("You have not provided any classes" +
-//                        " that should be targeted by supermock." +
-//                        " Would you like me to list the possible classes? (Y/n)");
-//                String res = reader.next();
-//                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
-//            }
+            Set<String> variableTypes = LocalTypeExtractor
+                    .extract(Class.forName(CLIOptions.targetClass)).stream()
+                    .filter(CommandLineRunner::shouldConsiderType)
+                    .collect(Collectors.toSet());
+            if (variableTypes.isEmpty()) return;
+
+            try (final Scanner reader = new Scanner(System.in)) {
+                System.out.println("You have not provided any classes" +
+                        " that should be targeted by supermock." +
+                        " Would you like me to list the possible classes? (Y/n)");
+                String res = reader.next();
+                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
+
+                for (String type : variableTypes) {
+                    System.out.println("Mock: " + type + "? (Y/n)");
+                    res = reader.next();
+                    if (!res.isBlank() && !res.equalsIgnoreCase("Y")) continue;
+                    CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                }
+            }
         }
+    }
+
+    private static boolean shouldConsiderType(String type) {
+        if (type.startsWith("java.")) return false;
+        if (type.equals("byte")
+                || type.equals("short")
+                || type.equals("int")
+                || type.equals("long")
+                || type.equals("float")
+                || type.equals("double")
+                || type.equals("char")
+                || type.equals("boolean")) return false;
+        return true;
     }
 
     private static void parseCliArgs(String[] args) {
