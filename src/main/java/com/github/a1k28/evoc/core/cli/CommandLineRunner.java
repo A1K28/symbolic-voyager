@@ -66,8 +66,11 @@ public class CommandLineRunner {
                 String res = reader.next();
                 if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
 
+                int i = 0;
                 for (String type : variableTypes) {
-                    System.out.println("Mock: " + type + "? (y/N)");
+                    i++;
+                    System.out.println("(" + i + "/" + variableTypes.size() + ")"
+                            + " Mock: " + type + "? (y/N)");
                     res = reader.next();
                     if (!res.equalsIgnoreCase("Y")) continue;
                     CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
