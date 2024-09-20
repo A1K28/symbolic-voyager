@@ -89,7 +89,7 @@ public class CommandLineRunner {
     }
 
     private static boolean shouldConsiderType(String type) {
-        if (CLIOptions.targetClass.equals(type)) return false;
+        if (CLIOptions.shouldPropagate(type)) return false;
         if ("void".equals(type)) return false;
         if (type.startsWith("java.")) return false;
         if (type.equals("byte")
