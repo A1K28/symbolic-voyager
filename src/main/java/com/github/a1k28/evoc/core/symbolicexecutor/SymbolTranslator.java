@@ -51,6 +51,7 @@ public class SymbolTranslator {
 
             // method mocks
             List<MethodMockResult> mockedMethodValues = new ArrayList<>();
+            Set<String> uniqueMockSet = new HashSet<>();
             for (int k = res.getMockedMethodValues().size()-1; k >= 0; k--) {
                 SMethodMockEvaluated sVarEvaluated = res.getMockedMethodValues().get(k);
 
@@ -67,6 +68,11 @@ public class SymbolTranslator {
                 for (int i = 0; i < mockParamClassTypes.length; i++) {
                     mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
                 }
+
+                String uniqueKey = sVarEvaluated.getMethod().toString()+";"+
+                        Arrays.toString(mockParams.toArray());
+                if (uniqueMockSet.contains(uniqueKey)) continue;
+                uniqueMockSet.add(uniqueKey);
 
                 MethodMockResult mockResult = new MethodMockResult(
                         sVarEvaluated.getMethod(), mockRetVal, sVarEvaluated.getExceptionType(), mockParams);
