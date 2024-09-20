@@ -47,15 +47,19 @@ public class JUnitTestAssembler {
                 parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
             }
 
+            // handle imports
             for (Class parameterType : method.getParameterTypes()) {
                 if (!parameterType.isPrimitive())
                     imports.add(parameterType.getPackageName());
             }
 
             for (MethodMockResult mockResult : res.getMethodMockValues()) {
-                imports.add(mockResult.getExceptionType().getPackageName());
+                imports.add(mockResult.getMethod().getReturnType().getPackageName());
+                imports.add(mockResult.getMethod().getDeclaringClass().getPackageName());
+                if (mockResult.getExceptionType() != null)
+                    imports.add(mockResult.getExceptionType().getPackageName());
                 for (Object param : mockResult.getParsedParameters())
-                    imports.add(param.getClass().getPackageName());
+                    if (param != null) imports.add(param.getClass().getPackageName());
             }
 
             if (!nameCount.containsKey(method.getName()))
@@ -123,12 +127,32 @@ public class JUnitTestAssembler {
         List<MethodMockModel> result = new ArrayList<>(methodMocks.size());
         for (MethodMockResult mockResult : methodMocks) {
             Class type = mockResult.getMethod().getDeclaringClass();
-            String methodName = mockResult.getMethod().getName();
+            Method method = mockResult.getMethod();
             Object[] args = mockResult.getParsedParameters().toArray();
             Object retVal = mockResult.getParsedReturnValue();
             Class exceptionType = mockResult.getExceptionType();
+
+            String retValSerialized = Parser.serialize(retVal);
+            String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
+            String retType = method.getReturnType().getSimpleName();
+            if ("void".equals(retType)) retType = null;
+
+            List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
+                    .map(Class::getSimpleName).toList();
+            List<Object> parameters = new ArrayList<>();
+            for (int i = 0; i < args.length; i++) {
+                parameters.add(parse(args[i], method.getParameterTypes()[i]));
+            }
+
             MethodMockModel model = new MethodMockModel(
-                    type.getCanonicalName(), methodName, args, retVal, exceptionType);
+                    type.getSimpleName(),
+                    method.getName(),
+                    parameters.size(),
+                    parameters,
+                    parameterTypes,
+                    retValSerialized,
+                    retType,
+                    exceptionName);
             result.add(model);
         }
         return result;
