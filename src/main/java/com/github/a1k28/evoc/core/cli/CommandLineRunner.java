@@ -61,10 +61,16 @@ public class CommandLineRunner {
 
             try (final Scanner reader = new Scanner(System.in)) {
                 System.out.println("You have not provided any classes" +
-                        " that should be targeted by supermock." +
+                        " that should be targeted by supermock (enabled by default)." +
                         " Would you like me to suggest possible classes? (Y/n)");
                 String res = reader.next();
-                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) return;
+                if (!res.isBlank() && !res.equalsIgnoreCase("Y")) {
+                    // if not, then mock all
+                    for (String type : variableTypes) {
+                        CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                    }
+                    return;
+                };
 
                 int i = 0;
                 for (String type : variableTypes) {

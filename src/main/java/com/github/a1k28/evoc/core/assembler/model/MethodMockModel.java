@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,7 +14,12 @@ import lombok.Setter;
 public class MethodMockModel {
     private String type;
     private String methodName;
-    private Object[] args;
-    private Object retVal;
-    private Class exceptionType;
+
+    private int paramCount;
+    private List<Object> parameters;
+    private List<String> parameterTypes;
+
+    private String retVal;
+    private String retType;
+    private String exceptionType;
 }

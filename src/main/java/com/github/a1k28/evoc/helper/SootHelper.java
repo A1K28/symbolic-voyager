@@ -30,6 +30,7 @@ import sootup.java.core.JavaSootField;
 import sootup.java.core.language.JavaLanguage;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Executable;
@@ -42,11 +43,26 @@ public class SootHelper {
 
     public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
         int javaVersion = getJavaVersion(Class.forName(className));
+        JavaLanguage language = new JavaLanguage(javaVersion);
 
+        Optional<SootClass<JavaSootClassSource>> optional = getJavaSootClassSource(
+                className, language);
+        for (int i = 0; i < 3 && optional.isEmpty(); i++) {
+            // the class may have not been loaded properly. wait for a bit.
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
+
+            optional = getJavaSootClassSource(className, language);
+        }
+
+        return optional.get();
+    }
+
+    private static Optional<SootClass<JavaSootClassSource>> getJavaSootClassSource(
+            String className, JavaLanguage language) {
         AnalysisInputLocation<JavaSootClass> inputLocation =
                 new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
-
-        JavaLanguage language = new JavaLanguage(javaVersion);
 
         Project project = JavaProject.builder(language)
                 .addInputLocation(inputLocation).build();
@@ -55,8 +71,7 @@ public class SootHelper {
                 project.getIdentifierFactory().getClassType(className);
 
         View<?> view = project.createView();
-
-        return (SootClass<JavaSootClassSource>) view.getClass(classType).get();
+        return (Optional<SootClass<JavaSootClassSource>>) view.getClass(classType);
     }
 
     public static SootMethod getSootMethod(
@@ -95,8 +110,8 @@ public class SootHelper {
     }
 
     public static int getJavaVersion(Class<?> clazz) {
-        try (InputStream is = clazz.getClassLoader().getResourceAsStream(
-                clazz.getName().replace('.', '/') + ".class");
+        try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
+                clazz.getName().replace(".", File.separator) + ".class");
              DataInputStream dis = new DataInputStream(is)) {
 
             dis.readInt(); // Skip magic number

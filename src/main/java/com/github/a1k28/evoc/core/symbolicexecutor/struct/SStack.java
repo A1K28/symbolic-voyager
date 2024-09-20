@@ -34,6 +34,16 @@ public class SStack implements IStack {
         return Optional.empty();
     }
 
+    public Optional<SVar> get(Expr expr) {
+        for (int i = 0; i < index; i++) {
+            List<SVar> vars = stack.get(i).entrySet().stream().flatMap(e -> e.getValue().stream()).toList();
+            for (SVar var : vars) {
+                if (expr.equals(var.getExpr())) return Optional.of(var);
+            }
+        }
+        return Optional.empty();
+    }
+
     public SVar add(String name, Class<?> classType, Expr expr, VarType type) {
         Optional<SVar> optional = getDeclaration(name);
         SVar sVar;

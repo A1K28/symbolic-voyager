@@ -24,7 +24,8 @@ public class LocalTypeExtractor {
     public void collectTypes(Class<?> clazz) throws IOException {
         String className = clazz.getName();
         String resourceName = className.replace(".", File.separator) + ".class";
-        try (InputStream inputStream = clazz.getClassLoader().getResourceAsStream(resourceName)) {
+        try (InputStream inputStream = ClassLoader.getSystemClassLoader()
+                .getResourceAsStream(resourceName)) {
             if (inputStream == null) {
                 throw new IOException("Class file not found: " + resourceName);
             }
