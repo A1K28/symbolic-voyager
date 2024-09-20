@@ -13,6 +13,7 @@ import static com.github.a1k28.supermock.MockAPI.when;
 import static com.github.a1k28.supermock.Parser.deserialize;
 
 public class ${cm.className}Test {
+    <#if cm.mocksExist == true>
     @BeforeAll
     public static void beforeAll() {
         MockAPI.attachAgentToThisJVM();
@@ -22,6 +23,7 @@ public class ${cm.className}Test {
     public void afterEach() {
         MockAPI.resetMockState();
     }
+    </#if>
 
     <#list cm.methodCallModels as mm>
     @Test

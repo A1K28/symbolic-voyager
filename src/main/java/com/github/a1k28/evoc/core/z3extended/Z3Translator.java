@@ -208,6 +208,27 @@ public class Z3Translator {
         }
     }
 
+    // if parameters are equal, make sure the method mocks the same return value
+    public Expr translateMockValue(Value value,
+                                   VarType varType,
+                                   Method method,
+                                   List<Expr> params,
+                                   SMethodPath methodPath,
+                                   SMethodPath topMethodPath) {
+        Expr expr = translateValue(value, varType, methodPath);
+        for (SMethodMockVar methodMockVar : topMethodPath.getSymbolicVarStack().getAllMocks(method)) {
+            if (params.size() != methodMockVar.getArguments().size()) continue;
+            BoolExpr eq = ctx.mkTrue();
+            for (int i = 0; i < params.size(); i++) {
+                Expr e1 = params.get(i);
+                Expr e2 = methodMockVar.getArguments().get(i);
+                eq = ctx.mkAnd(eq, ctx.mkEq(e1, e2));
+            }
+            expr = ctx.mkITE(eq, methodMockVar.getExpr(), expr);
+        }
+        return expr;
+    }
+
     public Expr translateValue(Value value, VarType varType, SMethodPath methodPath) {
         return translateValue(value, value.getType(), varType, methodPath);
     }

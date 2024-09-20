@@ -5,16 +5,13 @@ import com.microsoft.z3.Expr;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import sootup.core.jimple.basic.Value;
-
-import java.lang.reflect.Method;
 
 @Setter
 @Getter
 @ToString
 public class SVar {
     private final String name;
-    private final Expr expr;
+    private Expr expr;
     private final VarType type;
     private final Class<?> classType;
     private final boolean isDeclaration;

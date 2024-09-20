@@ -76,14 +76,6 @@ public class SStack implements IStack {
         stack.get(index).get(sVar.getName()).add(sVar);
     }
 
-    public List<SVar> getAll() {
-        return stack.stream()
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-    }
-
     @Override
     public void push() {
         stack.add(new LinkedHashMap<>());
@@ -94,6 +86,25 @@ public class SStack implements IStack {
     public void pop() {
         stack.remove(index);
         index--;
+    }
+
+    public List<SVar> getAll() {
+        return stack.stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    public List<SMethodMockVar> getAllMocks(Method method) {
+        return stack.stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .flatMap(Collection::stream)
+                .filter(e -> e instanceof SMethodMockVar)
+                .map(e -> (SMethodMockVar) e)
+                .filter(e -> e.getMethod().equals(method))
+                .collect(Collectors.toList());
     }
 
     public Optional<SVar> getDeclaration(String key) {

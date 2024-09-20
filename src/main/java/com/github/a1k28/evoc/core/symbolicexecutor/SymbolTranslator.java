@@ -51,26 +51,22 @@ public class SymbolTranslator {
 
             // method mocks
             List<MethodMockResult> mockedMethodValues = new ArrayList<>();
-            Set<String> uniqueMockSet = new HashSet<>();
             for (int k = res.getMockedMethodValues().size()-1; k >= 0; k--) {
                 SMethodMockEvaluated sVarEvaluated = res.getMockedMethodValues().get(k);
+
+                // ignore void methods
+                if ("void".equals(sVarEvaluated.getMethod().getReturnType().getName())) continue;
+
                 Class[] mockParamClassTypes = sVarEvaluated.getMethod().getParameterTypes();
                 assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();
                 List<Object> mockParams = new ArrayList<>();
                 Object mockRetVal = null;
-                if (sVarEvaluated.getExceptionType() == null && !"void".equals(sVarEvaluated.getMethod().getReturnType().getName())) {
+                if (sVarEvaluated.getExceptionType() == null) {
                     mockRetVal = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
                 }
                 for (int i = 0; i < mockParamClassTypes.length; i++) {
                     mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
                 }
-
-                // ensure that only the last mock is active (since it may contain dubs)
-                String uniqueKey = sVarEvaluated.getMethod().toString()+";"+
-                        Arrays.toString(mockParams.toArray());
-                if (uniqueMockSet.contains(uniqueKey))
-                    continue;
-                uniqueMockSet.add(uniqueKey);
 
                 MethodMockResult mockResult = new MethodMockResult(
                         sVarEvaluated.getMethod(), mockRetVal, sVarEvaluated.getExceptionType(), mockParams);

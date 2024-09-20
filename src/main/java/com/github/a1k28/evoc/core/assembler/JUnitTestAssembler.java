@@ -30,6 +30,7 @@ public class JUnitTestAssembler {
         Set<String> imports = new HashSet<>();
         List<MethodCallModel> methodCallModels = new ArrayList<>();
         Map<String, Integer> nameCount = new HashMap<>();
+        boolean mocksExist = false;
 
         for (TestGeneratorModel testGeneratorModel : testGeneratorModels) {
             Method method = testGeneratorModel.getMethod();
@@ -68,6 +69,8 @@ public class JUnitTestAssembler {
             String testName = method.getName()+"_"+nameCount.get(method.getName());
 
             List<MethodMockModel> mockModels = mapMocks(res.getMethodMockValues());
+            if (!mockModels.isEmpty())
+                mocksExist = true;
 
             // Prepare the data for the template
             MethodCallModel methodCallModel = new MethodCallModel(
@@ -87,7 +90,8 @@ public class JUnitTestAssembler {
                 clazz.getPackageName(),
                 clazz.getSimpleName(),
                 new ArrayList<>(imports),
-                methodCallModels);
+                methodCallModels,
+                mocksExist);
 
         Map<String, Object> data = new HashMap<>();
         data.put("cm", classModel);

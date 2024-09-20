@@ -98,9 +98,9 @@ public class SymbolicExecutor {
         }
 
         // expand paths by allowing method mocks to throw exceptions
-        if (type == SType.INVOKE_MOCK) {
-            mockThrowsAndPropagate(sMethodPath, node);
-        }
+//        if (type == SType.INVOKE_MOCK) {
+//            mockThrowsAndPropagate(sMethodPath, node);
+//        }
 
         Z3Status status = checkSatisfiability(sMethodPath, node, type);
         if (Z3Status.SATISFIABLE == status)
@@ -204,10 +204,11 @@ public class SymbolicExecutor {
             // if method cannot be invoked, then mock it.
             SMethodExpr methodExpr = rightOpHolder.asMethod();
             Class classType = SootHelper.translateType(rightOp.getType());
-            Expr expr = z3t.translateValue(rightOp, rightOpVarType, sMethodPath);
             List<Expr> params = translateExpressions(methodExpr, sMethodPath);
             Method method = (Method) SootHelper.getMethod(methodExpr.getInvokeExpr());
             SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
+            Expr expr = z3t.translateMockValue(
+                    rightOp, rightOpVarType, method, params, sMethodPath, topMethodPath);
             SVar sMethodMockVar = z3t.updateSymbolicVar(
                     leftOp, expr, VarType.METHOD_MOCK, sMethodPath, classType, method, params);
             topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
