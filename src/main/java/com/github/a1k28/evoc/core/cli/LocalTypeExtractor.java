@@ -41,8 +41,8 @@ public class LocalTypeExtractor {
                 @Override
                 public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                     Type[] argumentTypes = Type.getArgumentTypes(descriptor);
-                    for (int i = 0; i < argumentTypes.length; i++) {
-                        String paramType = argumentTypes[i].getClassName();
+                    for (Type argumentType : argumentTypes) {
+                        String paramType = argumentType.getClassName();
                         variableTypes.add(paramType);
                     }
 
@@ -52,6 +52,23 @@ public class LocalTypeExtractor {
                             if (!name.equals("this")) {
                                 String type = Type.getType(descriptor).getClassName();
                                 variableTypes.add(type);
+                            }
+                        }
+
+                        @Override
+                        public void visitTypeInsn(int opcode, String type) {
+                            if (opcode == Opcodes.NEW) {
+                                variableTypes.add(type.replace(File.separator, "."));
+                            }
+                        }
+
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                            variableTypes.add(owner.replace(File.separator, "."));
+                            Type returnType = Type.getReturnType(descriptor);
+                            variableTypes.add(returnType.getClassName());
+                            for (Type argumentType : Type.getArgumentTypes(descriptor)) {
+                                variableTypes.add(argumentType.getClassName());
                             }
                         }
                     };
