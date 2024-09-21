@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.mutation.struct;
+package com.github.a1k28.evoc.core.mutator.struct;
 
 public enum MType {
     CONDITIONALS_BOUNDARY,

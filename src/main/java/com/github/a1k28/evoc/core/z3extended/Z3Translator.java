@@ -9,7 +9,7 @@ import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
@@ -22,7 +22,6 @@ import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
 
-import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.github.a1k28.evoc.helper.SootHelper.isConstructorCall;

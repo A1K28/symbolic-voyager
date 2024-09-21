@@ -7,7 +7,7 @@ import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import sootup.core.model.Body;

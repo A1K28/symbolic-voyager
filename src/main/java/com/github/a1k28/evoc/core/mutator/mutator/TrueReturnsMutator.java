@@ -1,11 +1,8 @@
-package com.github.a1k28.evoc.core.mutation.mutator;
+package com.github.a1k28.evoc.core.mutator.mutator;
 
 import org.objectweb.asm.tree.*;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.ListIterator;
-import java.util.Optional;
 
 import static org.objectweb.asm.Opcodes.*;
 

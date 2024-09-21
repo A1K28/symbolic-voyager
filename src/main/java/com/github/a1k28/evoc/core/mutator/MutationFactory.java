@@ -1,8 +1,8 @@
-package com.github.a1k28.evoc.core.mutation;
+package com.github.a1k28.evoc.core.mutator;
 
-import com.github.a1k28.evoc.core.mutation.mutator.*;
-import com.github.a1k28.evoc.core.mutation.struct.MType;
-import com.github.a1k28.evoc.core.mutation.struct.MutationData;
+import com.github.a1k28.evoc.core.mutator.mutator.*;
+import com.github.a1k28.evoc.core.mutator.struct.MType;
+import com.github.a1k28.evoc.core.mutator.struct.MutationData;
 import com.github.a1k28.evoc.helper.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AbstractInsnNode;

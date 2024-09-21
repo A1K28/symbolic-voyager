@@ -1,9 +1,8 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.Expr;
 
 import java.lang.reflect.Method;

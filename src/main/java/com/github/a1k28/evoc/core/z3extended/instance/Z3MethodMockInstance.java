@@ -2,9 +2,8 @@ package com.github.a1k28.evoc.core.z3extended.instance;
 
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.MethodMockExprModel;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;

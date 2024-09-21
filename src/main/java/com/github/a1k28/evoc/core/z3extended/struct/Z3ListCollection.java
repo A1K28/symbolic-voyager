@@ -2,7 +2,7 @@
 //
 //import com.github.a1k28.evoc.core.z3extended.model.ListModel;
 //import com.github.a1k28.evoc.core.z3extended.model.SortType;
-//import com.github.a1k28.evoc.model.common.IStack;
+//import com.github.a1k28.evoc.core.z3extended.model.IStack;
 //import com.microsoft.z3.*;
 //
 //import java.util.*;

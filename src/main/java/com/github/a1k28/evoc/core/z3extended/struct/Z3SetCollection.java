@@ -1,6 +1,6 @@
 //package com.github.a1k28.evoc.core.z3extended.struct;
 //
-//import com.github.a1k28.evoc.model.common.IStack;
+//import com.github.a1k28.evoc.core.z3extended.model.IStack;
 //import com.microsoft.z3.BoolExpr;
 //import com.microsoft.z3.Context;
 //import com.microsoft.z3.Expr;

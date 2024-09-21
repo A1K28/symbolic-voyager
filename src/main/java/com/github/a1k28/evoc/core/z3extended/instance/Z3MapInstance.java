@@ -8,7 +8,7 @@ import com.github.a1k28.evoc.core.z3extended.model.Tuple;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.*;
 
 import java.util.List;

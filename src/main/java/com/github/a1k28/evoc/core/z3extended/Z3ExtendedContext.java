@@ -1,19 +1,13 @@
 package com.github.a1k28.evoc.core.z3extended;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
-import com.github.a1k28.evoc.core.z3extended.instance.Z3MethodMockInstance;
-import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3ClassInstance;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3MethodMockInstance;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.*;
 import lombok.Getter;
-
-import java.lang.reflect.Executable;
-import java.util.Optional;
 
 @Getter
 public class Z3ExtendedContext extends Context implements IStack {

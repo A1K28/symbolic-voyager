@@ -1,7 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
-import com.github.a1k28.evoc.model.common.IStack;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 
 import java.util.*;
 import java.util.stream.Collectors;

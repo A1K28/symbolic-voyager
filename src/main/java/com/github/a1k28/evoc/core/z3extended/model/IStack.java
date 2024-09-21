@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.model.common;
+package com.github.a1k28.evoc.core.z3extended.model;
 
 public interface IStack {
     void push();
