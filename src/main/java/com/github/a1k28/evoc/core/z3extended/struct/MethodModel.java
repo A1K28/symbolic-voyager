@@ -197,27 +197,27 @@ public enum MethodModel {
 //            case SET_CONTAINS -> ctx.mkSetContains(args.get(0), args.get(1));
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
 
-            case MAP_INIT -> ctx.mkMapInit(args.get(0));
-            case MAP_INIT_FROM_MAP -> ctx.mkMapInitFromMap(args.get(0), args.get(1));
-            case MAP_GET -> ctx.mkMapGet(args.get(0), args.get(1));
-            case MAP_PUT -> ctx.mkMapPut(args.get(0), args.get(1), args.get(2));
-            case MAP_SIZE -> ctx.mkMapLength(args.get(0));
-            case MAP_IS_EMPTY -> ctx.mkMapIsEmpty(args.get(0));
-            case MAP_CONTAINS_KEY -> ctx.mkMapContainsKey(args.get(0), args.get(1));
-            case MAP_CONTAINS_VALUE -> ctx.mkMapContainsValue(args.get(0), args.get(1));
-            case MAP_REMOVE -> ctx.mkMapRemove(args.get(0), args.get(1));
-            case MAP_PUT_ALL -> ctx.mkMapPutAll(args.get(0), args.get(1));
-            case MAP_CLEAR -> ctx.mkMapClear(args.get(0));
-            case MAP_EQUALS -> ctx.mkMapEquals(args.get(0), args.get(1));
-            case MAP_GET_OR_DEFAULT -> ctx.mkMapGetOrDefault(args.get(0), args.get(1), args.get(2));
-            case MAP_PUT_IF_ABSENT -> ctx.mkMapPutIfAbsent(args.get(0), args.get(1), args.get(2));
-            case MAP_REMOVE_BY_KEY_AND_VALUE -> ctx.mkMapRemove(args.get(0), args.get(1), args.get(2));
-            case MAP_REPLACE_BY_KEY_AND_VALUE -> ctx.mkMapReplace(args.get(0), args.get(1), args.get(2), args.get(3));
-            case MAP_REPLACE -> ctx.mkMapReplace(args.get(0), args.get(1), args.get(2));
-            case MAP_COPY_OF -> ctx.mkMapCopyOf(args.get(0));
+            case MAP_INIT -> ctx.getMapInstance().constructor(args.get(0));
+            case MAP_INIT_FROM_MAP -> ctx.getMapInstance().constructor(args.get(0), args.get(1));
+            case MAP_GET -> ctx.getMapInstance().get(args.get(0), args.get(1));
+            case MAP_PUT -> ctx.getMapInstance().put(args.get(0), args.get(1), args.get(2));
+            case MAP_SIZE -> ctx.getMapInstance().size(args.get(0));
+            case MAP_IS_EMPTY -> ctx.getMapInstance().isEmpty(args.get(0));
+            case MAP_CONTAINS_KEY -> ctx.getMapInstance().containsKey(args.get(0), args.get(1));
+            case MAP_CONTAINS_VALUE -> ctx.getMapInstance().containsValue(args.get(0), args.get(1));
+            case MAP_REMOVE -> ctx.getMapInstance().remove(args.get(0), args.get(1));
+            case MAP_PUT_ALL -> ctx.getMapInstance().putAll(args.get(0), args.get(1));
+            case MAP_CLEAR -> ctx.getMapInstance().clear(args.get(0));
+            case MAP_EQUALS -> ctx.getMapInstance().equals(args.get(0), args.get(1));
+            case MAP_GET_OR_DEFAULT -> ctx.getMapInstance().getOrDefault(args.get(0), args.get(1), args.get(2));
+            case MAP_PUT_IF_ABSENT -> ctx.getMapInstance().putIfAbsent(args.get(0), args.get(1), args.get(2));
+            case MAP_REMOVE_BY_KEY_AND_VALUE -> ctx.getMapInstance().removeByKeyAndValue(args.get(0), args.get(1), args.get(2));
+            case MAP_REPLACE_BY_KEY_AND_VALUE -> ctx.getMapInstance().replaceByKeyAndValue(args.get(0), args.get(1), args.get(2), args.get(3));
+            case MAP_REPLACE -> ctx.getMapInstance().replace(args.get(0), args.get(1), args.get(2));
+            case MAP_COPY_OF -> ctx.getMapInstance().copyOf(args.get(0));
             case MAP_OF, MAP_OF_1, MAP_OF_2, MAP_OF_3, MAP_OF_4, MAP_OF_5,
                     MAP_OF_6, MAP_OF_7, MAP_OF_8, MAP_OF_9, MAP_OF_10
-                    -> ctx.mkMapOf(args);
+                    -> ctx.getMapInstance().of(args.toArray(new Expr[0]));
         };
     }
 

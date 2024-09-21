@@ -55,7 +55,8 @@ public class SymbolicExecutor {
     public SatisfiableResults analyzeSymbolicPaths(
             SClassInstance classInstance, Executable method, SParamList paramList, JumpNode jumpNode)
             throws ClassNotFoundException {
-        SMethodPath methodPathSkeleton = ctx.getClassMethodPath(classInstance, method);
+        SMethodPath methodPathSkeleton = ctx.getClassInstance()
+                .getMethodPath(classInstance, method);
         SMethodPath sMethodPath = new SMethodPath(methodPathSkeleton, paramList, jumpNode, new SStack());
         printMethod(classInstance, method);
         push(sMethodPath);
@@ -66,7 +67,7 @@ public class SymbolicExecutor {
 
     private void printMethod(SClassInstance classInstance, Executable method) {
         log.debug("Printing method: " + method.getName());
-        ctx.getClassMethodPath(classInstance, method).print();
+        ctx.getClassInstance().getMethodPath(classInstance, method).print();
     }
 
     private void analyzePaths(SMethodPath sMethodPath, SNode node) throws ClassNotFoundException {
@@ -164,8 +165,9 @@ public class SymbolicExecutor {
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
                 ClassType classType = method.getInvokeExpr().getMethodSignature().getDeclClassType();
                 Expr leftOpExpr = z3t.translateValue(method.getBase(), varType, sMethodPath);
-                Expr expr = ctx.mkClassInstance(leftOpExpr, SootHelper.getClass(classType)).getExpr();
-                ctx.mkClassInitialize(expr);
+                Expr expr = ctx.getClassInstance().constructor(
+                        leftOpExpr, SootHelper.getClass(classType)).getExpr();
+                ctx.getClassInstance().initialize(expr);
             }
 
             JumpNode jumpNode = new JumpNode(sMethodPath, node);
@@ -199,8 +201,9 @@ public class SymbolicExecutor {
         } else if (rightOpHolder.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
             Class<?> type = SootHelper.translateType(rightOp.getType());
             Expr leftOpExpr = z3t.translateValue(leftOp, leftOpVarType, sMethodPath);
-            Expr expr = ctx.mkClassInstance(leftOpExpr, type).getExpr();
-            ctx.mkClassInitialize(expr);
+            Expr expr = ctx.getClassInstance().constructor(
+                    leftOpExpr, type).getExpr();
+            ctx.getClassInstance().initialize(expr);
             z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
         } else if (rightOpHolder.getSType() == SType.INVOKE_MOCK) {
             // if method cannot be invoked, then mock it.
@@ -335,13 +338,14 @@ public class SymbolicExecutor {
             throws ClassNotFoundException {
         if (base != null && !z3t.getValueName(base).equals("this")) {
             Expr expr = z3t.translateValue(base, VarType.OTHER, methodPath);
-            return ctx.mkClassInstance(expr, method.getDeclaringClass()).getClassInstance();
+            return ctx.getClassInstance().constructor(
+                    expr, method.getDeclaringClass()).getClassInstance();
         }
         return getClassInstance(method.getDeclaringClass());
     }
 
     private SClassInstance getClassInstance(Class<?> clazz) throws ClassNotFoundException {
-        return ctx.mkClassInstance(clazz).getClassInstance();
+        return ctx.getClassInstance().constructor(clazz).getClassInstance();
     }
 
     private SParamList createParamList(SMethodExpr methodExpr, SMethodPath methodPath) {

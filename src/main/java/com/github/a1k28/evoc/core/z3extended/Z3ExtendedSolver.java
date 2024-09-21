@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.model.Tuple;
@@ -87,10 +88,12 @@ public class Z3ExtendedSolver {
     public Map createInitialMap(MapModel mapModel, int size) {
         Map target = new HashMap<>();
         Queue<Expr> discoveredValues = new LinkedList<>();
+        Z3MapInstance mapInstance = ctx.getMapInstance();
         for (Tuple<Expr> tuple : mapModel.getDiscoveredKeys()) {
             Expr key = tuple.getO1();
             Expr keyWrapped = tuple.getO2();
-            BoolExpr condition = ctx.mkNot(ctx.mkMapContainsWrappedKey(mapModel, keyWrapped));
+            BoolExpr condition = ctx.mkNot(mapInstance
+                    .containsWrappedKey(mapModel, keyWrapped));
 
             // only continue if the condition is UNSATISFIABLE
             if (!isUnsatisfiable(condition)) {
@@ -103,12 +106,6 @@ public class Z3ExtendedSolver {
                 discoveredValues.add(retrieved);
                 continue;
             }
-//            key = sortUnion.unwrapValue(keyWrapped).get();
-//            Optional<Expr> keyOpt = sortUnion.unwrapValue(keyWrapped);
-//            if (keyOpt.isEmpty()) {
-//                discoveredValues.add(retrieved);
-//                continue;
-//            }
 
             solver.check(); // mandatory check before calling getModel()
             Model model = solver.getModel();
@@ -122,17 +119,25 @@ public class Z3ExtendedSolver {
             log.debug("(filled) Key:Value " + key + ":" + value);
 
             // update solver state
-            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
+            add(mapInstance.existsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
         }
 
         if (target.size() < size)
-            fillUnknownMapKeys(target, mapModel, size-target.size(), discoveredValues);
+            fillUnknownMapKeys(target,
+                    mapModel,
+                    size-target.size(),
+                    discoveredValues,
+                    mapInstance);
 
         return target;
     }
 
     private void fillUnknownMapKeys(
-            Map target, MapModel mapModel, int size, Queue<Expr> discoveredValues) {
+            Map target,
+            MapModel mapModel,
+            int size,
+            Queue<Expr> discoveredValues,
+            Z3MapInstance mapInstance) {
         ArrayExpr map = mapModel.getArray();
 
         // Create a symbolic key
@@ -193,7 +198,7 @@ public class Z3ExtendedSolver {
 
             // Add a constraint to exclude this key in the next iteration
             add(ctx.mkNot(ctx.mkEq(symbolicKey, keyWrapped)));
-            add(ctx.mkMapExistsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
+            add(mapInstance.existsByKeyAndValueCondition(mapModel, retrieved, keyWrapped, valueWrapped));
         }
         solver.pop();
     }

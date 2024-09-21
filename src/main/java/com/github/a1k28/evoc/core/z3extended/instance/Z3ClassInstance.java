@@ -89,7 +89,7 @@ public class Z3ClassInstance implements IStack {
         return model.getExpr();
     }
 
-    public Optional<ClassInstanceModel> getClassInstance(Expr expr) {
+    public Optional<ClassInstanceModel> getInstance(Expr expr) {
         int hashCode = ihc(expr);
         return stack.get(hashCode);
     }

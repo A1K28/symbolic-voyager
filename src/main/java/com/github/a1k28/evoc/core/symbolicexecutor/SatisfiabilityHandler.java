@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.MethodMockExprModel;
@@ -173,8 +174,9 @@ public class SatisfiabilityHandler {
     }
 
     private Object handleMapSatisfiability(Expr expr) {
-        MapModel mapModel = ctx.getInitialMap(expr).orElseThrow();
-        int size = solver.minimizeInteger(ctx.mkInitialMapLength(mapModel.getArray()));
+        Z3MapInstance mapInstance = ctx.getMapInstance();
+        MapModel mapModel = mapInstance.getInitialMap(expr).orElseThrow();
+        int size = solver.minimizeInteger(mapInstance.initialSize(mapModel.getArray()));
         return solver.createInitialMap(mapModel, size);
     }
 
@@ -197,13 +199,13 @@ public class SatisfiabilityHandler {
         SVar sVar = methodPath.getSymbolicVarStack().get(expr).orElseThrow();
         if (sVar.getType() == VarType.METHOD_MOCK)
             expr = ((SMethodMockVar) sVar).getReferenceExpr();
-        Optional<ClassInstanceModel> optional = ctx.getClassInstance(expr);
+        Optional<ClassInstanceModel> optional = ctx.getClassInstance().getInstance(expr);
         if (optional.isPresent()) {
             return optional.get();
         } else {
             try {
                 Class clazz = sVar.getClassType();
-                return ctx.mkClassInstance(expr, clazz);
+                return ctx.getClassInstance().constructor(expr, clazz);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
