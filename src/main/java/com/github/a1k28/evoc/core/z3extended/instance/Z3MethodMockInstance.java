@@ -50,7 +50,6 @@ public class Z3MethodMockInstance implements IStack {
                 method,
                 args,
                 throwType,
-                throwType != null,
                 retVal);
         stack.add(evalStr(referenceExpr), model);
         return model;

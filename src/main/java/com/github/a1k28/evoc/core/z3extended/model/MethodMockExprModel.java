@@ -17,10 +17,9 @@ public class MethodMockExprModel {
     private final Method method;
     private final List<Expr> args;
     private final ClassType exceptionType;
-    private final boolean throwsException;
     private final Expr retVal;
 
     public boolean throwsException() {
-        return this.throwsException;
+        return this.exceptionType != null;
     }
 }
