@@ -5,10 +5,10 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.stmt.*;
@@ -417,13 +417,13 @@ public class SymbolicExecutor {
 
         Z3ExtendedContext ctx = Z3Translator.getContext();
         Z3ExtendedSolver solver = ctx.getSolver();
-        Z3SortUnion sortUnion = new Z3SortUnion(ctx);
-
-        Sort arrayValueSort = sortUnion.getGenericSort();
-        ArraySort arraySort = ctx.mkArraySort(ctx.mkIntSort(), arrayValueSort);
-
-        solver.check();
-        Model model = solver.getModel();
-        String asd = "asdawd";
+//        Z3SortUnion sortUnion = new Z3SortUnion(ctx);
+//
+//        Sort arrayValueSort = sortUnion.getGenericSort();
+//        ArraySort arraySort = ctx.mkArraySort(ctx.mkIntSort(), arrayValueSort);
+//
+//        solver.check();
+//        Model model = solver.getModel();
+//        String asd = "asdawd";
     }
 }

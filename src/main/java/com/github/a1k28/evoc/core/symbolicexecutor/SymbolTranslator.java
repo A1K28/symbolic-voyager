@@ -55,8 +55,10 @@ public class SymbolTranslator {
             for (int k = res.getMockedMethodValues().size()-1; k >= 0; k--) {
                 SMethodMockEvaluated sVarEvaluated = res.getMockedMethodValues().get(k);
 
-                // ignore void methods
-                if ("void".equals(sVarEvaluated.getMethod().getReturnType().getName())) continue;
+                // ignore void methods that do not throw exceptions
+                if ("void".equals(sVarEvaluated.getMethod().getReturnType().getName())) {
+                    if (sVarEvaluated.getExceptionType() == null) continue;
+                }
 
                 Class[] mockParamClassTypes = sVarEvaluated.getMethod().getParameterTypes();
                 assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();

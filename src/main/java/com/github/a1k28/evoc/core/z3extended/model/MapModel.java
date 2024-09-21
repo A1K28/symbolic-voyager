@@ -1,6 +1,5 @@
 package com.github.a1k28.evoc.core.z3extended.model;
 
-import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.microsoft.z3.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -10,41 +9,22 @@ import lombok.Setter;
 @Getter
 @Setter
 @EqualsAndHashCode
+@AllArgsConstructor
 public class MapModel {
     private Expr reference;
-    private final Z3SortUnion sortUnion;
     private ArrayExpr array;
     private TupleSort sort;
     private Expr sentinel;
     private ArithExpr size;
     private boolean isSizeUnknown;
-    private Integer lastCalcSizeHashCode;
-
-    public MapModel(Expr reference,
-                    Z3SortUnion sortUnion,
-                    ArrayExpr array,
-                    ArithExpr size,
-                    boolean isSizeUnknown,
-                    TupleSort sort,
-                    Expr sentinel) {
-        this.reference = reference;
-        this.sortUnion = sortUnion;
-        this.array = array;
-        this.size = size;
-        this.sort = sort;
-        this.sentinel = sentinel;
-        this.isSizeUnknown = isSizeUnknown;
-    }
 
     public MapModel(MapModel model) {
         this.reference = model.reference;
-        this.sortUnion = model.sortUnion;
         this.array = model.array;
         this.size = model.size;
         this.isSizeUnknown = model.isSizeUnknown;
         this.sort = model.sort;
         this.sentinel = model.sentinel;
-        this.lastCalcSizeHashCode = model.lastCalcSizeHashCode;
     }
 
     @Getter

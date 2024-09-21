@@ -81,8 +81,7 @@ public class Z3MapInstance implements IStack {
             array = mkEmptyArray(keySort, sentinel);
         }
 
-        return new MapModel(reference, sortUnion, array, size,
-                isSizeUnknown, sort, sentinel);
+        return new MapModel(reference, array, sort, sentinel, size, isSizeUnknown);
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {

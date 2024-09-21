@@ -4,6 +4,7 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.Expr;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.SeqSort;
 import lombok.RequiredArgsConstructor;
 import sootup.core.signatures.MethodSignature;
@@ -27,13 +28,13 @@ public enum MethodModel {
     STRING_SOOT_CONCAT_INT(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(int)>", false),
 
     // --- lists ---
-//    LIST_INIT(List.class,"void <init>()", true),
+    LIST_INIT(List.class,"void <init>()", true),
 //    LIST_INIT_WITH_CAPACITY(List.class,"void <init>(int)", true),
 //    LIST_INIT_WITH_COLLECTION(List.class,"void <init>(java.util.Collection)", true),
 //    LIST_SIZE(List.class,"int size()", true),
 //    LIST_IS_EMPTY(List.class,"boolean isEmpty()", true),
-//    LIST_ADD(List.class,"boolean add(java.lang.Object)", true),
-//    LIST_ADD_BY_INDEX(List.class,"void add(int,java.lang.Object)", true),
+    LIST_ADD(List.class,"boolean add(java.lang.Object)", true),
+    LIST_ADD_BY_INDEX(List.class,"void add(int,java.lang.Object)", true),
 //    LIST_ADD_ALL(List.class,"boolean addAll(java.util.Collection)", true),
 //    LIST_ADD_ALL_BY_INDEX(List.class,"boolean addAll(int,java.util.Collection)", true),
 //    LIST_REMOVE(List.class,"boolean remove(java.lang.Object)", true),
@@ -44,7 +45,7 @@ public enum MethodModel {
 //    LIST_RETAIN_ALL(List.class,"boolean retainAll(java.util.Collection)", true),
 //    LIST_CLEAR(List.class,"void clear()", true),
 //    LIST_EQUALS(List.class,"boolean equals(java.lang.Object)", true),
-//    LIST_GET(List.class,"java.lang.Object get(int)", true),
+    LIST_GET(List.class,"java.lang.Object get(int)", true),
 //    LIST_SET(List.class,"java.lang.Object set(int,java.lang.Object)", true),
 //    LIST_HASH_CODE(List.class,"int hashCode()", true),
 //    LIST_SUBLIST(List.class,"java.util.List subList(int,int)", true),
@@ -196,6 +197,11 @@ public enum MethodModel {
 //            case SET_LEN -> ctx.mkSetLength(args.get(0));
 //            case SET_CONTAINS -> ctx.mkSetContains(args.get(0), args.get(1));
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
+
+            case LIST_INIT -> ctx.getListInstance().constructor(args.get(0));
+            case LIST_ADD -> ctx.getListInstance().add(args.get(0), args.get(1));
+            case LIST_ADD_BY_INDEX -> ctx.getListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));
+            case LIST_GET -> ctx.getListInstance().get(args.get(0), (IntExpr) args.get(1));
 
             case MAP_INIT -> ctx.getMapInstance().constructor(args.get(0));
             case MAP_INIT_FROM_MAP -> ctx.getMapInstance().constructor(args.get(0), args.get(1));

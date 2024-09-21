@@ -6,8 +6,39 @@ import org.junit.jupiter.api.DisplayName;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Z3ListCollectionTest {
-    @SymbolicTest({0,1})
+public class Z3ListTest {
+    @SymbolicTest({9})
+    @DisplayName("index_test_1")
+    public int index_test_1() {
+        List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        list.add(1, "0"); // 1, 0, 2, 3
+        if (!list.get(0).equals("1"))
+            return 0;
+        if (!list.get(1).equals("0"))
+            return 1;
+        if (!list.get(2).equals("2"))
+            return 2;
+        if (!list.get(3).equals("3"))
+            return 3;
+
+        list.add(3, "0"); // 1, 0, 2, 0, 3
+        if (!list.get(0).equals("1"))
+            return 4;
+        if (!list.get(1).equals("0"))
+            return 5;
+        if (!list.get(2).equals("2"))
+            return 6;
+        if (!list.get(3).equals("0"))
+            return 7;
+        if (!list.get(4).equals("3"))
+            return 8;
+        return 9;
+    }
+
+//    @SymbolicTest({0,1})
     @DisplayName("test_remove_by_idx_1")
     public int test_remove_by_idx_1(String a) {
         List<String> list = new ArrayList<>();
@@ -18,7 +49,7 @@ public class Z3ListCollectionTest {
         return 1;
     }
 
-    @SymbolicTest({0,1})
+    //@SymbolicTest({0,1})
     @DisplayName("test_remove_1")
     public int test_remove_1(String a) {
         List<String> list = new ArrayList<>();
@@ -29,7 +60,7 @@ public class Z3ListCollectionTest {
         return 1;
     }
 
-    @SymbolicTest({0,1})
+    //@SymbolicTest({0,1})
     @DisplayName("test_remove_2")
     public int test_remove_2(Integer a, Integer b) {
         List<Integer> list = new ArrayList<>();
@@ -41,7 +72,7 @@ public class Z3ListCollectionTest {
         return 1;
     }
 
-    @SymbolicTest({0,1})
+    //@SymbolicTest({0,1})
     @DisplayName("test_remove_all_1")
     public int test_remove_all_1(int a) {
         List<Integer> list = new ArrayList<>();
@@ -57,7 +88,7 @@ public class Z3ListCollectionTest {
         return 2;
     }
 
-    @SymbolicTest({0,2})
+    //@SymbolicTest({0,2})
     @DisplayName("test_remove_all_2")
     public int test_remove_all_2(int a) {
         List<Integer> list = new ArrayList<>();
@@ -72,7 +103,7 @@ public class Z3ListCollectionTest {
         return 2;
     }
 
-    @SymbolicTest({0,1,2})
+    //@SymbolicTest({0,1,2})
     @DisplayName("test_remove_all_3")
     public int test_remove_all_3(int a, int b) {
         List<Integer> list = new ArrayList<>();

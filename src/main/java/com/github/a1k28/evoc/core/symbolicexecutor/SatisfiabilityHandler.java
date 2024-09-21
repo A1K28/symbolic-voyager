@@ -76,8 +76,7 @@ public class SatisfiabilityHandler {
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
                 fieldsEvaluated.add(sVarEvaluated);
             } else if (var.getType() == VarType.METHOD_MOCK) {
-                SMethodMockEvaluated sVarEvaluated = handleMockExpression(
-                        sMethodPath, var);
+                SMethodMockEvaluated sVarEvaluated = handleMockExpression(sMethodPath, var);
                 mockedMethodsEvaluated.add(sVarEvaluated);
             } else {
                 // parameter

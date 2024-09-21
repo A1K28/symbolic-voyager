@@ -5,26 +5,52 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
 @Getter
 @Setter
 @EqualsAndHashCode
 public class ListModel {
-    private ArrayExpr expr;
+    private Expr reference;
+    private ArrayExpr array;
     private TupleSort sort;
     private Expr sentinel;
-    private int size;
-    private int capacity;
+    private IntExpr size;
+    private IntExpr internalSize;
+    private IntExpr capacity;
+    private boolean isSizeUnknown;
+    private List<Function<IntExpr, IntExpr>> indexMaps;
 
-    public ListModel(ArrayExpr expr, TupleSort sort, Expr sentinel, Integer capacity) {
-        this.expr = expr;
+    public ListModel(Expr reference,
+                     ArrayExpr array,
+                     TupleSort sort,
+                     Expr sentinel,
+                     IntExpr size,
+                     IntExpr capacity,
+                     boolean isSizeUnknown) {
+        this.reference = reference;
+        this.array = array;
         this.sort = sort;
         this.sentinel = sentinel;
-        this.size = 0;
-        this.capacity = capacity == null ? Integer.MAX_VALUE : capacity;
+        this.size = size;
+        this.internalSize = size;
+        this.capacity = capacity;
+        this.isSizeUnknown = isSizeUnknown;
+        this.indexMaps = new ArrayList<>();
     }
 
-    public void incrementSize() {
-        this.size++;
+    public ListModel(ListModel model) {
+        this.reference = model.reference;
+        this.array = model.array;
+        this.sort = model.sort;
+        this.sentinel = model.sentinel;
+        this.size = model.size;
+        this.internalSize = model.internalSize;
+        this.capacity = model.capacity;
+        this.isSizeUnknown = model.isSizeUnknown;
+        this.indexMaps = new ArrayList<>(model.indexMaps);
     }
 
     public Expr mkDecl(Expr element, BoolExpr isEmpty) {
