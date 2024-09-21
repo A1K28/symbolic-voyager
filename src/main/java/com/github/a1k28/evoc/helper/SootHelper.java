@@ -125,13 +125,16 @@ public class SootHelper {
     }
 
     public static Class<?> getClass(ClassType classType) {
+        return getClass(classType.getFullyQualifiedName());
+    }
+
+    public static Class<?> getClass(String classname) {
         try {
-            String name = classType.getFullyQualifiedName();
-            if (!cachedMap.containsKey(name)) {
-                Class clazz = Class.forName(name);
-                cachedMap.put(name, clazz);
+            if (!cachedMap.containsKey(classname)) {
+                Class clazz = Class.forName(classname);
+                cachedMap.put(classname, clazz);
             }
-            return cachedMap.get(name);
+            return cachedMap.get(classname);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

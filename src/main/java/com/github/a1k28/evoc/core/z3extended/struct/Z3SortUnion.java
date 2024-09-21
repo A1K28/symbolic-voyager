@@ -1,5 +1,7 @@
-package com.github.a1k28.evoc.core.z3extended;
+package com.github.a1k28.evoc.core.z3extended.struct;
 
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.microsoft.z3.*;
 
@@ -38,11 +40,6 @@ public class Z3SortUnion {
 
     public Expr unwrapValue(Expr expr, Expr defaultValue) {
         return unwrapValue(expr).orElse(defaultValue);
-    }
-
-    public Expr unwrapValueOrElseThrow(Expr expr) {
-        return unwrapValue(expr)
-                .orElseThrow(() -> new RuntimeException("Could not unwrap expression: " + expr));
     }
 
     public Optional<Expr> unwrapValue(Expr expr) {

@@ -1,4 +1,4 @@
-package com.github.a1k28.evoc.core.z3extended;
+package com.github.a1k28.evoc.core.z3extended.struct;
 
 import com.github.a1k28.evoc.core.z3extended.model.SortContainer;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
@@ -18,7 +18,6 @@ public class Z3CachingFactory {
     public Z3CachingFactory(Context ctx) {
         this.ctx = ctx;
     }
-
 
     public TupleSort mkMapSort(Sort key, Sort value) {
         return getMapSort(key, value).getSort();

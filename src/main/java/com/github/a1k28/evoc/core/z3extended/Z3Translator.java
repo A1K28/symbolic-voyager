@@ -35,7 +35,7 @@ public class Z3Translator {
         initZ3(true);
     }
 
-    public static void initZ3(boolean force) {
+    public void initZ3(boolean force) {
         // Initialize Z3
         if (force) {
             ctx = null;
@@ -93,7 +93,8 @@ public class Z3Translator {
     public SExpr translateAndWrapValue(Value value, VarType varType, SMethodPath methodPath) {
         if (value instanceof AbstractInvokeExpr invoke) {
             return wrapMethodCall(invoke, null);
-        } else if (value instanceof JNewExpr && CLIOptions.shouldPropagate(value.toString())) {
+        } else if (value instanceof JNewExpr &&
+                CLIOptions.shouldMockOrPropagate(value.getType().toString())) {
             return new SExpr(translateValue(value, varType, methodPath), SType.INVOKE_SPECIAL_CONSTRUCTOR);
         } else {
             return new SExpr(translateValue(value, varType, methodPath));
@@ -208,27 +209,6 @@ public class Z3Translator {
         }
     }
 
-    // if parameters are equal, make sure the method mocks the same return value
-    public Expr translateMockValue(Value value,
-                                   VarType varType,
-                                   Method method,
-                                   List<Expr> params,
-                                   SMethodPath methodPath,
-                                   SMethodPath topMethodPath) {
-        Expr expr = translateValue(value, varType, methodPath);
-        for (SMethodMockVar methodMockVar : topMethodPath.getSymbolicVarStack().getAllMocks(method)) {
-            if (params.size() != methodMockVar.getArguments().size()) continue;
-            BoolExpr eq = ctx.mkTrue();
-            for (int i = 0; i < params.size(); i++) {
-                Expr e1 = params.get(i);
-                Expr e2 = methodMockVar.getArguments().get(i);
-                eq = ctx.mkAnd(eq, ctx.mkEq(e1, e2));
-            }
-            expr = ctx.mkITE(eq, methodMockVar.getExpr(), expr);
-        }
-        return expr;
-    }
-
     public Expr translateValue(Value value, VarType varType, SMethodPath methodPath) {
         return translateValue(value, value.getType(), varType, methodPath);
     }
@@ -262,7 +242,16 @@ public class Z3Translator {
             return ctx.mkString(v.getValue().replaceFirst("\u0001", ""));
         }
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
-            return handleMethodCall(abstractInvoke, methodPath);
+//            Value base = null;
+//            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
+//                base = invoke.getBase();
+//                Optional<SVar> optional = getSymbolicValue(base, varType, methodPath);
+//                if (optional.isPresent()) return optional.get().getExpr();
+//            }
+            Expr res = handleMethodCall(abstractInvoke, type, varType, methodPath);
+//            if (base != null)
+//                updateSymbolicVar(base, res, varType, methodPath);
+            return res;
         }
         // TODO: handle arrays
         if (value instanceof JNewExpr
@@ -359,7 +348,10 @@ public class Z3Translator {
         throw new RuntimeException("Condition could not be translated: " + binop);
     }
 
-    private Expr handleMethodCall(AbstractInvokeExpr invoke, SMethodPath methodPath) {
+    private Expr handleMethodCall(AbstractInvokeExpr invoke,
+                                  Type type,
+                                  VarType varType,
+                                  SMethodPath methodPath) {
         System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature());
 
         MethodSignature methodSignature = invoke.getMethodSignature();
@@ -388,7 +380,8 @@ public class Z3Translator {
                 sort = ctx.mkUninterpretedSort(invoke.getMethodSignature().getDeclClassType().toString());
             else
                 sort = translateType(invoke.getType());
-            return ctx.mkFreshConst(invoke.toString(), sort);
+            return getSymbolicValue(invoke, sort, varType, methodPath);
+//            return ctx.mkFreshConst(invoke.toString(), sort);
         }
     }
 
@@ -458,6 +451,13 @@ public class Z3Translator {
         return SortType.OBJECT.value(ctx);
     }
 
+    private Optional<SVar> getSymbolicValue(Value value, VarType varType, SMethodPath methodPath) {
+        String key = getValueName(value);
+        return varType == VarType.FIELD ?
+                methodPath.getClassInstance().getSymbolicFieldStack().get(key)
+                : methodPath.getSymbolicVarStack().get(key);
+    }
+
     private Expr getSymbolicValue(Value value, Type type, VarType varType, SMethodPath methodPath) {
         String key = getValueName(value);
         Optional<SVar> optional = varType == VarType.FIELD ?
@@ -508,12 +508,6 @@ public class Z3Translator {
             return methodPath.getSymbolicVarStack().add(name, classType, expression, varType);
         }
         return null;
-    }
-
-    public SVar updateSymbolicVar(
-            Value variable, Expr expression, VarType varType, SMethodPath methodPath, Class<?> classType, Method method, List<Expr> params) {
-        String name = getValueName(variable);
-        return methodPath.getSymbolicVarStack().add(name, classType, expression, varType, method, params);
     }
 
     public String getValueName(Value value) {

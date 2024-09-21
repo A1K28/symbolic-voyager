@@ -1,12 +1,11 @@
-package com.github.a1k28.evoc.core.z3extended.struct;
+package com.github.a1k28.evoc.core.z3extended.instance;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
-import com.github.a1k28.evoc.core.z3extended.Z3CachingFactory;
-import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.helper.SootHelper;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Context;

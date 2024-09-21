@@ -2,24 +2,30 @@ package com.github.a1k28.evoc.core.z3extended;
 
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3MethodMockInstance;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3ClassInstance;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3MapInstance;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3ClassInstance;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
+import lombok.Getter;
 
 import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Optional;
 
+@Getter
 public class Z3ExtendedContext extends Context implements IStack {
 //    private final Z3CachingFactory sortState;
 //    private final Z3SetCollection z3SetCollection;
 //    private final Z3ListCollection z3ListCollection;
-    private final Z3MapInstance z3MapInstance;
-    private final Z3ClassInstance z3ClassInstance;
+    private final Z3MapInstance mapInstance;
+    private final Z3ClassInstance classInstance;
     private final Z3ExtendedSolver solver;
+    private final Z3MethodMockInstance methodMockInstance;
 
     public Z3ExtendedContext() {
         super();
@@ -31,28 +37,27 @@ public class Z3ExtendedContext extends Context implements IStack {
         Solver slvr = this.mkSolver();
         this.solver = new Z3ExtendedSolver(this, slvr, sortUnion);
 
-        this.z3MapInstance = new Z3MapInstance(this, sortState, sortUnion, solver);
-        this.z3ClassInstance = new Z3ClassInstance(this);
+        this.classInstance = new Z3ClassInstance(this);
+        this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
+        this.methodMockInstance = new Z3MethodMockInstance(this, solver);
     }
 
     @Override
     public void push() {
 //        this.z3SetCollection.push();
 //        this.z3ListCollection.push();
-        this.z3MapInstance.push();
-        this.z3ClassInstance.push();
+        this.mapInstance.push();
+        this.classInstance.push();
+        this.methodMockInstance.push();
     }
 
     @Override
     public void pop() {
 //        this.z3SetCollection.pop();
 //        this.z3ListCollection.pop();
-        this.z3MapInstance.pop();
-        this.z3ClassInstance.pop();
-    }
-
-    public Z3ExtendedSolver getSolver() {
-        return this.solver;
+        this.mapInstance.pop();
+        this.classInstance.pop();
+        this.methodMockInstance.pop();
     }
 
     // strings
@@ -169,120 +174,120 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     // maps
     public Optional<MapModel> getInitialMap(Expr var1) {
-        return z3MapInstance.getInitialMap(var1);
+        return mapInstance.getInitialMap(var1);
     }
 
     public Expr mkMapInit(Expr var1) {
-        return z3MapInstance.constructor(var1);
+        return mapInstance.constructor(var1);
     }
 
     public Expr mkMapInitFromMap(Expr var1, Expr var2) {
-        return z3MapInstance.constructor(var1, var2);
+        return mapInstance.constructor(var1, var2);
     }
 
     public Expr mkMapGet(Expr var1, Expr key) {
-        return z3MapInstance.get(var1, key);
+        return mapInstance.get(var1, key);
     }
 
     public Expr mkMapPut(Expr var1, Expr key, Expr value) {
-        return z3MapInstance.put(var1, key, value);
+        return mapInstance.put(var1, key, value);
     }
 
     public Expr mkMapLength(Expr var1) {
-        return z3MapInstance.size(var1);
+        return mapInstance.size(var1);
     }
 
     public Expr mkInitialMapLength(Expr var1) {
-        return z3MapInstance.initialSize(var1);
+        return mapInstance.initialSize(var1);
     }
 
     public BoolExpr mkMapIsEmpty(Expr var1) {
-        return z3MapInstance.isEmpty(var1);
+        return mapInstance.isEmpty(var1);
     }
 
     public BoolExpr mkMapContainsKey(Expr var1, Expr key) {
-        return z3MapInstance.containsKey(var1, key);
+        return mapInstance.containsKey(var1, key);
     }
 
     public BoolExpr mkMapContainsKey(MapModel model, Expr key) {
-        return z3MapInstance.containsKey(model, key);
+        return mapInstance.containsKey(model, key);
     }
 
     public BoolExpr mkMapContainsWrappedKey(MapModel model, Expr key) {
-        return z3MapInstance.containsWrappedKey(model, key);
+        return mapInstance.containsWrappedKey(model, key);
     }
 
 
     public BoolExpr mkMapExistsByKeyAndValueCondition(MapModel model, Expr retrieved, Expr key, Expr value) {
-        return z3MapInstance.existsByKeyAndValueCondition(model, retrieved, key, value);
+        return mapInstance.existsByKeyAndValueCondition(model, retrieved, key, value);
     }
 
     public BoolExpr mkMapContainsValue(Expr var1, Expr value) {
-        return z3MapInstance.containsValue(var1, value);
+        return mapInstance.containsValue(var1, value);
     }
 
     public Expr mkMapRemove(Expr var1, Expr key) {
-        return z3MapInstance.remove(var1, key);
+        return mapInstance.remove(var1, key);
     }
 
     public Expr mkMapPutAll(Expr var1, Expr var2) {
-        return z3MapInstance.putAll(var1, var2);
+        return mapInstance.putAll(var1, var2);
     }
 
     public Expr mkMapClear(Expr var1) {
-        return z3MapInstance.clear(var1);
+        return mapInstance.clear(var1);
     }
 
     public Expr mkMapEquals(Expr var1, Expr var2) {
-        return z3MapInstance.equals(var1, var2);
+        return mapInstance.equals(var1, var2);
     }
 
     public Expr mkMapGetOrDefault(Expr var1, Expr key, Expr def) {
-        return z3MapInstance.getOrDefault(var1, key, def);
+        return mapInstance.getOrDefault(var1, key, def);
     }
 
     public Expr mkMapPutIfAbsent(Expr var1, Expr key, Expr value) {
-        return z3MapInstance.putIfAbsent(var1, key, value);
+        return mapInstance.putIfAbsent(var1, key, value);
     }
 
     public Expr mkMapRemove(Expr var1, Expr key, Expr value) {
-        return z3MapInstance.removeByKeyAndValue(var1, key, value);
+        return mapInstance.removeByKeyAndValue(var1, key, value);
     }
 
     public Expr mkMapReplace(Expr var1, Expr key, Expr value) {
-        return z3MapInstance.replace(var1, key, value);
+        return mapInstance.replace(var1, key, value);
     }
 
     public Expr mkMapReplace(Expr var1, Expr key, Expr oldValue, Expr newValue) {
-        return z3MapInstance.replaceByKeyAndValue(var1, key, oldValue, newValue);
+        return mapInstance.replaceByKeyAndValue(var1, key, oldValue, newValue);
     }
 
     public Expr mkMapCopyOf(Expr var1) {
-        return z3MapInstance.copyOf(var1);
+        return mapInstance.copyOf(var1);
     }
 
     public Expr mkMapOf(List<Expr> vars) {
-        return z3MapInstance.of(vars.toArray(new Expr[0]));
+        return mapInstance.of(vars.toArray(new Expr[0]));
     }
 
     public ClassInstanceModel mkClassInstance(Class<?> clazz) throws ClassNotFoundException {
-        return z3ClassInstance.constructor(clazz);
+        return classInstance.constructor(clazz);
     }
 
     public ClassInstanceModel mkClassInstance(Expr expr, Class<?> clazz) throws ClassNotFoundException {
-        return z3ClassInstance.constructor(expr, clazz);
+        return classInstance.constructor(expr, clazz);
     }
 
     public Expr mkClassInitialize(Expr expr) {
-        return z3ClassInstance.initialize(expr);
+        return classInstance.initialize(expr);
     }
 
     public Optional<ClassInstanceModel> getClassInstance(Expr expr) {
-        return z3ClassInstance.getClassInstance(expr);
+        return classInstance.getClassInstance(expr);
     }
 
     public SMethodPath getClassMethodPath(SClassInstance instance, Executable method) {
-        return z3ClassInstance.getMethodPath(instance, method);
+        return classInstance.getMethodPath(instance, method);
     }
 
     // sets

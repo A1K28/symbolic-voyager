@@ -1,22 +1,24 @@
 package com.github.a1k28.evoc.core.z3extended.struct;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.evoc.model.common.IStack;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Z3Stack<K,V> implements IStack {
-    private int index;
-    private final List<Map<K,List<V>>> stack;
+    protected int index;
+    protected final List<Map<K,List<V>>> stack;
 
     public Z3Stack() {
         this.index = 0;
         this.stack = new ArrayList<>();
-        this.stack.add(new HashMap<>());
+        this.stack.add(Collections.emptyMap());
     }
 
     @Override
     public void push() {
-        stack.add(new HashMap<>());
+        stack.add(Collections.emptyMap());
         index++;
     }
 
@@ -27,6 +29,13 @@ public class Z3Stack<K,V> implements IStack {
     }
 
     public void add(K key, V value) {
+        // optimize
+        if (stack.get(index).isEmpty()) {
+            stack.remove(index);
+            stack.add(new HashMap<>());
+        }
+
+        // add
         if (!this.stack.get(index).containsKey(key))
             this.stack.get(index).put(key, new ArrayList<>());
         this.stack.get(index).get(key).add(value);
@@ -46,5 +55,13 @@ public class Z3Stack<K,V> implements IStack {
                 return Optional.of(stack.get(i).get(key).get(0));
         }
         return Optional.empty();
+    }
+
+    public List<V> getAll() {
+        return stack.stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 }

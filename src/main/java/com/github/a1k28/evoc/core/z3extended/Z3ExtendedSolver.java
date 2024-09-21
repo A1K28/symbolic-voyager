@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.core.z3extended;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.model.Tuple;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;

@@ -1,11 +1,12 @@
-package com.github.a1k28.evoc.core.z3extended.struct;
+package com.github.a1k28.evoc.core.z3extended.instance;
 
-import com.github.a1k28.evoc.core.z3extended.Z3CachingFactory;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
-import com.github.a1k28.evoc.core.z3extended.Z3SortUnion;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.Tuple;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.*;
 
@@ -23,9 +24,9 @@ public class Z3MapInstance implements IStack {
     private final List<Tuple<Expr>> discoveredKeys;
 
     public Z3MapInstance(Context context,
+                         Z3ExtendedSolver solver,
                          Z3CachingFactory sortState,
-                         Z3SortUnion sortUnion,
-                         Z3ExtendedSolver solver) {
+                         Z3SortUnion sortUnion) {
         this.ctx = context;
         this.sortState = sortState;
         this.sortUnion = sortUnion;

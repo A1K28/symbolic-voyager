@@ -1,6 +1,8 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.model.common.IStack;
 import com.microsoft.z3.Expr;
 
@@ -8,22 +10,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SStack implements IStack {
-    private int index;
-    private final List<Map<String, List<SVar>>> stack;
-
-    public SStack() {
-        this.index = 0;
-        this.stack = new ArrayList<>();
-        this.stack.add(new LinkedHashMap<>());
-    }
-
-    public void clear() {
-        this.index = 0;
-        this.stack.clear();
-        this.stack.add(new LinkedHashMap<>());
-    }
-
+public class SStack extends Z3Stack<String, SVar> implements IStack {
     public Optional<SVar> get(String key) {
         for (int i = index; i >= 0; i--) {
             if (stack.get(i).containsKey(key)) {
@@ -57,43 +44,22 @@ public class SStack implements IStack {
         return sVar;
     }
 
-    public SVar add(String name, Class<?> classType, Expr expr, VarType type, Method method, List<Expr> params) {
-        Optional<SVar> optional = getDeclaration(name);
-        SVar sVar;
-        if (optional.isPresent()) {
-            sVar = new SMethodMockVar(name, expr, type, classType, false, method, params);
-        }
-        else {
-            sVar = new SMethodMockVar(name, expr, type, classType, true, method, params);
-        }
-        add(sVar);
-        return sVar;
-    }
-
     public void add(SVar sVar) {
-        if (!stack.get(index).containsKey(sVar.getName()))
-            stack.get(index).put(sVar.getName(), new ArrayList<>());
-        stack.get(index).get(sVar.getName()).add(sVar);
+        this.add(sVar.getName(), sVar);
     }
 
     @Override
-    public void push() {
-        stack.add(new LinkedHashMap<>());
-        index++;
-    }
+    public void add(String key, SVar sVar) {
+        // optimize
+        if (stack.get(index).isEmpty()) {
+            stack.remove(index);
+            stack.add(new LinkedHashMap<>());
+        }
 
-    @Override
-    public void pop() {
-        stack.remove(index);
-        index--;
-    }
-
-    public List<SVar> getAll() {
-        return stack.stream()
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        // add
+        if (!stack.get(index).containsKey(key))
+            stack.get(index).put(key, new ArrayList<>());
+        stack.get(index).get(key).add(sVar);
     }
 
     public List<SMethodMockVar> getAllMocks(Method method) {

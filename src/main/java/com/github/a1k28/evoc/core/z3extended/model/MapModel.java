@@ -1,13 +1,12 @@
 package com.github.a1k28.evoc.core.z3extended.model;
 
-import com.github.a1k28.evoc.core.z3extended.Z3SortUnion;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.microsoft.z3.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter

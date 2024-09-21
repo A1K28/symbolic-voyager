@@ -11,6 +11,10 @@ public class CLIOptions {
     public static Set<String> mockablePackages = new HashSet<>();
     public static Integer gotoLimit = 20;
 
+    public static boolean shouldMockOrPropagate(String pckg) {
+        return shouldPropagate(pckg) || shouldMock(pckg);
+    }
+
     public static boolean shouldPropagate(String pckg) {
         if (targetClass.startsWith(pckg)) return true;
         for (String mockablePackage : mockablePackages)
