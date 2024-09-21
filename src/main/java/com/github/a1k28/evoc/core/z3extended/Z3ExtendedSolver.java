@@ -89,7 +89,7 @@ public class Z3ExtendedSolver {
         Map target = new HashMap<>();
         Queue<Expr> discoveredValues = new LinkedList<>();
         Z3MapInstance mapInstance = ctx.getMapInstance();
-        for (Tuple<Expr> tuple : mapModel.getDiscoveredKeys()) {
+        for (Tuple<Expr> tuple : mapInstance.getDiscoverableKeys()) {
             Expr key = tuple.getO1();
             Expr keyWrapped = tuple.getO2();
             BoolExpr condition = ctx.mkNot(mapInstance
@@ -144,10 +144,10 @@ public class Z3ExtendedSolver {
         Expr symbolicKey = ctx.mkConst("symbolicKey", mapModel.getKeySort());
 
         // Create a constraint: there exists a key where map[key] == targetValue
-        Expr<BoolSort>[] boolExprs = new BoolExpr[mapModel.getDiscoveredKeys().size()];
-        for (int i = 0; i < mapModel.getDiscoveredKeys().size(); i++) {
+        Expr<BoolSort>[] boolExprs = new BoolExpr[mapInstance.getDiscoverableKeys().size()];
+        for (int i = 0; i < mapInstance.getDiscoverableKeys().size(); i++) {
 //            Expr key = mapModel.getDiscoveredKeysTuple().get(i).getO1();
-            Expr keyWrapped = mapModel.getDiscoveredKeys().get(i).getO2();
+            Expr keyWrapped = mapInstance.getDiscoverableKeys().get(i).getO2();
 
             BoolExpr c = ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), keyWrapped));
             boolExprs[i] = c;

@@ -176,7 +176,7 @@ public class SatisfiabilityHandler {
     private Object handleMapSatisfiability(Expr expr) {
         Z3MapInstance mapInstance = ctx.getMapInstance();
         MapModel mapModel = mapInstance.getInitialMap(expr).orElseThrow();
-        int size = solver.minimizeInteger(mapInstance.initialSize(mapModel.getArray()));
+        int size = solver.minimizeInteger(mapInstance.initialSize(mapModel.getReference()));
         return solver.createInitialMap(mapModel, size);
     }
 
