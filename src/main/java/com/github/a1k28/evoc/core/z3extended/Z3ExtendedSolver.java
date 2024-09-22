@@ -113,7 +113,7 @@ public class Z3ExtendedSolver {
             key = model.eval(key, true);
             Expr valueWrapped = mapModel.getValue(retrieved);
             Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
-                    .orElseGet(Z3Translator::mkNull);
+                    .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);
             target.put(deserialize(key), deserialize(value));
             log.debug("(filled) Key:Value " + key + ":" + value);
@@ -191,7 +191,7 @@ public class Z3ExtendedSolver {
 
             Expr valueWrapped = mapModel.getValue(retrieved);
             Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
-                    .orElseGet(Z3Translator::mkNull);
+                    .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);
             target.put(deserialize(key), deserialize(value));
             log.debug("(filled unknown) Key:Value " + key + ":" + value);

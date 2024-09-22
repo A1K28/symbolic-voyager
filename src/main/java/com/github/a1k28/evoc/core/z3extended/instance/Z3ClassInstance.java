@@ -3,12 +3,12 @@ package com.github.a1k28.evoc.core.z3extended.instance;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
+import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.github.a1k28.evoc.core.z3extended.model.IStack;
-import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
@@ -24,14 +24,13 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.a1k28.evoc.core.z3extended.Z3Translator.mkNull;
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
 public class Z3ClassInstance implements IStack {
-    private final Context ctx;
+    private final Z3ExtendedContext ctx;
     private final Z3Stack<Integer, ClassInstanceModel> stack;
 
-    public Z3ClassInstance(Context ctx) {
+    public Z3ClassInstance(Z3ExtendedContext ctx) {
         this.ctx = ctx;
         this.stack = new Z3Stack<>();
     }
@@ -146,7 +145,7 @@ public class Z3ClassInstance implements IStack {
             return ctx.mkInt(0);
         if (clazz == PrimitiveType.DoubleType.class)
             return ctx.mkInt(0);
-        return mkNull();
+        return ctx.mkNull();
     }
 
     private static int ihc(Object o) {

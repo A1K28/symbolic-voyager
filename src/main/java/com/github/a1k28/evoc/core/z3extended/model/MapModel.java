@@ -14,7 +14,6 @@ public class MapModel {
     private Expr reference;
     private ArrayExpr array;
     private TupleSort sort;
-    private Expr sentinel;
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -24,7 +23,6 @@ public class MapModel {
         this.size = model.size;
         this.isSizeUnknown = model.isSizeUnknown;
         this.sort = model.sort;
-        this.sentinel = model.sentinel;
     }
 
     @Getter
@@ -35,6 +33,7 @@ public class MapModel {
         private Expr<TupleSort> value;
     }
 
+    // TODO: possibly refactor these
     public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty) {
         return this.sort.mkDecl().apply(key, element, isEmpty);
     }

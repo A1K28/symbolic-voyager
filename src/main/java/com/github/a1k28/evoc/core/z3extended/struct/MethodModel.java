@@ -29,41 +29,41 @@ public enum MethodModel {
 
     // --- lists ---
     LIST_INIT(List.class,"void <init>()", true),
-//    LIST_INIT_WITH_CAPACITY(List.class,"void <init>(int)", true),
-//    LIST_INIT_WITH_COLLECTION(List.class,"void <init>(java.util.Collection)", true),
-//    LIST_SIZE(List.class,"int size()", true),
-//    LIST_IS_EMPTY(List.class,"boolean isEmpty()", true),
+    LIST_INIT_WITH_CAPACITY(List.class,"void <init>(int)", true),
+    LIST_INIT_WITH_COLLECTION(List.class,"void <init>(java.util.Collection)", true),
+    LIST_SIZE(List.class,"int size()", true),
+    LIST_IS_EMPTY(List.class,"boolean isEmpty()", true),
     LIST_ADD(List.class,"boolean add(java.lang.Object)", true),
     LIST_ADD_BY_INDEX(List.class,"void add(int,java.lang.Object)", true),
-//    LIST_ADD_ALL(List.class,"boolean addAll(java.util.Collection)", true),
-//    LIST_ADD_ALL_BY_INDEX(List.class,"boolean addAll(int,java.util.Collection)", true),
-//    LIST_REMOVE(List.class,"boolean remove(java.lang.Object)", true),
-//    LIST_REMOVE_BY_INDEX(List.class,"java.lang.Object remove(int)", true),
-//    LIST_REMOVE_ALL(List.class,"boolean removeAll(java.util.Collection)", true),
-//    LIST_CONTAINS(List.class,"boolean contains(java.lang.Object)", true),
-//    LIST_CONTAINS_ALL(List.class,"boolean containsAll(java.util.Collection)", true),
-//    LIST_RETAIN_ALL(List.class,"boolean retainAll(java.util.Collection)", true),
-//    LIST_CLEAR(List.class,"void clear()", true),
-//    LIST_EQUALS(List.class,"boolean equals(java.lang.Object)", true),
+    LIST_ADD_ALL(List.class,"boolean addAll(java.util.Collection)", true),
+    LIST_ADD_ALL_BY_INDEX(List.class,"boolean addAll(int,java.util.Collection)", true),
+    LIST_REMOVE(List.class,"boolean remove(java.lang.Object)", true),
+    LIST_REMOVE_BY_INDEX(List.class,"java.lang.Object remove(int)", true),
+    LIST_REMOVE_ALL(List.class,"boolean removeAll(java.util.Collection)", true),
+    LIST_CONTAINS(List.class,"boolean contains(java.lang.Object)", true),
+    LIST_CONTAINS_ALL(List.class,"boolean containsAll(java.util.Collection)", true),
+    LIST_RETAIN_ALL(List.class,"boolean retainAll(java.util.Collection)", true),
+    LIST_CLEAR(List.class,"void clear()", true),
+    LIST_EQUALS(List.class,"boolean equals(java.lang.Object)", true),
     LIST_GET(List.class,"java.lang.Object get(int)", true),
-//    LIST_SET(List.class,"java.lang.Object set(int,java.lang.Object)", true),
-//    LIST_HASH_CODE(List.class,"int hashCode()", true),
-//    LIST_SUBLIST(List.class,"java.util.List subList(int,int)", true),
-//    LIST_INDEX_OF(List.class,"int indexOf(java.lang.Object)", true),
+    LIST_SET(List.class,"java.lang.Object set(int,java.lang.Object)", true),
+    LIST_HASH_CODE(List.class,"int hashCode()", true),
+    LIST_SUBLIST(List.class,"java.util.List subList(int,int)", true),
+    LIST_INDEX_OF(List.class,"int indexOf(java.lang.Object)", true),
 ////    LIST_STREAM("<java.util.List: java.util.stream.Stream stream()>", true),
-//    LIST_LAST_INDEX_OF(List.class,"int lastIndexOf(java.lang.Object)", true),
-//    LIST_OF_OBJECT_ARR(List.class,"java.util.List of(java.lang.Object[])", true),
-//    LIST_OF(List.class,"java.util.List of()", true),
-//    LIST_OF_1(List.class,"java.util.List of(java.lang.Object)", true),
-//    LIST_OF_2(List.class,"java.util.List of(java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_3(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_4(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_5(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_6(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_7(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_8(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_9(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-//    LIST_OF_10(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_LAST_INDEX_OF(List.class,"int lastIndexOf(java.lang.Object)", true),
+    LIST_OF_OBJECT_ARR(List.class,"java.util.List of(java.lang.Object[])", true),
+    LIST_OF(List.class,"java.util.List of()", true),
+    LIST_OF_1(List.class,"java.util.List of(java.lang.Object)", true),
+    LIST_OF_2(List.class,"java.util.List of(java.lang.Object,java.lang.Object)", true),
+    LIST_OF_3(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_4(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_5(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_6(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_7(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_8(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_9(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF_10(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
 //
 //    // replaceAll ?
 //    // sort ?
@@ -188,9 +188,6 @@ public enum MethodModel {
 //            case LIST_SUBLIST -> ctx.mkListSublist(args.get(0), (IntExpr) args.get(1), (IntExpr) args.get(2));
 //            case LIST_INDEX_OF -> ctx.mkListIndexOf(args.get(0), args.get(1));
 //            case LIST_LAST_INDEX_OF -> ctx.mkListLastIndexOf(args.get(0), args.get(1));
-//            case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4, LIST_OF_5,
-//                    LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
-//                    -> ctx.mkListWithCollection(args);
 //
 //            case SET_RETAIN_ALL -> ctx.mkSetIntersection(args.get(0), args.get(1));
 //            case SET_ADD -> ctx.mkSetAdd(args.get(0), args.get(1));
@@ -198,10 +195,35 @@ public enum MethodModel {
 //            case SET_CONTAINS -> ctx.mkSetContains(args.get(0), args.get(1));
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
 
-            case LIST_INIT -> ctx.getListInstance().constructor(args.get(0));
-            case LIST_ADD -> ctx.getListInstance().add(args.get(0), args.get(1));
-            case LIST_ADD_BY_INDEX -> ctx.getListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));
-            case LIST_GET -> ctx.getListInstance().get(args.get(0), (IntExpr) args.get(1));
+            case LIST_INIT -> ctx.getLinkedListInstance().constructor(args.get(0));
+            case LIST_INIT_WITH_CAPACITY -> null;
+            case LIST_INIT_WITH_COLLECTION -> null;
+            case LIST_ADD -> ctx.getLinkedListInstance().add(args.get(0), args.get(1));
+            case LIST_ADD_BY_INDEX -> ctx.getLinkedListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));
+            case LIST_ADD_ALL -> null;
+            case LIST_ADD_ALL_BY_INDEX -> null;
+//            case LIST_GET -> ctx.getListInstance().get(args.get(0), (IntExpr) args.get(1));
+            case LIST_GET -> ctx.getLinkedListInstance().get(args.get(0), (IntExpr) args.get(1));
+            case LIST_REMOVE_BY_INDEX -> ctx.getListInstance().remove(args.get(0), (IntExpr) args.get(1));
+            case LIST_REMOVE -> null;
+            case LIST_REMOVE_ALL -> null;
+            case LIST_RETAIN_ALL -> null;
+            case LIST_EQUALS -> null;
+            case LIST_SET -> null;
+            case LIST_HASH_CODE -> null;
+            case LIST_SUBLIST -> null;
+//            case LIST_SUBLIST -> ctx.getListInstance().subList(args.get(0), (IntExpr) args.get(1), (IntExpr) args.get(2));
+            case LIST_INDEX_OF -> ctx.getListInstance().indexOf(args.get(0), args.get(1));
+            case LIST_LAST_INDEX_OF -> ctx.getListInstance().lastIndexOf(args.get(0), args.get(1));
+            case LIST_OF_OBJECT_ARR -> null;
+            case LIST_SIZE -> ctx.getListInstance().size(args.get(0));
+            case LIST_IS_EMPTY -> ctx.getListInstance().isEmpty(args.get(0));
+            case LIST_CONTAINS -> ctx.getListInstance().contains(args.get(0), args.get(1));
+            case LIST_CONTAINS_ALL -> ctx.getListInstance().containsAll(args.get(0), args.get(1));
+            case LIST_CLEAR -> ctx.getListInstance().clear(args.get(0));
+            case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4, LIST_OF_5,
+                    LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
+                    -> null;
 
             case MAP_INIT -> ctx.getMapInstance().constructor(args.get(0));
             case MAP_INIT_FROM_MAP -> ctx.getMapInstance().constructor(args.get(0), args.get(1));

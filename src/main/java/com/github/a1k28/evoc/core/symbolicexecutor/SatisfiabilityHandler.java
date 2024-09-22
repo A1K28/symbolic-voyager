@@ -164,8 +164,8 @@ public class SatisfiabilityHandler {
         } else {
             evaluated = model.eval(expr, true);
             // this is required to keep an accurate solver state
-            BoolExpr assertion = z3t.mkEq(expr, (Expr) evaluated);
-            if (!z3t.containsAssertion(assertion))
+            BoolExpr assertion = ctx.mkEq(expr, (Expr) evaluated);
+            if (!ctx.containsAssertion(assertion))
                 solver.add(assertion);
         }
 

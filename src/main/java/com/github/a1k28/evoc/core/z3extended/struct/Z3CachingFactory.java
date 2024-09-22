@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public class Z3CachingFactory {
     private final Context ctx;
     private final Map<String, SortContainer> listSorts = new HashMap<>();
+    private final Map<String, SortContainer> linkedListSorts = new HashMap<>();
     private final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
 
     public Z3CachingFactory(Context ctx) {
@@ -33,6 +34,10 @@ public class Z3CachingFactory {
 
     public Expr mkListSentinel(Sort sort) {
         return getListSort(sort).getSentinel();
+    }
+
+    public TupleSort mkLinkedListSort(Sort sort) {
+        return getLinkedListSort(sort).getSort();
     }
 
     public Sort getSort(Expr expr) {
@@ -72,6 +77,26 @@ public class Z3CachingFactory {
             listSorts.put(name, container);
         }
         return listSorts.get(name);
+    }
+
+    private SortContainer getLinkedListSort(Sort valueSort) {
+        String name = valueSort.getName().toString();
+//        Sort referenceSort = SortType.REFERENCE.value(ctx);
+        Sort referenceSort = ctx.mkIntSort();
+        if (!linkedListSorts.containsKey(name)) {
+            TupleSort tupleSort = ctx.mkTupleSort(
+                    ctx.mkSymbol("linkedList:"+name),
+                    new Symbol[]{
+                            ctx.mkSymbol("value"),
+                            ctx.mkSymbol("ref"),
+                            ctx.mkSymbol("nextRef"),
+                            ctx.mkSymbol("prevRef")},
+                    new Sort[]{valueSort, referenceSort, referenceSort, referenceSort}
+            );
+            SortContainer container = new SortContainer(tupleSort, null);
+            linkedListSorts.put(name, container);
+        }
+        return linkedListSorts.get(name);
     }
 
     private SortContainer getMapSort(Sort key, Sort value) {

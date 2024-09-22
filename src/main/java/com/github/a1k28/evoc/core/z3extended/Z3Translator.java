@@ -65,24 +65,8 @@ public class Z3Translator {
         return ctx;
     }
 
-    public static boolean containsAssertion(Expr assertion) {
-        return Arrays.asList(ctx.getSolver().getAssertions()).contains(assertion);
-    }
-
-    public static Expr mkNull() {
-        return ctx.mkConst("null", SortType.NULL.value(ctx));
-    }
-
     public IStack getStack() {
         return ctx;
-    }
-
-    public BoolExpr mkNot(Expr expr) {
-        return ctx.mkNot(expr);
-    }
-
-    public BoolExpr mkEq(Expr expr, Expr val) {
-        return ctx.mkEq(expr, val);
     }
 
     public Expr mkExpr(String name, Sort sort) {
@@ -316,7 +300,7 @@ public class Z3Translator {
             // handle other binary operations
         }
         if (value instanceof NullConstant)
-            return mkNull();
+            return ctx.mkNull();
 //        else if (value instanceof JInstanceOfExpr)
 //            return ctx.mkMod(left, right);
 //        else if (value instanceof JNewArrayExpr)

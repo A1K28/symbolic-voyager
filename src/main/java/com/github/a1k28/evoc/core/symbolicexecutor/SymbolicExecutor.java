@@ -7,8 +7,7 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Expr;
+import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.stmt.*;
@@ -128,7 +127,7 @@ public class SymbolicExecutor {
         Value condition = ifStmt.getCondition();
         BoolExpr z3Condition = (BoolExpr) z3t.translateCondition(
                 condition, getVarType(sMethodPath, ifStmt), sMethodPath);
-        BoolExpr assertion = node.getType() == SType.BRANCH_TRUE ? z3Condition : z3t.mkNot(z3Condition);
+        BoolExpr assertion = node.getType() == SType.BRANCH_TRUE ? z3Condition : ctx.mkNot(z3Condition);
         solver.add(assertion);
         return SType.BRANCH;
     }
@@ -417,6 +416,42 @@ public class SymbolicExecutor {
 
         Z3ExtendedContext ctx = Z3Translator.getContext();
         Z3ExtendedSolver solver = ctx.getSolver();
+
+
+        // Define the sort for the function (Int -> Int)
+        Sort[] domain = new Sort[]{ctx.getIntSort()};
+        Sort range = ctx.getIntSort();
+
+        // Declare the recursive function
+        FuncDecl f = ctx.mkRecFuncDecl(ctx.mkSymbol("factorial"), domain, range);
+
+        // Create variables for the function
+        IntExpr n = ctx.mkIntConst("n");
+
+        // Define the function body
+        BoolExpr recursionCondition = ctx.mkGt(n, ctx.mkInt(0));
+        IntExpr recursiveCase = (IntExpr) ctx.mkMul(n, f.apply(ctx.mkSub(n, ctx.mkInt(1))));
+        IntExpr baseCase = ctx.mkInt(1);
+
+        // Combine the cases
+        Expr<IntSort> body = ctx.mkITE(recursionCondition, recursiveCase, baseCase);
+
+        ctx.AddRecDef(f, new Expr[]{n}, body);
+
+        // Now you can use the factorial function in your constraints
+        // For example, to check if factorial(5) == 120:
+        solver.add(ctx.mkEq(f.apply(ctx.mkInt(5)), ctx.mkInt(120)));
+
+        if (solver.check() == Status.SATISFIABLE) {
+            System.out.println("Factorial function is correctly defined");
+            System.out.println(solver.getModel());
+        } else {
+            System.out.println("Error in factorial function definition or constraint");
+        }
+
+
+
+
 //        Z3SortUnion sortUnion = new Z3SortUnion(ctx);
 //
 //        Sort arrayValueSort = sortUnion.getGenericSort();
