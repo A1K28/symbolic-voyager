@@ -301,7 +301,7 @@ public class Z3LinkedListInstance implements IStack {
     /**
      *
      * @param model the in-memory model
-     * @param nextRef which reference, which should be next to the new element
+     * @param nextRef the reference, which should be next to the new element
      * @param element the value
      * @return true if the list was modified by the result of this call
      */
