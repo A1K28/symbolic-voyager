@@ -5,17 +5,12 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3LinkedListInstance;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
-import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
-import com.github.a1k28.evoc.core.z3extended.model.MapModel;
-import com.github.a1k28.evoc.core.z3extended.model.MethodMockExprModel;
-import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.core.z3extended.model.*;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Model;
-import com.microsoft.z3.Status;
+import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
 
 import java.util.ArrayList;
@@ -159,6 +154,8 @@ public class SatisfiabilityHandler {
         Object evaluated;
         if (SortType.MAP.equals(expr.getSort())) {
             evaluated = handleMapSatisfiability(expr);
+        } else if (SortType.ARRAY.equals(expr.getSort())) {
+            evaluated = handleListSatisfiability(expr);
         } else if (SortType.OBJECT.equals(expr.getSort())) {
             evaluated = handleObjectSatisfiability(methodPath, expr);
         } else {
@@ -178,6 +175,13 @@ public class SatisfiabilityHandler {
         int size = solver.minimizeInteger(mapInstance.initialSize(mapModel.getReference()));
         return solver.createInitialMap(mapModel, size);
     }
+
+    private Object handleListSatisfiability(Expr expr) {
+//        Z3LinkedListInstance linkedListInstance = ctx.getLinkedListInstance();
+//        LinkedListModel listModel = linkedListInstance.getInitial(expr).orElseThrow();
+        throw new RuntimeException("List interpretations are not yet supported");
+    }
+
 
     private Object handleObjectSatisfiability(SMethodPath methodPath, Expr expr) {
         ClassInstanceModel model = getClassInstanceModel(methodPath, expr);

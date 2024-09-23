@@ -172,8 +172,8 @@ public enum MethodModel {
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
 
             case LIST_INIT -> ctx.getLinkedListInstance().constructor(args.get(0));
-            case LIST_INIT_WITH_CAPACITY -> null;
-            case LIST_INIT_WITH_COLLECTION -> null;
+            case LIST_INIT_WITH_CAPACITY -> ctx.getLinkedListInstance().constructor(args.get(0), (IntExpr) args.get(1));
+            case LIST_INIT_WITH_COLLECTION -> ctx.getLinkedListInstance().constructor(args.get(0), args.get(1));
             case LIST_ADD -> ctx.getLinkedListInstance().add(args.get(0), args.get(1));
             case LIST_ADD_BY_INDEX -> ctx.getLinkedListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));
             case LIST_ADD_ALL -> ctx.getLinkedListInstance().addAll(args.get(0), args.get(1));

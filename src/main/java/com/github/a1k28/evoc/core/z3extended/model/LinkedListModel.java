@@ -16,7 +16,6 @@ public class LinkedListModel {
     private Expr headReference;
     private Expr tailReference;
     private IntExpr size;
-    private IntExpr capacity;
     private IntExpr refCounter;
     private boolean isSizeUnknown;
 
@@ -25,7 +24,6 @@ public class LinkedListModel {
                            Expr headReference,
                            Expr tailReference,
                            IntExpr size,
-                           IntExpr capacity,
                            IntExpr refCounter,
                            boolean isSizeUnknown) {
         this.reference = reference;
@@ -33,7 +31,6 @@ public class LinkedListModel {
         this.headReference = headReference;
         this.tailReference = tailReference;
         this.size = size;
-        this.capacity = capacity;
         this.refCounter = refCounter;
         this.isSizeUnknown = isSizeUnknown;
     }
@@ -44,7 +41,6 @@ public class LinkedListModel {
         this.headReference = model.headReference;
         this.tailReference = model.tailReference;
         this.size = model.size;
-        this.capacity = model.capacity;
         this.refCounter = model.refCounter;
         this.isSizeUnknown = model.isSizeUnknown;
     }

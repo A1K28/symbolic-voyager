@@ -11,6 +11,8 @@ import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.microsoft.z3.*;
 
+import java.util.Optional;
+
 public class Z3LinkedListInstance implements IStack {
 
     private final Z3ExtendedContext ctx;
@@ -75,20 +77,19 @@ public class Z3LinkedListInstance implements IStack {
         return constructor(var1, null, null, false).getReference();
     }
 
-//    public Expr constructor(Expr var1,
-//                            Integer capacity) {
-//    }
-//
-//    public Expr constructor(Expr var1, Expr var2) {
-//    }
+    public Expr constructor(Expr var1, IntExpr capacity) {
+        return constructor(var1, capacity, null, false).getReference();
+    }
+
+    public Expr constructor(Expr var1, Expr var2) {
+        return constructor(var1, null, var2, false).getReference();
+    }
 
     private LinkedListModel constructor(Expr reference,
-                             IntExpr capacity,
-                             Expr[] arguments,
-                             boolean isSizeUnknown) {
+                                        IntExpr capacity,
+                                        Expr collection,
+                                        boolean isSizeUnknown) {
         IntExpr size;
-//        Expr headRef = ctx.mkFreshConst("headRef", referenceSort);
-//        Expr tailRef = ctx.mkFreshConst("tailRef", referenceSort);
         IntExpr refCounter = ctx.mkInt(2);
         Expr headRef = ctx.mkInt(0);
         Expr tailRef = ctx.mkInt(1);
@@ -122,14 +123,18 @@ public class Z3LinkedListInstance implements IStack {
         referenceMap = ctx.mkStore(referenceMap, tailRef, tail);
 
         LinkedListModel linkedListModel = new LinkedListModel(
-                reference, referenceMap, headRef, tailRef, size, capacity, refCounter, isSizeUnknown);
-
-//        if (arguments != null)
-//            for (Expr argument : arguments)
-//                add(listModel, argument);
-
+                reference, referenceMap, headRef, tailRef, size, refCounter, isSizeUnknown);
         stack.add(reference, linkedListModel);
+
+        if (collection != null) {
+            addAll(reference, collection);
+        }
+
         return linkedListModel;
+    }
+
+    public Optional<LinkedListModel> getInitial(Expr var1) {
+        return stack.getFirst(var1);
     }
 
     public BoolExpr add(Expr var1, Expr element) {
@@ -405,8 +410,7 @@ public class Z3LinkedListInstance implements IStack {
         IntExpr initialSize = target.getSize();
         Expr head2 = ctx.mkSelect(source.getReferenceMap(), source.getHeadReference());
 
-        IntExpr capacity = target.getCapacity() == null ?
-                ctx.mkInt(Integer.MAX_VALUE) : target.getCapacity();
+        IntExpr initialSourceSize = target.getSize();
 
         Expr holder = addAllFunc.apply(
                 lastSourceRef,
@@ -414,12 +418,13 @@ public class Z3LinkedListInstance implements IStack {
                 nodeSort.getNextRef(head2),
                 source.getReferenceMap(),
                 initialSize,
-                capacity,
                 target.getRefCounter());
 
         target.setReferenceMap(arrayAndSizeHolderSort.getArray(holder));
         target.setSize((IntExpr) arrayAndSizeHolderSort.getExpr(holder));
-        target.setRefCounter((IntExpr) ctx.mkAdd(target.getRefCounter(), target.getSize()));
+
+        IntExpr sizeDiff = (IntExpr) ctx.mkSub(target.getSize(), initialSourceSize);
+        target.setRefCounter((IntExpr) ctx.mkAdd(target.getRefCounter(), sizeDiff));
 
         return ctx.mkGt(target.getSize(), initialSize);
     }
@@ -462,10 +467,7 @@ public class Z3LinkedListInstance implements IStack {
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr newRef = mkNextRef(model);
 
-        BoolExpr shouldAdd;
-        if (model.getCapacity() == null) shouldAdd = ctx.mkTrue();
-        else shouldAdd = ctx.mkLt(model.getSize(), model.getCapacity());
-
+        BoolExpr shouldAdd = ctx.mkTrue();
         Expr wrappedElement = sortUnion.wrapValue(element);
         referenceMap = addBeforeReference(referenceMap, nextRef, wrappedElement, newRef, shouldAdd);
         IntExpr size = (IntExpr) ctx.mkITE(shouldAdd,
@@ -480,7 +482,7 @@ public class Z3LinkedListInstance implements IStack {
      *
      * @param referenceMap the array model
      * @param nextRef the reference, which should be next to the new element
-     * @param element the value
+     * @param wrappedElement the wrapped value
      * @param newRef the new reference value
      * @param shouldAdd a boolean value indicating whether the operation should proceed or not
      * @return true if the list was modified by the result of this call
@@ -831,7 +833,7 @@ public class Z3LinkedListInstance implements IStack {
                 ctx.mkSymbol("LinkedListAddAllFunc"),
                 new Sort[]{referenceSort, arraySort,
                         referenceSort, arraySort,
-                        ctx.mkIntSort(), ctx.mkIntSort(), ctx.mkIntSort()},
+                        ctx.mkIntSort(), ctx.mkIntSort()},
                 arrayAndSizeHolderSort.getSort());
 
         Expr targetRef = ctx.mkBound(0, referenceSort);
@@ -839,14 +841,13 @@ public class Z3LinkedListInstance implements IStack {
         Expr sourceRef = ctx.mkBound(2, referenceSort);
         ArrayExpr sourceRefMap = (ArrayExpr) ctx.mkBound(3, arraySort);
         IntExpr targetSize = (IntExpr) ctx.mkBound(4, ctx.mkIntSort());
-        IntExpr targetCapacity = (IntExpr) ctx.mkBound(5, ctx.mkIntSort());
-        IntExpr refCounter = (IntExpr) ctx.mkBound(6, ctx.mkIntSort());
+        IntExpr refCounter = (IntExpr) ctx.mkBound(5, ctx.mkIntSort());
 
         Expr sourceNode = ctx.mkSelect(sourceRefMap, sourceRef);
         Expr nextRef = nodeSort.getNextRef(sourceNode);
 
         BoolExpr hasReachedTheEnd = ctx.mkEq(sourceRef, nextRef);
-        BoolExpr shouldAdd = ctx.mkLt(targetSize, targetCapacity);
+        BoolExpr shouldAdd = ctx.mkTrue();
         Expr wrappedElement = nodeSort.getValue(sourceNode);
 
         Expr recursiveCase = addAllFunc.apply(
@@ -855,7 +856,6 @@ public class Z3LinkedListInstance implements IStack {
                 nextRef,
                 sourceRefMap,
                 ctx.mkITE(shouldAdd, ctx.mkAdd(targetSize, ctx.mkInt(1)), targetSize),
-                targetCapacity,
                 ctx.mkAdd(refCounter, ctx.mkInt(1)));
 
         Expr body = ctx.mkITE(
@@ -869,7 +869,6 @@ public class Z3LinkedListInstance implements IStack {
                 sourceRef,
                 sourceRefMap,
                 targetSize,
-                targetCapacity,
                 refCounter
         }, body);
     }

@@ -27,6 +27,20 @@ public class Z3ListTest {
         return 4;
     }
 
+//    @SymbolicTest({0,1,2,3,4})
+    @DisplayName("simple_index_test_winput_1")
+    public int simple_index_test_winput_1(List list) {
+        if (list.get(0).equals("1"))
+            return 0;
+        if (list.get(1).equals("0"))
+            return 1;
+        if (list.get(2).equals("2"))
+            return 2;
+        if (list.get(3).equals("3"))
+            return 3;
+        return 4;
+    }
+
     @SymbolicTest({9})
     @DisplayName("index_test_1")
     public int index_test_1() {
@@ -104,6 +118,36 @@ public class Z3ListTest {
         list.add(3, "-2");  // -1,1,0,-2,3
         list.remove(1); // -1,0,-2,3
         if (list.size() != 4)
+            return 1;
+        return 2;
+    }
+
+    @SymbolicTest({1})
+    @DisplayName("test_init_with_capacity_1")
+    public int test_init_with_capacity_1() {
+        List<String> list = new ArrayList<>(2);
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        list.add("4");
+        list.add(1, "0"); // 1,0,2,3,4
+        if (list.size() != 5)
+            return 0;
+        return 1;
+    }
+
+    @SymbolicTest({2})
+    @DisplayName("test_init_with_collection_1")
+    public int test_init_with_collection_1() {
+        List<Integer> list1 = new ArrayList<>();
+        list1.add(1);
+        list1.add(2);
+        list1.add(3);
+
+        List list2 = new ArrayList(list1);
+        if (list1.size() != list2.size())
+            return 0;
+        if (!list1.equals(list2))
             return 1;
         return 2;
     }
