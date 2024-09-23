@@ -13,10 +13,9 @@ public class Z3ListTest {
     public int simple_index_test_1() {
         List<String> list = new ArrayList<>();
         list.add("1");
-        list.add("0");
         list.add("2");
         list.add("3");
-//        list.add(1, "0"); // 1, 0, 2, 3
+        list.add(1, "0"); // 1, 0, 2, 3
         if (!list.get(0).equals("1"))
             return 0;
         if (!list.get(1).equals("0"))
@@ -27,7 +26,6 @@ public class Z3ListTest {
             return 3;
         return 4;
     }
-
 
     @SymbolicTest({9})
     @DisplayName("index_test_1")
@@ -60,7 +58,7 @@ public class Z3ListTest {
         return 9;
     }
 
-//    @SymbolicTest({7})
+    @SymbolicTest({7})
     @DisplayName("index_test_with_remove_1")
     public int index_test_with_remove_1() {
         List<String> list = new ArrayList<>();
@@ -69,7 +67,6 @@ public class Z3ListTest {
         list.add("3");
         list.add(1, "0"); // 1,0,2,3
         list.remove(2); // 1,0,3
-        // internal representation: 1,X,3,0
         if (!list.get(0).equals("1"))
             return 0;
         if (!list.get(1).equals("0"))
@@ -80,7 +77,6 @@ public class Z3ListTest {
         list.add(0, "-1"); // -1,1,0,3
         list.add(3, "-2");  // -1,1,0,-2,3
         list.remove(1); // -1,0,-2,3
-        // internal representation: X,X,3,0-1,-2
         if (!list.get(0).equals("-1")) // 0 -> 4
             return 3;
         if (!list.get(1).equals("0")) // 1 -> 3
@@ -92,7 +88,7 @@ public class Z3ListTest {
         return 7;
     }
 
-//    @SymbolicTest({2})
+    @SymbolicTest({2})
     @DisplayName("index_test_with_size_1")
     public int index_test_with_size_1() {
         List<String> list = new ArrayList<>();
@@ -101,20 +97,72 @@ public class Z3ListTest {
         list.add("3");
         list.add(1, "0"); // 1,0,2,3
         list.remove(2); // 1,0,3
-        // internal representation: 1,X,3,0
         if (list.size() != 3)
             return 0;
 
         list.add(0, "-1"); // -1,1,0,3
         list.add(3, "-2");  // -1,1,0,-2,3
         list.remove(1); // -1,0,-2,3
-        // internal representation: X,X,3,0-1,-2
         if (list.size() != 4)
             return 1;
         return 2;
     }
 
-//    @SymbolicTest({8})
+    @SymbolicTest({15})
+    @DisplayName("test_remove_by_value_1")
+    public int test_remove_by_value_1() {
+        List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("1");
+        list.add("2");
+        list.add("2");
+        list.add("3");
+        list.add(1, "0"); // 1,0,1,2,2,3
+        list.remove("3"); // 1,0,1,2,2
+//        if (!list.get(0).equals("1"))
+//            return 0;
+//        if (!list.get(1).equals("0"))
+//            return 1;
+//        if (!list.get(2).equals("1"))
+//            return 2;
+//        if (!list.get(3).equals("2"))
+//            return 3;
+//        if (!list.get(4).equals("2"))
+//            return 4;
+//
+        list.add("-1"); // 1,0,1,2,2,-1
+        list.remove("1"); // 0,1,2,2,-1
+//
+//        if (!list.get(0).equals("0"))
+//            return 5;
+//        if (!list.get(1).equals("1"))
+//            return 6;
+//        if (!list.get(2).equals("2"))
+//            return 7;
+//        if (!list.get(3).equals("2"))
+//            return 8;
+//        if (!list.get(4).equals("-1"))
+//            return 9;
+//
+        list.remove("2"); // 0,1,2,-1
+        list.remove(0); // 1,2,-1
+        list.add("-2"); // 1,2,-1,-2
+//
+//        if (!list.get(0).equals("1"))
+//            return 10;
+//        if (!list.get(1).equals("2"))
+//            return 11;
+//        if (!list.get(2).equals("-1"))
+//            return 12;
+//        if (!list.get(3).equals("-2"))
+//            return 13;
+        if (list.remove("-3"))
+            return 14;
+
+        return 15;
+    }
+
+    @SymbolicTest({8})
     @DisplayName("test_contains_value_1")
     public int test_contains_value_1() {
         List<String> list = new ArrayList<>();
@@ -123,7 +171,6 @@ public class Z3ListTest {
         list.add("3");
         list.add(1, "0"); // 1,0,2,3
         list.remove(2); // 1,0,3
-        // internal representation: 1,X,3,0
         if (!list.contains("3"))
             return 0;
         if (list.contains("2"))
@@ -131,7 +178,6 @@ public class Z3ListTest {
         list.add(0, "-1"); // -1,1,0,3
         list.add(3, "-2");  // -1,1,0,-2,3
         list.remove(1); // -1,0,-2,3
-        // internal representation: X,X,3,0-1,-2
         if (list.contains("-3"))
             return 3;
         if (list.contains("1"))
@@ -145,7 +191,7 @@ public class Z3ListTest {
         return 8;
     }
 
-//    @SymbolicTest({4})
+    @SymbolicTest({4})
     @DisplayName("test_contains_all_1")
     public int test_contains_all_1() {
         List<String> list1 = new ArrayList<>();
@@ -175,7 +221,7 @@ public class Z3ListTest {
         return 4;
     }
 
-//    @SymbolicTest({3})
+    @SymbolicTest({3})
     @DisplayName("test_clear_1")
     public int test_clear_1() {
         List<String> list = new ArrayList<>();
@@ -194,7 +240,7 @@ public class Z3ListTest {
         return 3;
     }
 
-//    @SymbolicTest({3})
+//    //@SymbolicTest({3})
     @DisplayName("test_sublist_1")
     public int test_sublist_1() {
         List<String> list = new ArrayList<>();
@@ -214,7 +260,7 @@ public class Z3ListTest {
         return 3;
     }
 
-//    @SymbolicTest({5})
+    @SymbolicTest({6})
     @DisplayName("test_index_of_1")
     public int test_index_of_1() {
         List<String> list = new ArrayList<>();
@@ -234,10 +280,12 @@ public class Z3ListTest {
             return 3;
         if (list.indexOf("5") != 4)
             return 4;
-        return 5;
+        if (list.indexOf("2000") != -1)
+            return 5;
+        return 6;
     }
 
-//    @SymbolicTest({3})
+    @SymbolicTest({5})
     @DisplayName("test_index_of_2")
     public int test_index_of_2() {
         List<String> list = new ArrayList<>();
@@ -253,12 +301,14 @@ public class Z3ListTest {
             return 1;
         if (list.indexOf("5") != 4)
             return 2;
-        if (list.indexOf("2") == 1)
+        if (list.indexOf("2") != 1)
             return 3;
-        return 4;
+        if (list.indexOf("2000") != -1)
+            return 4;
+        return 5;
     }
 
-//    @SymbolicTest({5})
+    @SymbolicTest({5})
     @DisplayName("test_index_of_3")
     public int test_index_of_3() {
         List<String> list = new ArrayList<>();
@@ -272,7 +322,6 @@ public class Z3ListTest {
         list.add(2, "-2");
 
         // current state: 1,2,-2,2,2,5,-1
-        // internal state: 1,2,2,2,5,-1,-2
 
         if (list.indexOf("1") != 0)
             return 0;
@@ -287,7 +336,7 @@ public class Z3ListTest {
         return 5;
     }
 
-//    @SymbolicTest({4})
+    @SymbolicTest({4})
     @DisplayName("test_index_of_4")
     public int test_index_of_4() {
         List<String> list = new ArrayList<>();
@@ -301,19 +350,17 @@ public class Z3ListTest {
         list.remove(2);
 
         // current state: 1,2,2,5,-1
-        // internal representation: 1,2,X,2,5,-1
 
         list.add(2, "-2");
         list.remove(5);
 
 
         // current state: 1,2,-2,2,5
-        // internal representation: 1,2,X,2,5,X,-2
 
-//        if (list.indexOf("1") != 0)
-//            return 0;
-//        if (list.indexOf("2") != 1)
-//            return 1;
+        if (list.indexOf("1") != 0)
+            return 0;
+        if (list.indexOf("2") != 1)
+            return 1;
         if (list.indexOf("-2") != 2)
             return 2;
         if (list.indexOf("5") != 4)
@@ -321,7 +368,7 @@ public class Z3ListTest {
         return 4;
     }
 
-//    @SymbolicTest({3})
+    @SymbolicTest({3})
     @DisplayName("test_last_index_of_1")
     public int test_last_index_of_1() {
         List<String> list = new ArrayList<>();
@@ -333,15 +380,13 @@ public class Z3ListTest {
 
         list.remove(2);
 
-        // internal representation: 1,2,X,2,5
-
-        if (list.lastIndexOf("1") != 0) // "1" -> 0 (internal)
+        if (list.lastIndexOf("1") != 0)
             return 0;
-        if (list.lastIndexOf("2") != 2) // "2" -> 3 (internal)
+        if (list.lastIndexOf("2") != 2)
             return 1;
-        if (list.lastIndexOf("5") != 3) // "5" -> 4 (internal)
+        if (list.lastIndexOf("5") != 3)
             return 2;
-        if (list.lastIndexOf("2") == 2) // "2" -> 3 (internal)
+        if (list.lastIndexOf("2") == 2)
             return 3;
         return 4;
     }
@@ -354,7 +399,7 @@ public class Z3ListTest {
 
 
 
-//    @SymbolicTest({0,1})
+//    //@SymbolicTest({0,1})
     @DisplayName("test_remove_by_idx_1")
     public int test_remove_by_idx_1(String a) {
         List<String> list = new ArrayList<>();
@@ -365,7 +410,7 @@ public class Z3ListTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    ////@SymbolicTest({0,1})
     @DisplayName("test_remove_1")
     public int test_remove_1(String a) {
         List<String> list = new ArrayList<>();
@@ -376,7 +421,7 @@ public class Z3ListTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    ////@SymbolicTest({0,1})
     @DisplayName("test_remove_2")
     public int test_remove_2(Integer a, Integer b) {
         List<Integer> list = new ArrayList<>();
@@ -388,7 +433,7 @@ public class Z3ListTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1})
+    ////@SymbolicTest({0,1})
     @DisplayName("test_remove_all_1")
     public int test_remove_all_1(int a) {
         List<Integer> list = new ArrayList<>();
@@ -404,7 +449,7 @@ public class Z3ListTest {
         return 2;
     }
 
-    //@SymbolicTest({0,2})
+    ////@SymbolicTest({0,2})
     @DisplayName("test_remove_all_2")
     public int test_remove_all_2(int a) {
         List<Integer> list = new ArrayList<>();
@@ -419,7 +464,7 @@ public class Z3ListTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2})
+    ////@SymbolicTest({0,1,2})
     @DisplayName("test_remove_all_3")
     public int test_remove_all_3(int a, int b) {
         List<Integer> list = new ArrayList<>();

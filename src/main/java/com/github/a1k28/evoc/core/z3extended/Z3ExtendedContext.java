@@ -19,7 +19,6 @@ public class Z3ExtendedContext extends Context implements IStack {
     private final Z3ClassInstance classInstance;
     private final Z3MethodMockInstance methodMockInstance;
     private final Z3MapInstance mapInstance;
-    private final Z3ListInstance listInstance;
     private final Z3LinkedListInstance linkedListInstance;
 
     public Z3ExtendedContext() {
@@ -33,7 +32,6 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.classInstance = new Z3ClassInstance(this);
         this.methodMockInstance = new Z3MethodMockInstance(this, solver);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
-        this.listInstance = new Z3ListInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
     }
 
@@ -44,7 +42,6 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.classInstance.push();
         this.methodMockInstance.push();
         this.mapInstance.push();
-        this.listInstance.push();
         this.linkedListInstance.push();
     }
 
@@ -55,7 +52,6 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.classInstance.pop();
         this.methodMockInstance.pop();
         this.mapInstance.pop();
-        this.listInstance.pop();
         this.linkedListInstance.pop();
     }
 

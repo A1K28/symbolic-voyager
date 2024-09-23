@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class Z3CachingFactory {
     private final Context ctx;
     private final Map<String, SortContainer> listSorts = new HashMap<>();
-    private final Map<String, SortContainer> linkedListSorts = new HashMap<>();
+    private final Map<String, Map<String, SortContainer>> linkedListSorts = new HashMap<>();
     private final Map<String, Map<String, SortContainer>> mapSorts = new HashMap<>();
 
     public Z3CachingFactory(Context ctx) {
@@ -36,8 +36,8 @@ public class Z3CachingFactory {
         return getListSort(sort).getSentinel();
     }
 
-    public TupleSort mkLinkedListSort(Sort sort) {
-        return getLinkedListSort(sort).getSort();
+    public TupleSort mkLinkedListSort(Sort keySort, Sort valueSort) {
+        return getLinkedListSort(keySort, valueSort).getSort();
     }
 
     public Sort getSort(Expr expr) {
@@ -79,24 +79,24 @@ public class Z3CachingFactory {
         return listSorts.get(name);
     }
 
-    private SortContainer getLinkedListSort(Sort valueSort) {
-        String name = valueSort.getName().toString();
-//        Sort referenceSort = SortType.REFERENCE.value(ctx);
-        Sort referenceSort = ctx.mkIntSort();
-        if (!linkedListSorts.containsKey(name)) {
+    private SortContainer getLinkedListSort(Sort keySort, Sort valueSort) {
+        String keyName = keySort.getName().toString();
+        String valueName = valueSort.getName().toString();
+        if (!linkedListSorts.containsKey(keyName)) linkedListSorts.put(keyName, new HashMap<>());
+        if (!linkedListSorts.get(keyName).containsKey(valueName)) {
             TupleSort tupleSort = ctx.mkTupleSort(
-                    ctx.mkSymbol("linkedList:"+name),
+                    ctx.mkSymbol("linkedList:"+keyName+":"+valueName),
                     new Symbol[]{
                             ctx.mkSymbol("value"),
                             ctx.mkSymbol("ref"),
                             ctx.mkSymbol("nextRef"),
                             ctx.mkSymbol("prevRef")},
-                    new Sort[]{valueSort, referenceSort, referenceSort, referenceSort}
+                    new Sort[]{valueSort, keySort, keySort, keySort}
             );
             SortContainer container = new SortContainer(tupleSort, null);
-            linkedListSorts.put(name, container);
+            linkedListSorts.get(keyName).put(valueName, container);
         }
-        return linkedListSorts.get(name);
+        return linkedListSorts.get(keyName).get(valueName);
     }
 
     private SortContainer getMapSort(Sort key, Sort value) {

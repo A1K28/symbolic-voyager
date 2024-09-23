@@ -204,8 +204,8 @@ public enum MethodModel {
             case LIST_ADD_ALL_BY_INDEX -> null;
 //            case LIST_GET -> ctx.getListInstance().get(args.get(0), (IntExpr) args.get(1));
             case LIST_GET -> ctx.getLinkedListInstance().get(args.get(0), (IntExpr) args.get(1));
-            case LIST_REMOVE_BY_INDEX -> ctx.getListInstance().remove(args.get(0), (IntExpr) args.get(1));
-            case LIST_REMOVE -> null;
+            case LIST_REMOVE_BY_INDEX -> ctx.getLinkedListInstance().remove(args.get(0), (IntExpr) args.get(1));
+            case LIST_REMOVE -> ctx.getLinkedListInstance().remove(args.get(0), args.get(1));
             case LIST_REMOVE_ALL -> null;
             case LIST_RETAIN_ALL -> null;
             case LIST_EQUALS -> null;
@@ -213,14 +213,14 @@ public enum MethodModel {
             case LIST_HASH_CODE -> null;
             case LIST_SUBLIST -> null;
 //            case LIST_SUBLIST -> ctx.getListInstance().subList(args.get(0), (IntExpr) args.get(1), (IntExpr) args.get(2));
-            case LIST_INDEX_OF -> ctx.getListInstance().indexOf(args.get(0), args.get(1));
-            case LIST_LAST_INDEX_OF -> ctx.getListInstance().lastIndexOf(args.get(0), args.get(1));
+            case LIST_INDEX_OF -> ctx.getLinkedListInstance().indexOf(args.get(0), args.get(1));
+            case LIST_LAST_INDEX_OF -> ctx.getLinkedListInstance().lastIndexOf(args.get(0), args.get(1));
             case LIST_OF_OBJECT_ARR -> null;
-            case LIST_SIZE -> ctx.getListInstance().size(args.get(0));
-            case LIST_IS_EMPTY -> ctx.getListInstance().isEmpty(args.get(0));
-            case LIST_CONTAINS -> ctx.getListInstance().contains(args.get(0), args.get(1));
-            case LIST_CONTAINS_ALL -> ctx.getListInstance().containsAll(args.get(0), args.get(1));
-            case LIST_CLEAR -> ctx.getListInstance().clear(args.get(0));
+            case LIST_SIZE -> ctx.getLinkedListInstance().size(args.get(0));
+            case LIST_IS_EMPTY -> ctx.getLinkedListInstance().isEmpty(args.get(0));
+            case LIST_CONTAINS -> ctx.getLinkedListInstance().contains(args.get(0), args.get(1));
+            case LIST_CONTAINS_ALL -> ctx.getLinkedListInstance().containsAll(args.get(0), args.get(1));
+            case LIST_CLEAR -> ctx.getLinkedListInstance().clear(args.get(0));
             case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4, LIST_OF_5,
                     LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
                     -> null;
