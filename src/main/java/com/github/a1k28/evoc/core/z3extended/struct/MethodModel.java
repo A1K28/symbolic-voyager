@@ -208,7 +208,7 @@ public enum MethodModel {
             case LIST_REMOVE -> ctx.getLinkedListInstance().remove(args.get(0), args.get(1));
             case LIST_REMOVE_ALL -> null;
             case LIST_RETAIN_ALL -> null;
-            case LIST_EQUALS -> null;
+            case LIST_EQUALS -> ctx.getLinkedListInstance().equals(args.get(0), args.get(1));
             case LIST_SET -> null;
             case LIST_HASH_CODE -> null;
             case LIST_SUBLIST -> null;
