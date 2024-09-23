@@ -193,6 +193,25 @@ public class Z3ListTest {
         return 3;
     }
 
+    @SymbolicTest({4})
+    @DisplayName("test_set_1")
+    public int test_set_1() {
+        List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("2");
+        list.add("3");
+
+        if (!list.set(0, "-1").equals("1"))
+            return 0;
+        if (!list.set(2, "-1").equals("3"))
+            return 1;
+        if (!list.set(0, "-10").equals("-1"))
+            return 2;
+        if (list.size() != 3)
+            return 3;
+        return 4;
+    }
+
     @SymbolicTest({8})
     @DisplayName("test_contains_value_1")
     public int test_contains_value_1() {

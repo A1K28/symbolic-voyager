@@ -21,7 +21,7 @@ public class Z3LinkedListInstance implements IStack {
     private final Sort referenceSort;
 
     private FuncDecl searchRecFunc;
-    private FuncDecl findRefByValueFunc;
+    private FuncDecl findNodeByValueFunc;
     private FuncDecl findIdxByValueFunc;
     private FuncDecl findLastIdxByValueFunc;
     private FuncDecl<SetSort> toSetFunc;
@@ -42,7 +42,7 @@ public class Z3LinkedListInstance implements IStack {
         this.nodeSort = sortState.mkLinkedListSort(referenceSort, valueSort);
 
         defineSearchFunc();
-        defineFindRefByValueFunc();
+        defineFindNodeByValueFunc();
         defineFindIdxByValueFunc();
         defineFindLastIdxByValueFunc();
         defineToSetFunc();
@@ -183,8 +183,9 @@ public class Z3LinkedListInstance implements IStack {
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr head = ctx.mkSelect(referenceMap, model.getHeadReference());
         Expr nextRef = getNextRef(head);
-        Expr ref = findRefByValueFunc.apply(
+        Expr node = findNodeByValueFunc.apply(
                 nextRef, sortUnion.wrapValue(element), referenceMap);
+        Expr ref = getRef(node);
         remove(model, ref);
         IntExpr newSize = model.getSize();
         return ctx.mkLt(newSize, oldSize);
@@ -269,10 +270,6 @@ public class Z3LinkedListInstance implements IStack {
         return sortUnion.unwrapValue(getValue(retrieved), ctx.mkNull());
     }
 
-//
-//    public Expr set(Expr var1, IntExpr index, Expr element) {
-//    }
-//
 //    // TODO: what to do here?
 //    public Expr hashCode(Expr var1) {
 //    }
@@ -345,6 +342,26 @@ public class Z3LinkedListInstance implements IStack {
 
         return (BoolExpr) equalsFunc.apply(getNextRef(head1), model1.getReferenceMap(),
                 getNextRef(head2), model2.getReferenceMap());
+    }
+
+    public Expr set(Expr var1, IntExpr index, Expr element) {
+        LinkedListModel model = getModel(var1);
+        Expr wrappedElement = sortUnion.wrapValue(element);
+        ArrayExpr referenceMap = model.getReferenceMap();
+        Expr ref = getReferenceByIndex(referenceMap, model.getHeadReference(), index);
+        Expr node = ctx.mkSelect(referenceMap, ref);
+        Expr prevNodeUpdated = mkDecl(wrappedElement,
+                ref, getNextRef(node), getPrevRef(node));
+        // can only update the element if the ref was found
+        BoolExpr canUpdate = ctx.mkAnd(
+                ctx.mkNot(ctx.mkEq(model.getHeadReference(), ref)),
+                ctx.mkNot(ctx.mkEq(model.getTailReference(), ref))
+        );
+        referenceMap = (ArrayExpr) ctx.mkITE(canUpdate,
+                ctx.mkStore(referenceMap, ref, prevNodeUpdated),
+                referenceMap);
+        model.setReferenceMap(referenceMap);
+        return sortUnion.unwrapValue(getValue(node), ctx.mkNull());
     }
 
     private Expr getReferenceByIndex(ArrayExpr referenceMap, Expr headRef, IntExpr index) {
@@ -491,11 +508,11 @@ public class Z3LinkedListInstance implements IStack {
         ctx.AddRecDef(searchRecFunc, new Expr[]{ref, i, index, referenceMap}, body);
     }
 
-    private void defineFindRefByValueFunc() {
-        this.findRefByValueFunc = ctx.mkRecFuncDecl(
-                ctx.mkSymbol("LinkedListFindRefByValueFunc"),
+    private void defineFindNodeByValueFunc() {
+        this.findNodeByValueFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListFindNodeByValueFunc"),
                 new Sort[]{referenceSort, valueSort, ctx.mkArraySort(referenceSort, nodeSort)},
-                ctx.mkIntSort());
+                nodeSort);
 
         Expr ref = ctx.mkBound(0, referenceSort);
         Expr value = ctx.mkBound(1, valueSort);
@@ -508,17 +525,17 @@ public class Z3LinkedListInstance implements IStack {
         BoolExpr isIllegalState = ctx.mkEq(ref, nextRef);
         BoolExpr condition = ctx.mkEq(value, retrievedVal);
 
-        Expr recursiveCase = findRefByValueFunc.apply(
+        Expr recursiveCase = findNodeByValueFunc.apply(
                 nextRef,
                 value,
                 referenceMap);
 
         Expr body = ctx.mkITE(
                 ctx.mkOr(condition, isIllegalState),
-                ref,
+                node,
                 recursiveCase);
 
-        ctx.AddRecDef(findRefByValueFunc, new Expr[]{ref, value, referenceMap}, body);
+        ctx.AddRecDef(findNodeByValueFunc, new Expr[]{ref, value, referenceMap}, body);
     }
 
     private void defineFindIdxByValueFunc() {
