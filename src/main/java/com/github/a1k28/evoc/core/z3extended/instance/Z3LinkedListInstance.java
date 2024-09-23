@@ -26,6 +26,7 @@ public class Z3LinkedListInstance implements IStack {
     private FuncDecl findLastIdxByValueFunc;
     private FuncDecl<SetSort> toSetFunc;
     private FuncDecl<BoolSort> containsAllFunc;
+    private FuncDecl<BoolSort> equalsFunc;
 
     public Z3LinkedListInstance(Z3ExtendedContext context,
                                 Z3ExtendedSolver solver,
@@ -46,6 +47,7 @@ public class Z3LinkedListInstance implements IStack {
         defineFindLastIdxByValueFunc();
         defineToSetFunc();
         defineContainsAllFunc();
+        defineEqualsFunc();
     }
 
     @Override
@@ -259,10 +261,7 @@ public class Z3LinkedListInstance implements IStack {
         model.setSizeUnknown(false);
         return null;
     }
-//
-//    public BoolExpr equals(Expr var1, Expr var2) {
-//    }
-//
+
     public Expr get(Expr var1, IntExpr index) {
         LinkedListModel model = getModel(var1);
         Expr ref = getReferenceByIndex(model.getReferenceMap(), model.getHeadReference(), index);
@@ -337,13 +336,24 @@ public class Z3LinkedListInstance implements IStack {
         return ctx.mkSub(model.getSize(), ctx.mkAdd(lastIdx, ctx.mkInt(1)));
     }
 
+    public BoolExpr equals(Expr var1, Expr var2) {
+        LinkedListModel model1 = getModel(var1);
+        LinkedListModel model2 = getModel(var2);
+
+        Expr head1 = ctx.mkSelect(model1.getReferenceMap(), model1.getHeadReference());
+        Expr head2 = ctx.mkSelect(model2.getReferenceMap(), model2.getHeadReference());
+
+        return (BoolExpr) equalsFunc.apply(getNextRef(head1), model1.getReferenceMap(),
+                getNextRef(head2), model2.getReferenceMap());
+    }
+
     private Expr getReferenceByIndex(ArrayExpr referenceMap, Expr headRef, IntExpr index) {
         Expr head = ctx.mkSelect(referenceMap, headRef);
         Expr nextRef = getNextRef(head);
         return searchRecFunc.apply(nextRef, ctx.mkInt(0), index, referenceMap);
     }
 
-    public Expr remove(LinkedListModel model, Expr reference) {
+    private Expr remove(LinkedListModel model, Expr reference) {
         // can only remove the element if the ref was found
         BoolExpr canRemove = ctx.mkAnd(
                 ctx.mkNot(ctx.mkEq(model.getHeadReference(), reference)),
@@ -635,6 +645,48 @@ public class Z3LinkedListInstance implements IStack {
 
 
         ctx.AddRecDef(containsAllFunc, new Expr[]{ref, set, referenceMap}, body);
+    }
+
+    private void defineEqualsFunc() {
+        ArraySort arraySort = ctx.mkArraySort(referenceSort, nodeSort);
+
+        this.equalsFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListEqualsFunc"),
+                new Sort[]{referenceSort, arraySort, referenceSort, arraySort},
+                ctx.mkBoolSort());
+
+        Expr ref1 = ctx.mkBound(0, referenceSort);
+        Expr referenceMap1 = ctx.mkBound(1, arraySort);
+        Expr ref2 = ctx.mkBound(2, referenceSort);
+        Expr referenceMap2 = ctx.mkBound(3, arraySort);
+
+        Expr node1 = ctx.mkSelect(referenceMap1, ref1);
+        Expr node2 = ctx.mkSelect(referenceMap2, ref2);
+
+        Expr nextRef1 = getNextRef(node1);
+        Expr nextRef2 = getNextRef(node2);
+
+        BoolExpr hasReachedTheEnd1 = ctx.mkEq(ref1, nextRef1);
+        BoolExpr hasReachedTheEnd2 = ctx.mkEq(ref2, nextRef2);
+        BoolExpr sizesMatch = ctx.mkNot(ctx.mkXor(hasReachedTheEnd1, hasReachedTheEnd2));
+        BoolExpr shouldContinue = ctx.mkAnd(
+                ctx.mkNot(hasReachedTheEnd1),
+                ctx.mkNot(hasReachedTheEnd2));
+
+        BoolExpr equals = ctx.mkEq(getValue(node1), getValue(node2));
+
+        Expr recursiveCase = equalsFunc.apply(
+                nextRef1,
+                referenceMap1,
+                nextRef2,
+                referenceMap2);
+
+        Expr body = ctx.mkITE(
+                shouldContinue,
+                ctx.mkITE(equals, recursiveCase, ctx.mkFalse()),
+                sizesMatch);
+
+        ctx.AddRecDef(equalsFunc, new Expr[]{ref1, referenceMap1, ref2, referenceMap2}, body);
     }
 
     private ArrayExpr mkArray() {

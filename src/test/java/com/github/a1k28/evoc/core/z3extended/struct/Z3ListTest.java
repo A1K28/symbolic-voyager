@@ -119,47 +119,78 @@ public class Z3ListTest {
         list.add("3");
         list.add(1, "0"); // 1,0,1,2,2,3
         list.remove("3"); // 1,0,1,2,2
-//        if (!list.get(0).equals("1"))
-//            return 0;
-//        if (!list.get(1).equals("0"))
-//            return 1;
-//        if (!list.get(2).equals("1"))
-//            return 2;
-//        if (!list.get(3).equals("2"))
-//            return 3;
-//        if (!list.get(4).equals("2"))
-//            return 4;
-//
+        if (!list.get(0).equals("1"))
+            return 0;
+        if (!list.get(1).equals("0"))
+            return 1;
+        if (!list.get(2).equals("1"))
+            return 2;
+        if (!list.get(3).equals("2"))
+            return 3;
+        if (!list.get(4).equals("2"))
+            return 4;
+
         list.add("-1"); // 1,0,1,2,2,-1
         list.remove("1"); // 0,1,2,2,-1
-//
-//        if (!list.get(0).equals("0"))
-//            return 5;
-//        if (!list.get(1).equals("1"))
-//            return 6;
-//        if (!list.get(2).equals("2"))
-//            return 7;
-//        if (!list.get(3).equals("2"))
-//            return 8;
-//        if (!list.get(4).equals("-1"))
-//            return 9;
-//
+
+        if (!list.get(0).equals("0"))
+            return 5;
+        if (!list.get(1).equals("1"))
+            return 6;
+        if (!list.get(2).equals("2"))
+            return 7;
+        if (!list.get(3).equals("2"))
+            return 8;
+        if (!list.get(4).equals("-1"))
+            return 9;
+
         list.remove("2"); // 0,1,2,-1
         list.remove(0); // 1,2,-1
         list.add("-2"); // 1,2,-1,-2
-//
-//        if (!list.get(0).equals("1"))
-//            return 10;
-//        if (!list.get(1).equals("2"))
-//            return 11;
-//        if (!list.get(2).equals("-1"))
-//            return 12;
-//        if (!list.get(3).equals("-2"))
-//            return 13;
+
+        if (!list.get(0).equals("1"))
+            return 10;
+        if (!list.get(1).equals("2"))
+            return 11;
+        if (!list.get(2).equals("-1"))
+            return 12;
+        if (!list.get(3).equals("-2"))
+            return 13;
         if (list.remove("-3"))
             return 14;
 
         return 15;
+    }
+
+    @SymbolicTest({3})
+    @DisplayName("test_equals_1")
+    public int test_equals_1() {
+        List<String> list1 = new ArrayList<>();
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+        list1.add(1, "0"); // 1,0,2,3
+        list1.remove(2); // 1,0,3
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("1");
+        list2.add("0");
+        list2.add("2");
+        list2.add("3");
+        list2.add(1, "0"); // 1,0,0,2,3
+
+        if (list1.equals(list2))
+            return 0;
+
+        list2.remove(2); // 1,0,2,3
+        if (list2.equals(list1))
+            return 1;
+
+        list2.remove(2); // 1,0,3
+        if (!list2.equals(list1))
+            return 2;
+
+        return 3;
     }
 
     @SymbolicTest({8})
