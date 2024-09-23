@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.model.Tuple;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
+import com.github.a1k28.evoc.core.z3extended.sort.MapSort;
 import com.github.a1k28.evoc.helper.Logger;
 import com.microsoft.z3.*;
 import lombok.RequiredArgsConstructor;
@@ -89,6 +90,7 @@ public class Z3ExtendedSolver {
         Map target = new HashMap<>();
         Queue<Expr> discoveredValues = new LinkedList<>();
         Z3MapInstance mapInstance = ctx.getMapInstance();
+        MapSort mapSort = mapInstance.getMapSort();
         for (Tuple<Expr> tuple : mapInstance.getDiscoverableKeys()) {
             Expr key = tuple.getO1();
             Expr keyWrapped = tuple.getO2();
@@ -111,7 +113,7 @@ public class Z3ExtendedSolver {
             Model model = solver.getModel();
 
             key = model.eval(key, true);
-            Expr valueWrapped = mapModel.getValue(retrieved);
+            Expr valueWrapped = mapSort.getValue(retrieved);
             Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
                     .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);
@@ -139,9 +141,10 @@ public class Z3ExtendedSolver {
             Queue<Expr> discoveredValues,
             Z3MapInstance mapInstance) {
         ArrayExpr map = mapModel.getArray();
+        MapSort mapSort = mapInstance.getMapSort();
 
         // Create a symbolic key
-        Expr symbolicKey = ctx.mkConst("symbolicKey", mapModel.getKeySort());
+        Expr symbolicKey = ctx.mkConst("symbolicKey", mapSort.getKeySort());
 
         // Create a constraint: there exists a key where map[key] == targetValue
         Expr<BoolSort>[] boolExprs = new BoolExpr[mapInstance.getDiscoverableKeys().size()];
@@ -149,13 +152,13 @@ public class Z3ExtendedSolver {
 //            Expr key = mapModel.getDiscoveredKeysTuple().get(i).getO1();
             Expr keyWrapped = mapInstance.getDiscoverableKeys().get(i).getO2();
 
-            BoolExpr c = ctx.mkNot(ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), keyWrapped));
+            BoolExpr c = ctx.mkNot(ctx.mkEq(mapSort.getKey(ctx.mkSelect(map, symbolicKey)), keyWrapped));
             boolExprs[i] = c;
         }
 
         BoolExpr condition = ctx.mkAnd(
-                ctx.mkNot(mapModel.isEmpty(ctx.mkSelect(map, symbolicKey))),
-                ctx.mkEq(mapModel.getKey(ctx.mkSelect(map, symbolicKey)), symbolicKey),
+                ctx.mkNot(mapSort.isEmpty(ctx.mkSelect(map, symbolicKey))),
+                ctx.mkEq(mapSort.getKey(ctx.mkSelect(map, symbolicKey)), symbolicKey),
                 ctx.mkAnd(boolExprs)
         );
 
@@ -189,7 +192,7 @@ public class Z3ExtendedSolver {
                 retrieved = discoveredValues.poll();
             }
 
-            Expr valueWrapped = mapModel.getValue(retrieved);
+            Expr valueWrapped = mapSort.getValue(retrieved);
             Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
                     .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);

@@ -9,6 +9,7 @@ import com.github.a1k28.evoc.core.z3extended.model.Tuple;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
+import com.github.a1k28.evoc.core.z3extended.sort.MapSort;
 import com.microsoft.z3.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class Z3MapInstance implements IStack {
     private final Z3Stack<Expr, Tuple<Expr>> discoveredKeys;
     private final Z3ExtendedSolver solver;
     private final Expr sentinel;
+    private final MapSort mapSort;
 
     public Z3MapInstance(Z3ExtendedContext context,
                          Z3ExtendedSolver solver,
@@ -36,6 +38,7 @@ public class Z3MapInstance implements IStack {
 
         Sort keySort = sortUnion.getGenericSort();
         Sort valueSort = sortUnion.getGenericSort();
+        this.mapSort = sortState.mkMapSort(keySort, valueSort);
         this.sentinel = sortState.mkMapSentinel(keySort, valueSort);
     }
 
@@ -49,6 +52,10 @@ public class Z3MapInstance implements IStack {
     public void pop() {
         stack.pop();
         discoveredKeys.pop();
+    }
+
+    public MapSort getMapSort() {
+        return this.mapSort;
     }
 
     public Expr constructor(Expr var1) {
@@ -69,13 +76,12 @@ public class Z3MapInstance implements IStack {
         // TODO: handle sorts?
         Sort keySort = sortUnion.getGenericSort();
         Sort valueSort = sortUnion.getGenericSort();
-        TupleSort sort = sortState.mkMapSort(keySort, valueSort);
 
         ArrayExpr array;
         ArithExpr size;
         if (isSizeUnknown) {
             size = (ArithExpr) ctx.mkFreshConst("size", ctx.mkIntSort());
-            array = mkArray(keySort, sort);
+            array = mkArray(keySort, mapSort.getSort());
 
             // size assertion
             BoolExpr sizeAssertion = ctx.mkGe(size, ctx.mkInt(0));
@@ -85,7 +91,7 @@ public class Z3MapInstance implements IStack {
             array = mkEmptyArray(keySort, sentinel);
         }
 
-        return new MapModel(reference, array, sort, size, isSizeUnknown);
+        return new MapModel(reference, array, mapSort.getSort(), size, isSizeUnknown);
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {
@@ -99,18 +105,18 @@ public class Z3MapInstance implements IStack {
     public Expr get(Expr var1, Expr key) {
         MapModel model = getModel(var1);
         Expr retrieved = getByKey(model, key);
-        BoolExpr isEmpty = model.isEmpty(retrieved);
+        BoolExpr isEmpty = mapSort.isEmpty(retrieved);
         Expr res = ctx.mkITE(isEmpty, sentinel, retrieved);
         return sortUnion.unwrapValue(
-                model.getValue(res), model.getValue(sentinel));
+                mapSort.getValue(res), mapSort.getValue(sentinel));
     }
 
     public Expr getOrDefault(Expr var1, Expr key, Expr def) {
         MapModel model = getModel(var1);
         Expr retrieved = getByKey(model, key);
-        BoolExpr isEmpty = model.isEmpty(retrieved);
+        BoolExpr isEmpty = mapSort.isEmpty(retrieved);
         Expr unwrapped = sortUnion.unwrapValue(
-                model.getValue(retrieved), model.getValue(sentinel));
+                mapSort.getValue(retrieved), mapSort.getValue(sentinel));
         return ctx.mkITE(isEmpty, def, unwrapped);
     }
 
@@ -155,7 +161,7 @@ public class Z3MapInstance implements IStack {
 
     public BoolExpr containsValue(Expr var1, Expr value) {
         MapModel model = getModel(var1);
-        Expr keyWrapped = ctx.mkFreshConst("key", model.getKeySort());
+        Expr keyWrapped = ctx.mkFreshConst("key", mapSort.getKeySort());
         Expr valueWrapped = sortUnion.wrapValue(value);
         Expr retrieved = ctx.mkSelect(model.getArray(), keyWrapped);
         BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, keyWrapped, valueWrapped);
@@ -179,7 +185,7 @@ public class Z3MapInstance implements IStack {
         Expr retrieved = ctx.mkSelect(map, keyWrapped);
         BoolExpr exists = existsByKeyCondition(model, retrieved, keyWrapped);
         Expr previous = ctx.mkITE(exists, retrieved, sentinel);
-        Expr previousValue = model.getValue(previous);
+        Expr previousValue = mapSort.getValue(previous);
 
         map = ctx.mkStore(map, keyWrapped, sentinel);
 
@@ -231,7 +237,7 @@ public class Z3MapInstance implements IStack {
     public Expr clear(Expr var1) {
         MapModel model = getModel(var1);
         model = copyModel(model);
-        ArrayExpr updatedArray = mkEmptyArray(model.getKeySort(), sentinel);
+        ArrayExpr updatedArray = mkEmptyArray(mapSort.getKeySort(), sentinel);
         model.setArray(updatedArray);
         model.setSize(ctx.mkInt(0));
         model.setSizeUnknown(false);
@@ -254,7 +260,7 @@ public class Z3MapInstance implements IStack {
 
         Expr retrieved = ctx.mkSelect(model.getArray(), keyWrapped);
         BoolExpr exists = existsByKeyAndValueCondition(model, retrieved, keyWrapped, oldValueWrapped);
-        Expr value = model.mkDecl(keyWrapped, newValueWrapped, ctx.mkBool(false));
+        Expr value = mapSort.mkDecl(keyWrapped, newValueWrapped, ctx.mkBool(false));
         map = (ArrayExpr) ctx.mkITE(exists, ctx.mkStore(map, keyWrapped, value), map);
 
         model.setArray(map);
@@ -273,7 +279,7 @@ public class Z3MapInstance implements IStack {
         Expr previousValue = ctx.mkSelect(model.getArray(), keyWrapped);
         BoolExpr exists = existsByKeyCondition(model, previousValue, keyWrapped);
 
-        Expr newValue = model.mkDecl(keyWrapped, valueWrapped, ctx.mkBool(false));
+        Expr newValue = mapSort.mkDecl(keyWrapped, valueWrapped, ctx.mkBool(false));
         newValue = ctx.mkITE(exists, newValue, sentinel);
 
         map = ctx.mkStore(map, keyWrapped, newValue);
@@ -281,13 +287,13 @@ public class Z3MapInstance implements IStack {
         model.setArray(map);
         addDiscoveredKey(key);
 
-        return model.getValue(previousValue);
+        return mapSort.getValue(previousValue);
     }
 
     public Expr copyOf(Expr var1) {
         MapModel source = getModel(var1, false);
         MapModel target = new MapModel(source);
-        ArrayExpr arr = mkArray(source.getKeySort(), source.getValueSort());
+        ArrayExpr arr = mkArray(mapSort.getKeySort(), mapSort.getValueSort());
         target.setArray(arr);
         solver.add(ctx.mkEq(source.getArray(), arr));
         stack.add(target.getReference(), target);
@@ -298,13 +304,13 @@ public class Z3MapInstance implements IStack {
         MapModel model = getModel(ctx.mkFreshConst(
                 "Map", SortType.MAP.value(ctx)), false);
         ArrayExpr map = model.getArray();
-        ArrayExpr set = ctx.mkEmptySet(model.getKeySort());
+        ArrayExpr set = ctx.mkEmptySet(mapSort.getKeySort());
         ArithExpr size = ctx.mkInt(0);
         if (vars != null) {
             for (int i = 0; i < vars.length; i+=2) {
                 Expr key = sortUnion.wrapValue(vars[i]);
                 Expr val = sortUnion.wrapValue(vars[i+1]);
-                Expr value = model.mkDecl(key, val, ctx.mkBool(false));
+                Expr value = mapSort.mkDecl(key, val, ctx.mkBool(false));
                 map = ctx.mkStore(map, key, value);
                 addDiscoveredKey(vars[i]);
                 BoolExpr exists = ctx.mkSetMembership(key, set);
@@ -319,9 +325,9 @@ public class Z3MapInstance implements IStack {
 
     public BoolExpr existsByKeyAndValueCondition(MapModel model, Expr retrieved, Expr key, Expr value) {
         return ctx.mkAnd(
-                ctx.mkNot(model.isEmpty(retrieved)),
-                ctx.mkEq(model.getKey(retrieved), key),
-                ctx.mkEq(model.getValue(retrieved), value)
+                ctx.mkNot(mapSort.isEmpty(retrieved)),
+                ctx.mkEq(mapSort.getKey(retrieved), key),
+                ctx.mkEq(mapSort.getValue(retrieved), value)
         );
     }
 
@@ -336,7 +342,7 @@ public class Z3MapInstance implements IStack {
 
     public Expr size(MapModel model) {
         if (model.isSizeUnknown()) {
-            ArrayExpr set = ctx.mkEmptySet(model.getKeySort());
+            ArrayExpr set = ctx.mkEmptySet(mapSort.getKeySort());
             ArithExpr size = ctx.mkInt(0);
             for (Tuple<Expr> tuple : getDiscoverableKeys()) {
                 Expr key = tuple.getO2();
@@ -368,9 +374,9 @@ public class Z3MapInstance implements IStack {
 
         value = sortUnion.wrapValue(value);
         if (shouldBeAbsent)
-            value = ctx.mkITE(exists, model.getValue(previous), value);
+            value = ctx.mkITE(exists, mapSort.getValue(previous), value);
 
-        Expr newValue = model.mkDecl(keyWrapped, value, ctx.mkBool(false));
+        Expr newValue = mapSort.mkDecl(keyWrapped, value, ctx.mkBool(false));
         ArrayExpr newMap = ctx.mkStore(map, keyWrapped, newValue);
 
         ArithExpr size = (ArithExpr) ctx.mkITE(exists,
@@ -380,8 +386,8 @@ public class Z3MapInstance implements IStack {
         model.setSize(size);
         addDiscoveredKey(key);
 
-        Expr sentinelValue = model.getValue(sentinel);
-        return sortUnion.unwrapValue(model.getValue(previous), sentinelValue);
+        Expr sentinelValue = mapSort.getValue(sentinel);
+        return sortUnion.unwrapValue(mapSort.getValue(previous), sentinelValue);
     }
 
     private void putAllTKSU(MapModel target, MapModel source) {
@@ -396,7 +402,7 @@ public class Z3MapInstance implements IStack {
             Expr retrievedFromTarget = ctx.mkSelect(target.getArray(), key);
             BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
 
-            Expr newValue = target.mkDecl(key, target.getValue(retrievedFromTarget), ctx.mkBool(false));
+            Expr newValue = mapSort.mkDecl(key, mapSort.getValue(retrievedFromTarget), ctx.mkBool(false));
             BoolExpr shouldSave = ctx.mkAnd(existsInTarget, ctx.mkNot(existsInSource));
 
             map = (ArrayExpr) ctx.mkITE(shouldSave, ctx.mkStore(map, key, newValue), map);
@@ -414,7 +420,7 @@ public class Z3MapInstance implements IStack {
             Expr key = tuple.getO2();
             Expr retrievedFromSource = ctx.mkSelect(source.getArray(), key);
             BoolExpr existsInSource = existsByKeyCondition(source, retrievedFromSource, key);
-            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
+            Expr newValue = mapSort.mkDecl(key, mapSort.getValue(retrievedFromSource), ctx.mkBool(false));
             map = (ArrayExpr) ctx.mkITE(existsInSource,
                     ctx.mkStore(map, key, newValue), map);
         }
@@ -437,7 +443,7 @@ public class Z3MapInstance implements IStack {
             Expr retrievedFromTarget = ctx.mkSelect(map, key);
             BoolExpr existsInTarget = existsByKeyCondition(target, retrievedFromTarget, key);
 
-            Expr newValue = target.mkDecl(key, source.getValue(retrievedFromSource), ctx.mkBool(false));
+            Expr newValue = mapSort.mkDecl(key, mapSort.getValue(retrievedFromSource), ctx.mkBool(false));
             map = (ArrayExpr) ctx.mkITE(existsInSource,
                     ctx.mkStore(map, key, newValue), map);
 
@@ -459,8 +465,8 @@ public class Z3MapInstance implements IStack {
 
     private BoolExpr existsByKeyCondition(MapModel model, Expr retrieved, Expr key) {
         return ctx.mkAnd(
-                ctx.mkNot(model.isEmpty(retrieved)),
-                ctx.mkEq(model.getKey(retrieved), key)
+                ctx.mkNot(mapSort.isEmpty(retrieved)),
+                ctx.mkEq(mapSort.getKey(retrieved), key)
         );
     }
 

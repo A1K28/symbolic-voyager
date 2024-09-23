@@ -212,6 +212,114 @@ public class Z3ListTest {
         return 4;
     }
 
+    @SymbolicTest({7})
+    @DisplayName("test_add_all_1")
+    public int test_add_all_1() {
+        List<String> list1 = new ArrayList<>();
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("4");
+        list2.add("2");
+
+        if (!list1.addAll(list2))
+            return 0;
+        if (!list1.get(0).equals("1"))
+            return 1;
+        if (!list1.get(1).equals("2"))
+            return 2;
+        if (!list1.get(2).equals("3"))
+            return 3;
+        if (!list1.get(3).equals("4"))
+            return 4;
+        if (!list1.get(4).equals("2"))
+            return 5;
+        if (list1.size() != 5)
+            return 6;
+        return 7;
+    }
+
+    @SymbolicTest({7})
+    @DisplayName("test_add_all_by_index_1")
+    public int test_add_all_by_index_1() {
+        List<String> list1 = new ArrayList<>();
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("4");
+        list2.add("2");
+
+        if (!list1.addAll(2, list2)) // 1,2,4,2,3
+            return 0;
+        if (!list1.get(0).equals("1"))
+            return 1;
+        if (!list1.get(1).equals("2"))
+            return 2;
+        if (!list1.get(2).equals("4"))
+            return 3;
+        if (!list1.get(3).equals("2"))
+            return 4;
+        if (!list1.get(4).equals("3"))
+            return 5;
+        if (list1.size() != 5)
+            return 6;
+        return 7;
+    }
+
+    @SymbolicTest({5})
+    @DisplayName("test_remove_all_1")
+    public int test_remove_all_1() {
+        List<String> list1 = new ArrayList<>();
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("2");
+        list2.add("4");
+
+        if (!list1.removeAll(list2))
+            return 0;
+        if (list1.size() != 2)
+            return 1;
+        if (!list1.contains("1"))
+            return 2;
+        if (!list1.contains("3"))
+            return 3;
+        if (list1.contains("2"))
+            return 4;
+        return 5;
+    }
+
+    @SymbolicTest({5})
+    @DisplayName("test_retain_all_1")
+    public int test_retain_all_1() {
+        List<String> list1 = new ArrayList<>();
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("2");
+        list2.add("4");
+
+        if (!list1.retainAll(list2))
+            return 0;
+        if (list1.size() != 1)
+            return 1;
+        if (!list1.contains("2"))
+            return 2;
+        if (list1.contains("1"))
+            return 3;
+        if (list1.contains("3"))
+            return 4;
+        return 5;
+    }
+
     @SymbolicTest({8})
     @DisplayName("test_contains_value_1")
     public int test_contains_value_1() {

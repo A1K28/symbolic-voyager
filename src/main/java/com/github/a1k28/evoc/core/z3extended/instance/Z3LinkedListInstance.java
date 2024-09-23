@@ -4,7 +4,8 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.github.a1k28.evoc.core.z3extended.model.LinkedListModel;
-import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.core.z3extended.sort.ArrayAndExprSort;
+import com.github.a1k28.evoc.core.z3extended.sort.LinkedListNodeSort;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
@@ -17,8 +18,10 @@ public class Z3LinkedListInstance implements IStack {
     private final Z3Stack<Expr, LinkedListModel> stack;
     private final Z3ExtendedSolver solver;
     private final Sort valueSort;
-    private final TupleSort nodeSort;
+    private final LinkedListNodeSort nodeSort;
     private final Sort referenceSort;
+    private final ArrayAndExprSort arrayAndSizeHolderSort;
+    private final ArraySort arraySort;
 
     private FuncDecl searchRecFunc;
     private FuncDecl findNodeByValueFunc;
@@ -27,6 +30,9 @@ public class Z3LinkedListInstance implements IStack {
     private FuncDecl<SetSort> toSetFunc;
     private FuncDecl<BoolSort> containsAllFunc;
     private FuncDecl<BoolSort> equalsFunc;
+    private FuncDecl removeAllFunc;
+    private FuncDecl retainAllFunc;
+    private FuncDecl addAllFunc;
 
     public Z3LinkedListInstance(Z3ExtendedContext context,
                                 Z3ExtendedSolver solver,
@@ -40,6 +46,8 @@ public class Z3LinkedListInstance implements IStack {
         this.valueSort = sortUnion.getGenericSort();
         this.referenceSort = ctx.mkIntSort();
         this.nodeSort = sortState.mkLinkedListSort(referenceSort, valueSort);
+        this.arraySort = ctx.mkArraySort(referenceSort, nodeSort.getSort());
+        this.arrayAndSizeHolderSort = sortState.mkArrayAndExprHolder(arraySort, ctx.mkIntSort());
 
         defineSearchFunc();
         defineFindNodeByValueFunc();
@@ -48,6 +56,9 @@ public class Z3LinkedListInstance implements IStack {
         defineToSetFunc();
         defineContainsAllFunc();
         defineEqualsFunc();
+        defineRemoveAllFunc();
+        defineRetainAllFunc();
+        defineAddAllFunc();
     }
 
     @Override
@@ -97,14 +108,14 @@ public class Z3LinkedListInstance implements IStack {
             Expr firstRef = ctx.mkFreshConst("firstRef", referenceSort);
             Expr lastRef = ctx.mkFreshConst("lastRef", referenceSort);
 
-            head = mkDecl(nill, headRef, firstRef, headRef);
-            tail = mkDecl(nill, tailRef, tailRef, lastRef);
+            head = nodeSort.mkDecl(nill, headRef, firstRef, headRef);
+            tail = nodeSort.mkDecl(nill, tailRef, tailRef, lastRef);
         } else {
             referenceMap = mkEmptyArray();
             size = ctx.mkInt(0);
 
-            head = mkDecl(nill, headRef, tailRef, headRef);
-            tail = mkDecl(nill, tailRef, tailRef, headRef);
+            head = nodeSort.mkDecl(nill, headRef, tailRef, headRef);
+            tail = nodeSort.mkDecl(nill, tailRef, tailRef, headRef);
         }
 
         referenceMap = ctx.mkStore(referenceMap, headRef, head);
@@ -140,35 +151,21 @@ public class Z3LinkedListInstance implements IStack {
         return ctx.mkEq(getModel(var1).getSize(), ctx.mkInt(0));
     }
 
-//    public BoolExpr addAll(Expr var1, Expr var2) {
-//        ListModel target = copyModel(getModel(var1));
-//        ListModel source = getModel(var2);
-//
-//        ArrayExpr targetArray = target.getArray();
-//        ArrayExpr sourceArray = source.getArray();
-//
-//        IntExpr i = ctx.mkIntConst("i");
-//        BoolExpr isSourceIdxEmpty = isValEmpty(ctx.mkSelect(sourceArray, i));
-//        BoolExpr body = ctx.mkAnd(
-//                ctx.mkLe(ctx.mkInt(0), i),
-//                ctx.mkLt(i, source.getInternalSize()),
-//                ctx.mkEq(
-//                        targetArray,
-//                        ctx.mkStore(targetArray,
-//                                ctx.mkAdd(i, target.getInternalSize()),
-//                                ctx.mkSelect(sourceArray, i))
-//                )
-//        );
-//
-//        target.setSize((IntExpr) ctx.mkAdd(target.getSize(), source.getSize()));
-//        target.setInternalSize((IntExpr) ctx.mkAdd(target.getInternalSize(), source.getInternalSize()));
-//
-//        return ctx.mkTrue();
-//    }
+    public BoolExpr addAll(Expr var1, Expr var2) {
+        LinkedListModel target = copyModel(getModel(var1));
+        LinkedListModel source = getModel(var2);
 
-//
-//    public BoolExpr addAll(Expr var1, ArithExpr index, Expr var2) {
-//    }
+        Expr tailRef = target.getTailReference();
+        return addAll(target, source, tailRef);
+    }
+
+    public BoolExpr addAll(Expr var1, IntExpr index, Expr var2) {
+        LinkedListModel target = copyModel(getModel(var1));
+        LinkedListModel source = getModel(var2);
+
+        Expr lastRef = getReferenceByIndex(target.getReferenceMap(), target.getHeadReference(), index);
+        return addAll(target, source, lastRef);
+    }
 
     public Expr remove(Expr var1, IntExpr index) {
         LinkedListModel model = copyModel(getModel(var1));
@@ -182,10 +179,10 @@ public class Z3LinkedListInstance implements IStack {
         IntExpr oldSize = model.getSize();
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr head = ctx.mkSelect(referenceMap, model.getHeadReference());
-        Expr nextRef = getNextRef(head);
+        Expr nextRef = nodeSort.getNextRef(head);
         Expr node = findNodeByValueFunc.apply(
                 nextRef, sortUnion.wrapValue(element), referenceMap);
-        Expr ref = getRef(node);
+        Expr ref = nodeSort.getRef(node);
         remove(model, ref);
         IntExpr newSize = model.getSize();
         return ctx.mkLt(newSize, oldSize);
@@ -202,9 +199,46 @@ public class Z3LinkedListInstance implements IStack {
 //        solver.add(ctx.mkImplies(existsMatch, existsCondition));
 //    }
 
-//    public BoolExpr removeAll(Expr var1, Expr var2) {
-//    }
-//
+    public BoolExpr removeAll(Expr var1, Expr var2) {
+        LinkedListModel model1 = copyModel(getModel(var1));
+        LinkedListModel model2 = getModel(var2);
+
+        IntExpr size = model1.getSize();
+
+        Expr head1 = ctx.mkSelect(model1.getReferenceMap(), model1.getHeadReference());
+        Expr head2 = ctx.mkSelect(model2.getReferenceMap(), model2.getHeadReference());
+
+        Expr<SetSort> set = toSetFunc.apply(
+                nodeSort.getNextRef(head2), ctx.mkEmptySet(valueSort), model2.getReferenceMap());
+        Expr holder = removeAllFunc.apply(
+                nodeSort.getNextRef(head1), model1.getReferenceMap(), set, ctx.mkInt(0));
+
+        model1.setReferenceMap(arrayAndSizeHolderSort.getArray(holder));
+        model1.setSize((IntExpr) arrayAndSizeHolderSort.getExpr(holder));
+
+        return ctx.mkLt(model1.getSize(), size);
+    }
+
+    public BoolExpr retainAll(Expr var1, Expr var2) {
+        LinkedListModel model1 = copyModel(getModel(var1));
+        LinkedListModel model2 = getModel(var2);
+
+        IntExpr size = model1.getSize();
+
+        Expr head1 = ctx.mkSelect(model1.getReferenceMap(), model1.getHeadReference());
+        Expr head2 = ctx.mkSelect(model2.getReferenceMap(), model2.getHeadReference());
+
+        Expr<SetSort> set = toSetFunc.apply(
+                nodeSort.getNextRef(head2), ctx.mkEmptySet(valueSort), model2.getReferenceMap());
+        Expr holder = retainAllFunc.apply(
+                nodeSort.getNextRef(head1), model1.getReferenceMap(), set, ctx.mkInt(0));
+
+        model1.setReferenceMap(arrayAndSizeHolderSort.getArray(holder));
+        model1.setSize((IntExpr) arrayAndSizeHolderSort.getExpr(holder));
+
+        return ctx.mkLt(model1.getSize(), size);
+    }
+
     public BoolExpr contains(Expr var1, Expr element) {
         return ctx.mkNot(ctx.mkEq(indexOf(var1, element), ctx.mkInt(-1)));
     }
@@ -216,9 +250,9 @@ public class Z3LinkedListInstance implements IStack {
         Expr head1 = ctx.mkSelect(model1.getReferenceMap(), model1.getHeadReference());
         Expr head2 = ctx.mkSelect(model2.getReferenceMap(), model2.getHeadReference());
 
-        ArrayExpr set = (ArrayExpr) toSetFunc.apply(
-                getNextRef(head2), ctx.mkEmptySet(referenceSort), model2.getReferenceMap());
-        return (BoolExpr) containsAllFunc.apply(getNextRef(head1), set, model1.getReferenceMap());
+        Expr<SetSort> set = toSetFunc.apply(
+                nodeSort.getNextRef(head2), ctx.mkEmptySet(valueSort), model2.getReferenceMap());
+        return (BoolExpr) containsAllFunc.apply(nodeSort.getNextRef(head1), set, model1.getReferenceMap());
     }
 
 //
@@ -238,9 +272,6 @@ public class Z3LinkedListInstance implements IStack {
 //                1, null, null, null, null);
 //    }
 
-//    public BoolExpr retainAll(Expr var1, Expr var2) {
-//    }
-//
     public Expr clear(Expr var1) {
         LinkedListModel model = copyModel(getModel(var1));
 
@@ -251,8 +282,8 @@ public class Z3LinkedListInstance implements IStack {
         ArrayExpr referenceMap = mkEmptyArray();
         IntExpr size = ctx.mkInt(0);
 
-        Expr head = mkDecl(nill, headRef, tailRef, headRef);
-        Expr tail = mkDecl(nill, tailRef, tailRef, headRef);
+        Expr head = nodeSort.mkDecl(nill, headRef, tailRef, headRef);
+        Expr tail = nodeSort.mkDecl(nill, tailRef, tailRef, headRef);
 
         referenceMap = ctx.mkStore(referenceMap, headRef, head);
         referenceMap = ctx.mkStore(referenceMap, tailRef, tail);
@@ -267,7 +298,7 @@ public class Z3LinkedListInstance implements IStack {
         LinkedListModel model = getModel(var1);
         Expr ref = getReferenceByIndex(model.getReferenceMap(), model.getHeadReference(), index);
         Expr retrieved = ctx.mkSelect(model.getReferenceMap(), ref);
-        return sortUnion.unwrapValue(getValue(retrieved), ctx.mkNull());
+        return sortUnion.unwrapValue(nodeSort.getValue(retrieved), ctx.mkNull());
     }
 
 //    // TODO: what to do here?
@@ -318,7 +349,7 @@ public class Z3LinkedListInstance implements IStack {
         LinkedListModel model = getModel(var1);
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr head = ctx.mkSelect(referenceMap, model.getHeadReference());
-        Expr nextRef = getNextRef(head);
+        Expr nextRef = nodeSort.getNextRef(head);
         return findIdxByValueFunc.apply(
                 nextRef, sortUnion.wrapValue(element), ctx.mkInt(0), referenceMap);
     }
@@ -327,7 +358,7 @@ public class Z3LinkedListInstance implements IStack {
         LinkedListModel model = getModel(var1);
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr tail = ctx.mkSelect(referenceMap, model.getTailReference());
-        Expr prevRef = getPrevRef(tail);
+        Expr prevRef = nodeSort.getPrevRef(tail);
         IntExpr lastIdx = (IntExpr) findLastIdxByValueFunc.apply(
                 prevRef, sortUnion.wrapValue(element), ctx.mkInt(0), referenceMap);
         return ctx.mkSub(model.getSize(), ctx.mkAdd(lastIdx, ctx.mkInt(1)));
@@ -340,8 +371,8 @@ public class Z3LinkedListInstance implements IStack {
         Expr head1 = ctx.mkSelect(model1.getReferenceMap(), model1.getHeadReference());
         Expr head2 = ctx.mkSelect(model2.getReferenceMap(), model2.getHeadReference());
 
-        return (BoolExpr) equalsFunc.apply(getNextRef(head1), model1.getReferenceMap(),
-                getNextRef(head2), model2.getReferenceMap());
+        return (BoolExpr) equalsFunc.apply(nodeSort.getNextRef(head1), model1.getReferenceMap(),
+                nodeSort.getNextRef(head2), model2.getReferenceMap());
     }
 
     public Expr set(Expr var1, IntExpr index, Expr element) {
@@ -350,8 +381,8 @@ public class Z3LinkedListInstance implements IStack {
         ArrayExpr referenceMap = model.getReferenceMap();
         Expr ref = getReferenceByIndex(referenceMap, model.getHeadReference(), index);
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr prevNodeUpdated = mkDecl(wrappedElement,
-                ref, getNextRef(node), getPrevRef(node));
+        Expr prevNodeUpdated = nodeSort.mkDecl(wrappedElement,
+                ref, nodeSort.getNextRef(node), nodeSort.getPrevRef(node));
         // can only update the element if the ref was found
         BoolExpr canUpdate = ctx.mkAnd(
                 ctx.mkNot(ctx.mkEq(model.getHeadReference(), ref)),
@@ -361,13 +392,36 @@ public class Z3LinkedListInstance implements IStack {
                 ctx.mkStore(referenceMap, ref, prevNodeUpdated),
                 referenceMap);
         model.setReferenceMap(referenceMap);
-        return sortUnion.unwrapValue(getValue(node), ctx.mkNull());
+        return sortUnion.unwrapValue(nodeSort.getValue(node), ctx.mkNull());
     }
 
     private Expr getReferenceByIndex(ArrayExpr referenceMap, Expr headRef, IntExpr index) {
         Expr head = ctx.mkSelect(referenceMap, headRef);
-        Expr nextRef = getNextRef(head);
+        Expr nextRef = nodeSort.getNextRef(head);
         return searchRecFunc.apply(nextRef, ctx.mkInt(0), index, referenceMap);
+    }
+
+    private BoolExpr addAll(LinkedListModel target, LinkedListModel source, Expr lastSourceRef) {
+        IntExpr initialSize = target.getSize();
+        Expr head2 = ctx.mkSelect(source.getReferenceMap(), source.getHeadReference());
+
+        IntExpr capacity = target.getCapacity() == null ?
+                ctx.mkInt(Integer.MAX_VALUE) : target.getCapacity();
+
+        Expr holder = addAllFunc.apply(
+                lastSourceRef,
+                target.getReferenceMap(),
+                nodeSort.getNextRef(head2),
+                source.getReferenceMap(),
+                initialSize,
+                capacity,
+                target.getRefCounter());
+
+        target.setReferenceMap(arrayAndSizeHolderSort.getArray(holder));
+        target.setSize((IntExpr) arrayAndSizeHolderSort.getExpr(holder));
+        target.setRefCounter((IntExpr) ctx.mkAdd(target.getRefCounter(), target.getSize()));
+
+        return ctx.mkGt(target.getSize(), initialSize);
     }
 
     private Expr remove(LinkedListModel model, Expr reference) {
@@ -378,55 +432,77 @@ public class Z3LinkedListInstance implements IStack {
         );
 
         ArrayExpr referenceMap = model.getReferenceMap();
-
         Expr node = ctx.mkSelect(referenceMap, reference);
-        Expr prevRef = getPrevRef(node);
-        Expr nextRef = getNextRef(node);
-
-        Expr prevNode = ctx.mkSelect(referenceMap, prevRef);
-        Expr nextNode = ctx.mkSelect(referenceMap, nextRef);
-
-        Expr prevNodeUpdated = mkDecl(getValue(prevNode), prevRef, nextRef, getPrevRef(prevNode));
-        Expr nextNodeUpdated = mkDecl(getValue(nextNode), nextRef, getNextRef(nextNode), prevRef);
-
-        referenceMap = (ArrayExpr) ctx.mkITE(canRemove, ctx.mkStore(referenceMap, prevRef, prevNodeUpdated), referenceMap);
-        referenceMap = (ArrayExpr) ctx.mkITE(canRemove, ctx.mkStore(referenceMap, nextRef, nextNodeUpdated), referenceMap);
+        referenceMap = remove(referenceMap, node, canRemove);
         IntExpr size = (IntExpr) ctx.mkITE(canRemove, ctx.mkSub(model.getSize(), ctx.mkInt(1)), model.getSize());
 
         model.setSize(size);
         model.setReferenceMap(referenceMap);
-        return sortUnion.unwrapValue(getValue(node), ctx.mkNull());
+        return sortUnion.unwrapValue(nodeSort.getValue(node), ctx.mkNull());
     }
 
-    /**
-     *
-     * @param model the in-memory model
-     * @param nextRef the reference, which should be next to the new element
-     * @param element the value
-     * @return true if the list was modified by the result of this call
-     */
-    private BoolExpr addBeforeReference(LinkedListModel model, Expr nextRef, Expr element) {
-        ArrayExpr referenceMap = model.getReferenceMap();
-        Expr wrappedElement = sortUnion.wrapValue(element);
-        Expr lastNode = ctx.mkSelect(referenceMap, nextRef);
-        Expr prevRef = getPrevRef(lastNode);
-        Expr newRef = mkNextRef(model);
-
-        Expr node = mkDecl(wrappedElement, newRef, nextRef, prevRef);
-        referenceMap = ctx.mkStore(referenceMap, newRef, node);
+    private ArrayExpr remove(ArrayExpr referenceMap, Expr node, BoolExpr canRemove) {
+        Expr prevRef = nodeSort.getPrevRef(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
         Expr prevNode = ctx.mkSelect(referenceMap, prevRef);
-        Expr prevNodeUpdated = mkDecl(getValue(prevNode), prevRef, newRef, getPrevRef(prevNode));
-        referenceMap = ctx.mkStore(referenceMap, prevRef, prevNodeUpdated);
+        Expr nextNode = ctx.mkSelect(referenceMap, nextRef);
 
-        Expr nextNodeUpdated = mkDecl(getValue(lastNode), nextRef, getNextRef(lastNode), newRef);
-        referenceMap = ctx.mkStore(referenceMap, nextRef, nextNodeUpdated);
+        Expr prevNodeUpdated = nodeSort.mkDecl(nodeSort.getValue(prevNode),
+                prevRef, nextRef, nodeSort.getPrevRef(prevNode));
+        Expr nextNodeUpdated = nodeSort.mkDecl(nodeSort.getValue(nextNode),
+                nextRef, nodeSort.getNextRef(nextNode), prevRef);
 
-        IntExpr size = (IntExpr) ctx.mkAdd(model.getSize(), ctx.mkInt(1));
+        referenceMap = (ArrayExpr) ctx.mkITE(canRemove, ctx.mkStore(referenceMap, prevRef, prevNodeUpdated), referenceMap);
+        referenceMap = (ArrayExpr) ctx.mkITE(canRemove, ctx.mkStore(referenceMap, nextRef, nextNodeUpdated), referenceMap);
+        return referenceMap;
+    }
+
+    private BoolExpr addBeforeReference(LinkedListModel model, Expr nextRef, Expr element) {
+        ArrayExpr referenceMap = model.getReferenceMap();
+        Expr newRef = mkNextRef(model);
+
+        BoolExpr shouldAdd;
+        if (model.getCapacity() == null) shouldAdd = ctx.mkTrue();
+        else shouldAdd = ctx.mkLt(model.getSize(), model.getCapacity());
+
+        Expr wrappedElement = sortUnion.wrapValue(element);
+        referenceMap = addBeforeReference(referenceMap, nextRef, wrappedElement, newRef, shouldAdd);
+        IntExpr size = (IntExpr) ctx.mkITE(shouldAdd,
+                ctx.mkAdd(model.getSize(), ctx.mkInt(1)), model.getSize());
 
         model.setReferenceMap(referenceMap);
         model.setSize(size);
         return ctx.mkTrue();
+    }
+
+    /**
+     *
+     * @param referenceMap the array model
+     * @param nextRef the reference, which should be next to the new element
+     * @param element the value
+     * @param newRef the new reference value
+     * @param shouldAdd a boolean value indicating whether the operation should proceed or not
+     * @return true if the list was modified by the result of this call
+     */
+    private ArrayExpr addBeforeReference(
+            ArrayExpr referenceMap, Expr nextRef, Expr wrappedElement, Expr newRef, BoolExpr shouldAdd) {
+        Expr lastNode = ctx.mkSelect(referenceMap, nextRef);
+        Expr prevRef = nodeSort.getPrevRef(lastNode);
+
+        ArrayExpr originalReferenceMap = referenceMap;
+
+        Expr node = nodeSort.mkDecl(wrappedElement, newRef, nextRef, prevRef);
+        referenceMap = ctx.mkStore(referenceMap, newRef, node);
+
+        Expr prevNode = ctx.mkSelect(referenceMap, prevRef);
+        Expr prevNodeUpdated = nodeSort.mkDecl(nodeSort.getValue(prevNode), prevRef, newRef, nodeSort.getPrevRef(prevNode));
+        referenceMap = ctx.mkStore(referenceMap, prevRef, prevNodeUpdated);
+
+        Expr nextNodeUpdated = nodeSort.mkDecl(nodeSort.getValue(lastNode), nextRef, nodeSort.getNextRef(lastNode), newRef);
+        referenceMap = ctx.mkStore(referenceMap, nextRef, nextNodeUpdated);
+
+        return (ArrayExpr) ctx.mkITE(shouldAdd, referenceMap, originalReferenceMap);
     }
 
     private LinkedListModel getModel(Expr var1) {
@@ -451,40 +527,20 @@ public class Z3LinkedListInstance implements IStack {
         return newModel;
     }
 
-    private Expr mkDecl(Expr element, Expr ref, Expr nextRef, Expr prevRef) {
-        return this.nodeSort.mkDecl().apply(element, ref, nextRef, prevRef);
-    }
-
-    private Expr getValue(Expr node) {
-        return this.nodeSort.getFieldDecls()[0].apply(node);
-    }
-
-    private Expr getRef(Expr node) {
-        return this.nodeSort.getFieldDecls()[1].apply(node);
-    }
-
-    private Expr getNextRef(Expr node) {
-        return this.nodeSort.getFieldDecls()[2].apply(node);
-    }
-
-    private Expr getPrevRef(Expr node) {
-        return this.nodeSort.getFieldDecls()[3].apply(node);
-    }
-
     // assuming index out of bounds does not occur!
     private void defineSearchFunc() {
         this.searchRecFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListSearchRecFunc"),
-                new Sort[]{referenceSort, ctx.mkIntSort(), ctx.mkIntSort(), ctx.mkArraySort(referenceSort, nodeSort)},
+                new Sort[]{referenceSort, ctx.mkIntSort(), ctx.mkIntSort(), arraySort},
                 referenceSort);
 
         Expr ref = ctx.mkBound(0, referenceSort);
         Expr i = ctx.mkBound(1, ctx.mkIntSort());
         Expr index = ctx.mkBound(2, ctx.mkIntSort());
-        Expr referenceMap = ctx.mkBound(3, ctx.mkArraySort(referenceSort, nodeSort));
+        Expr referenceMap = ctx.mkBound(3, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr nextRef = getNextRef(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
         BoolExpr isLegalState = ctx.mkAnd(
                 ctx.mkGe(i, ctx.mkInt(0)),
@@ -511,16 +567,16 @@ public class Z3LinkedListInstance implements IStack {
     private void defineFindNodeByValueFunc() {
         this.findNodeByValueFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListFindNodeByValueFunc"),
-                new Sort[]{referenceSort, valueSort, ctx.mkArraySort(referenceSort, nodeSort)},
-                nodeSort);
+                new Sort[]{referenceSort, valueSort, arraySort},
+                nodeSort.getSort());
 
         Expr ref = ctx.mkBound(0, referenceSort);
         Expr value = ctx.mkBound(1, valueSort);
-        Expr referenceMap = ctx.mkBound(2, ctx.mkArraySort(referenceSort, nodeSort));
+        Expr referenceMap = ctx.mkBound(2, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr retrievedVal = getValue(node);
-        Expr nextRef = getNextRef(node);
+        Expr retrievedVal = nodeSort.getValue(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
         BoolExpr isIllegalState = ctx.mkEq(ref, nextRef);
         BoolExpr condition = ctx.mkEq(value, retrievedVal);
@@ -541,17 +597,17 @@ public class Z3LinkedListInstance implements IStack {
     private void defineFindIdxByValueFunc() {
         this.findIdxByValueFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListFindIdxByValueFunc"),
-                new Sort[]{referenceSort, valueSort, ctx.mkIntSort(), ctx.mkArraySort(referenceSort, nodeSort)},
+                new Sort[]{referenceSort, valueSort, ctx.mkIntSort(), arraySort},
                 ctx.mkIntSort());
 
         Expr ref = ctx.mkBound(0, referenceSort);
         Expr value = ctx.mkBound(1, valueSort);
         Expr idx = ctx.mkBound(2, ctx.mkIntSort());
-        Expr referenceMap = ctx.mkBound(3, ctx.mkArraySort(referenceSort, nodeSort));
+        Expr referenceMap = ctx.mkBound(3, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr retrievedVal = getValue(node);
-        Expr nextRef = getNextRef(node);
+        Expr retrievedVal = nodeSort.getValue(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
         BoolExpr isIllegalState = ctx.mkEq(ref, nextRef);
         BoolExpr condition = ctx.mkEq(value, retrievedVal);
@@ -574,17 +630,17 @@ public class Z3LinkedListInstance implements IStack {
     private void defineFindLastIdxByValueFunc() {
         this.findLastIdxByValueFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListFindLastIdxByValueFunc"),
-                new Sort[]{referenceSort, valueSort, ctx.mkIntSort(), ctx.mkArraySort(referenceSort, nodeSort)},
+                new Sort[]{referenceSort, valueSort, ctx.mkIntSort(), arraySort},
                 ctx.mkIntSort());
 
         Expr ref = ctx.mkBound(0, referenceSort);
         Expr value = ctx.mkBound(1, valueSort);
         Expr idx = ctx.mkBound(2, ctx.mkIntSort());
-        Expr referenceMap = ctx.mkBound(3, ctx.mkArraySort(referenceSort, nodeSort));
+        Expr referenceMap = ctx.mkBound(3, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr retrievedVal = getValue(node);
-        Expr prevRef = getPrevRef(node);
+        Expr retrievedVal = nodeSort.getValue(node);
+        Expr prevRef = nodeSort.getPrevRef(node);
 
         BoolExpr isIllegalState = ctx.mkEq(ref, prevRef);
         BoolExpr condition = ctx.mkEq(value, retrievedVal);
@@ -607,23 +663,23 @@ public class Z3LinkedListInstance implements IStack {
     private void defineToSetFunc() {
         this.toSetFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListToSetFunc"),
-                new Sort[]{referenceSort, ctx.mkSetSort(referenceSort), ctx.mkArraySort(referenceSort, nodeSort)},
-                ctx.mkSetSort(referenceSort));
+                new Sort[]{referenceSort, ctx.mkSetSort(valueSort), arraySort},
+                ctx.mkSetSort(valueSort));
 
         Expr ref = ctx.mkBound(0, referenceSort);
-        ArrayExpr set = (ArrayExpr) ctx.mkBound(1, ctx.mkSetSort(referenceSort));
-        Expr referenceMap = ctx.mkBound(2, ctx.mkArraySort(referenceSort, nodeSort));
+        ArrayExpr set = (ArrayExpr) ctx.mkBound(1, ctx.mkSetSort(valueSort));
+        Expr referenceMap = ctx.mkBound(2, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr nextRef = getNextRef(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
-        set = ctx.mkSetAdd(set, ref);
+//        set = ctx.mkSetAdd(set, nodeSort.getValue(node));
 
         BoolExpr hasReachedTheEnd = ctx.mkEq(ref, nextRef);
 
         Expr recursiveCase = toSetFunc.apply(
                 nextRef,
-                ctx.mkSetAdd(set, ref),
+                ctx.mkSetAdd(set, nodeSort.getValue(node)),
                 referenceMap);
 
         Expr body = ctx.mkITE(
@@ -635,20 +691,21 @@ public class Z3LinkedListInstance implements IStack {
     }
 
     private void defineContainsAllFunc() {
+        SetSort setSort = ctx.mkSetSort(valueSort);
         this.containsAllFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListContainsAllFunc"),
-                new Sort[]{referenceSort, ctx.mkSetSort(referenceSort), ctx.mkArraySort(referenceSort, nodeSort)},
+                new Sort[]{referenceSort, setSort, arraySort},
                 ctx.mkBoolSort());
 
         Expr ref = ctx.mkBound(0, referenceSort);
-        ArrayExpr set = (ArrayExpr) ctx.mkBound(1, ctx.mkSetSort(referenceSort));
-        Expr referenceMap = ctx.mkBound(2, ctx.mkArraySort(referenceSort, nodeSort));
+        ArrayExpr set = (ArrayExpr) ctx.mkBound(1, setSort);
+        Expr referenceMap = ctx.mkBound(2, arraySort);
 
         Expr node = ctx.mkSelect(referenceMap, ref);
-        Expr nextRef = getNextRef(node);
+        Expr nextRef = nodeSort.getNextRef(node);
 
         BoolExpr hasReachedTheEnd = ctx.mkEq(ref, nextRef);
-        BoolExpr contains = ctx.mkSetMembership(ref, set);
+        BoolExpr contains = ctx.mkSetMembership(nodeSort.getValue(node), set);
 
         Expr recursiveCase = containsAllFunc.apply(
                 nextRef,
@@ -665,8 +722,6 @@ public class Z3LinkedListInstance implements IStack {
     }
 
     private void defineEqualsFunc() {
-        ArraySort arraySort = ctx.mkArraySort(referenceSort, nodeSort);
-
         this.equalsFunc = ctx.mkRecFuncDecl(
                 ctx.mkSymbol("LinkedListEqualsFunc"),
                 new Sort[]{referenceSort, arraySort, referenceSort, arraySort},
@@ -680,8 +735,8 @@ public class Z3LinkedListInstance implements IStack {
         Expr node1 = ctx.mkSelect(referenceMap1, ref1);
         Expr node2 = ctx.mkSelect(referenceMap2, ref2);
 
-        Expr nextRef1 = getNextRef(node1);
-        Expr nextRef2 = getNextRef(node2);
+        Expr nextRef1 = nodeSort.getNextRef(node1);
+        Expr nextRef2 = nodeSort.getNextRef(node2);
 
         BoolExpr hasReachedTheEnd1 = ctx.mkEq(ref1, nextRef1);
         BoolExpr hasReachedTheEnd2 = ctx.mkEq(ref2, nextRef2);
@@ -690,7 +745,7 @@ public class Z3LinkedListInstance implements IStack {
                 ctx.mkNot(hasReachedTheEnd1),
                 ctx.mkNot(hasReachedTheEnd2));
 
-        BoolExpr equals = ctx.mkEq(getValue(node1), getValue(node2));
+        BoolExpr equals = ctx.mkEq(nodeSort.getValue(node1), nodeSort.getValue(node2));
 
         Expr recursiveCase = equalsFunc.apply(
                 nextRef1,
@@ -706,8 +761,120 @@ public class Z3LinkedListInstance implements IStack {
         ctx.AddRecDef(equalsFunc, new Expr[]{ref1, referenceMap1, ref2, referenceMap2}, body);
     }
 
+    private void defineRemoveAllFunc() {
+        SetSort setSort = ctx.mkSetSort(valueSort);
+        this.removeAllFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListRemoveAllFunc"),
+                new Sort[]{referenceSort, arraySort, setSort, ctx.mkIntSort()},
+                arrayAndSizeHolderSort.getSort());
+
+        Expr ref = ctx.mkBound(0, referenceSort);
+        ArrayExpr referenceMap = (ArrayExpr) ctx.mkBound(1, arraySort);
+        Expr set = ctx.mkBound(2, setSort);
+        Expr idx = ctx.mkBound(3, ctx.mkIntSort());
+
+        Expr node = ctx.mkSelect(referenceMap, ref);
+        Expr nextRef = nodeSort.getNextRef(node);
+
+        BoolExpr hasReachedTheEnd = ctx.mkEq(ref, nextRef);
+        BoolExpr contains = ctx.mkSetMembership(nodeSort.getValue(node), set);
+
+        Expr recursiveCase = removeAllFunc.apply(
+                nextRef,
+                remove(referenceMap, node, contains),
+                set,
+                ctx.mkITE(contains, idx, ctx.mkAdd(idx, ctx.mkInt(1))));
+
+        Expr body = ctx.mkITE(
+                hasReachedTheEnd,
+                arrayAndSizeHolderSort.mkDecl(referenceMap, idx),
+                recursiveCase);
+
+        ctx.AddRecDef(removeAllFunc, new Expr[]{ref, referenceMap, set, idx}, body);
+    }
+
+    private void defineRetainAllFunc() {
+        SetSort setSort = ctx.mkSetSort(valueSort);
+        this.retainAllFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListRetainAllFunc"),
+                new Sort[]{referenceSort, arraySort, setSort, ctx.mkIntSort()},
+                arrayAndSizeHolderSort.getSort());
+
+        Expr ref = ctx.mkBound(0, referenceSort);
+        ArrayExpr referenceMap = (ArrayExpr) ctx.mkBound(1, arraySort);
+        Expr set = ctx.mkBound(2, setSort);
+        Expr idx = ctx.mkBound(3, ctx.mkIntSort());
+
+        Expr node = ctx.mkSelect(referenceMap, ref);
+        Expr nextRef = nodeSort.getNextRef(node);
+
+        BoolExpr hasReachedTheEnd = ctx.mkEq(ref, nextRef);
+        BoolExpr contains = ctx.mkSetMembership(nodeSort.getValue(node), set);
+        BoolExpr shouldRemove = ctx.mkNot(contains);
+
+        Expr recursiveCase = retainAllFunc.apply(
+                nextRef,
+                remove(referenceMap, node, shouldRemove),
+                set,
+                ctx.mkITE(shouldRemove, idx, ctx.mkAdd(idx, ctx.mkInt(1))));
+
+        Expr body = ctx.mkITE(
+                hasReachedTheEnd,
+                arrayAndSizeHolderSort.mkDecl(referenceMap, idx),
+                recursiveCase);
+
+        ctx.AddRecDef(retainAllFunc, new Expr[]{ref, referenceMap, set, idx}, body);
+    }
+
+    private void defineAddAllFunc() {
+        this.addAllFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListAddAllFunc"),
+                new Sort[]{referenceSort, arraySort,
+                        referenceSort, arraySort,
+                        ctx.mkIntSort(), ctx.mkIntSort(), ctx.mkIntSort()},
+                arrayAndSizeHolderSort.getSort());
+
+        Expr targetRef = ctx.mkBound(0, referenceSort);
+        ArrayExpr targetRefMap = (ArrayExpr) ctx.mkBound(1, arraySort);
+        Expr sourceRef = ctx.mkBound(2, referenceSort);
+        ArrayExpr sourceRefMap = (ArrayExpr) ctx.mkBound(3, arraySort);
+        IntExpr targetSize = (IntExpr) ctx.mkBound(4, ctx.mkIntSort());
+        IntExpr targetCapacity = (IntExpr) ctx.mkBound(5, ctx.mkIntSort());
+        IntExpr refCounter = (IntExpr) ctx.mkBound(6, ctx.mkIntSort());
+
+        Expr sourceNode = ctx.mkSelect(sourceRefMap, sourceRef);
+        Expr nextRef = nodeSort.getNextRef(sourceNode);
+
+        BoolExpr hasReachedTheEnd = ctx.mkEq(sourceRef, nextRef);
+        BoolExpr shouldAdd = ctx.mkLt(targetSize, targetCapacity);
+        Expr wrappedElement = nodeSort.getValue(sourceNode);
+
+        Expr recursiveCase = addAllFunc.apply(
+                targetRef,
+                addBeforeReference(targetRefMap, targetRef, wrappedElement, refCounter, shouldAdd),
+                nextRef,
+                sourceRefMap,
+                ctx.mkITE(shouldAdd, ctx.mkAdd(targetSize, ctx.mkInt(1)), targetSize),
+                targetCapacity,
+                ctx.mkAdd(refCounter, ctx.mkInt(1)));
+
+        Expr body = ctx.mkITE(
+                hasReachedTheEnd,
+                arrayAndSizeHolderSort.mkDecl(targetRefMap, targetSize),
+                recursiveCase);
+
+        ctx.AddRecDef(addAllFunc, new Expr[]{
+                targetRef,
+                targetRefMap,
+                sourceRef,
+                sourceRefMap,
+                targetSize,
+                targetCapacity,
+                refCounter
+        }, body);
+    }
+
     private ArrayExpr mkArray() {
-        ArraySort arraySort = ctx.mkArraySort(referenceSort, nodeSort);
         return (ArrayExpr) ctx.mkFreshConst("Array", arraySort);
     }
 
@@ -722,8 +889,7 @@ public class Z3LinkedListInstance implements IStack {
     private Expr mkNullNode() {
         Expr wrappedNull = sortUnion.wrapValue(ctx.mkNull());
         Expr nullReference = mkNullReference();
-        return this.nodeSort.mkDecl().apply(
-                wrappedNull, nullReference, nullReference, nullReference);
+        return this.nodeSort.mkDecl(wrappedNull, nullReference, nullReference, nullReference);
     }
 
     private Expr mkNextRef(LinkedListModel model) {
