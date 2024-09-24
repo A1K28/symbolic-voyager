@@ -185,7 +185,7 @@ public enum MethodModel {
             case LIST_RETAIN_ALL -> ctx.getLinkedListInstance().retainAll(args.get(0), args.get(1));
             case LIST_EQUALS -> ctx.getLinkedListInstance().equals(args.get(0), args.get(1));
             case LIST_SET -> ctx.getLinkedListInstance().set(args.get(0), (IntExpr) args.get(1), args.get(2));
-            case LIST_HASH_CODE -> null;
+            case LIST_HASH_CODE -> ctx.getLinkedListInstance().hashCode(args.get(0));
             case LIST_SUBLIST -> null;
             case LIST_INDEX_OF -> ctx.getLinkedListInstance().indexOf(args.get(0), args.get(1));
             case LIST_LAST_INDEX_OF -> ctx.getLinkedListInstance().lastIndexOf(args.get(0), args.get(1));

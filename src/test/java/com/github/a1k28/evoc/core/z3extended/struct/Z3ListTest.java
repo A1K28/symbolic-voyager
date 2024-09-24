@@ -152,6 +152,37 @@ public class Z3ListTest {
         return 2;
     }
 
+    @SymbolicTest({3})
+    @DisplayName("test_hashcode_1")
+    public int test_hashcode_1() {
+        List<Integer> list1 = new ArrayList<>();
+        list1.add(1);
+        list1.add(2);
+        list1.add(3);
+
+        List<Integer> list2 = new ArrayList<>();
+        list2.add(1);
+        list2.add(2);
+        list2.add(3);
+
+        int hashCode1 = list1.hashCode();
+        int hashCode2 = list2.hashCode();
+
+        if (hashCode1 != hashCode2)
+            return 0;
+
+        list1.remove(1);
+        if (list1.hashCode() == list2.hashCode())
+            return 1;
+
+        list1.remove(0);
+        list2.remove(0);
+        list1.add(0, 2);
+        if (list1.hashCode() != list2.hashCode())
+            return 2;
+        return 3;
+    }
+
     @SymbolicTest({15})
     @DisplayName("test_remove_by_value_1")
     public int test_remove_by_value_1() {
