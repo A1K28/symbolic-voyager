@@ -4,9 +4,11 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.ClassInstanceModel;
 import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.helper.SootHelper;
 import com.microsoft.z3.Expr;
@@ -26,13 +28,18 @@ import java.util.Optional;
 
 import static com.github.a1k28.evoc.helper.SootHelper.*;
 
-public class Z3ClassInstance implements IStack {
-    private final Z3ExtendedContext ctx;
-    private final Z3Stack<Integer, ClassInstanceModel> stack;
+public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack {
+    private final Z3Stack<String, ClassInstanceModel> stack;
+    private final Z3SortUnion sortUnion;
 
-    public Z3ClassInstance(Z3ExtendedContext ctx) {
-        this.ctx = ctx;
+    public Z3ClassInstance(Z3ExtendedContext ctx,
+                           Z3ExtendedSolver solver,
+                           Z3SortUnion sortUnion) {
+        super(ctx, solver);
         this.stack = new Z3Stack<>();
+        this.sortUnion = sortUnion;
+
+        defineMapFunc("ClassArrayReferenceMap", sortUnion.getGenericSort());
     }
 
     @Override
@@ -45,15 +52,23 @@ public class Z3ClassInstance implements IStack {
         stack.pop();
     }
 
+    public ClassInstanceModel parameterConstructor(Expr base, Class<?> clazz) {
+        try {
+            return constructor(base, clazz);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public ClassInstanceModel constructor(Class<?> clazz) throws ClassNotFoundException {
         assert clazz != null;
-        int clazzHC = ihc(clazz);
+        String clazzHC = String.valueOf(System.identityHashCode(clazz));
         Optional<ClassInstanceModel> optional = stack.get(clazzHC);
         if (optional.isEmpty()) {
             Expr expr = ctx.mkConst("Object"+clazzHC, SortType.OBJECT.value(ctx));
             SClassInstance sClassInstance = createClassInstance(clazz);
             ClassInstanceModel classInstanceModel = new ClassInstanceModel(
-                    clazzHC, expr, null, sClassInstance);
+                    expr, null, sClassInstance);
             stack.add(clazzHC, classInstanceModel);
         }
         return stack.get(clazzHC).orElseThrow();
@@ -61,21 +76,34 @@ public class Z3ClassInstance implements IStack {
 
     public ClassInstanceModel constructor(Expr base, Class<?> clazz) throws ClassNotFoundException {
         assert base != null && clazz != null;
-        int baseHC = ihc(base);
-        Optional<ClassInstanceModel> optional = stack.get(baseHC);
+        Expr wrappedBase = sortUnion.wrapValue(base);
+        Optional<String> optional = evalReferenceStrict(wrappedBase);
+        String ref;
         if (optional.isEmpty()) {
-            Expr expr = ctx.mkConst("Object"+baseHC, SortType.OBJECT.value(ctx));
+            createMapping(wrappedBase);
+            ref = evalReference(wrappedBase);
+            Expr expr = ctx.mkConst("Object"+ref, SortType.OBJECT.value(ctx));
             SClassInstance sClassInstance = createClassInstance(clazz);
             ClassInstanceModel classInstanceModel = new ClassInstanceModel(
-                    baseHC, expr, base, sClassInstance);
-            stack.add(baseHC, classInstanceModel);
+                    expr, base, sClassInstance);
+            stack.add(ref, classInstanceModel);
+        } else {
+            ref = optional.get();
         }
-        return stack.get(baseHC).orElseThrow();
+        return stack.get(ref).orElseThrow();
     }
 
-    public Expr initialize(Expr expr) {
-        int hashCode = ihc(expr);
-        ClassInstanceModel model = stack.get(hashCode).orElseThrow();
+    public Expr initialize(Expr expr, Class<?> clazz) {
+        Expr wrappedExpr = sortUnion.wrapValue(expr);
+        Optional<String> ref = evalReferenceStrict(wrappedExpr);
+
+        ClassInstanceModel model;
+        if (ref.isEmpty()) {
+            model = parameterConstructor(expr, clazz);
+        } else {
+            model = stack.get(ref.get()).orElseThrow();
+        }
+
         SClassInstance instance = model.getClassInstance();
 
         for (JavaSootField field : instance.getFields()) {
@@ -89,8 +117,9 @@ public class Z3ClassInstance implements IStack {
     }
 
     public Optional<ClassInstanceModel> getInstance(Expr expr) {
-        int hashCode = ihc(expr);
-        return stack.get(hashCode);
+        Expr wrappedExpr = sortUnion.wrapValue(expr);
+        String ref = evalReference(wrappedExpr);
+        return stack.get(ref);
     }
 
     // lazily initialize methods & constructors

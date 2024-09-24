@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.helper.SootHelper;
 import com.microsoft.z3.*;
@@ -115,10 +116,11 @@ public class SymbolicExecutor {
     }
 
     private SType handleParameter(SMethodPath sMethodPath, SNode node) {
-        if (sMethodPath.getParamList().hasNext())
+        if (sMethodPath.getParamList().hasNext()) { // is inner method
             updateParameter(sMethodPath, node.getUnit());
-        else
+        } else { // is target/first method
             saveParameter(sMethodPath, node.getUnit());
+        }
         return SType.PARAMETER;
     }
 
@@ -163,10 +165,11 @@ public class SymbolicExecutor {
             // set all values to default
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
                 ClassType classType = method.getInvokeExpr().getMethodSignature().getDeclClassType();
+                Class<?> type = SootHelper.translateType(classType);
                 Expr leftOpExpr = z3t.translateValue(method.getBase(), varType, sMethodPath);
                 Expr expr = ctx.getClassInstance().constructor(
                         leftOpExpr, SootHelper.getClass(classType)).getExpr();
-                ctx.getClassInstance().initialize(expr);
+                ctx.getClassInstance().initialize(expr, type);
             }
 
             JumpNode jumpNode = new JumpNode(sMethodPath, node);
@@ -195,6 +198,8 @@ public class SymbolicExecutor {
             } else {
                 Class<?> type = SootHelper.translateType(rightOp.getType());
                 Expr expr = z3t.callProverMethod(rightOpHolder.asMethod(), rightOpVarType, sMethodPath);
+                // TODO: handle complex nested objects within parameters
+//                expr = ctx.mkDefault(expr, Z3Translator.translateType(rightOp.getType()));
                 z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
             }
         } else if (rightOpHolder.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
@@ -202,7 +207,7 @@ public class SymbolicExecutor {
             Expr leftOpExpr = z3t.translateValue(leftOp, leftOpVarType, sMethodPath);
             Expr expr = ctx.getClassInstance().constructor(
                     leftOpExpr, type).getExpr();
-            ctx.getClassInstance().initialize(expr);
+            ctx.getClassInstance().initialize(expr, type);
             z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, sMethodPath, type);
         } else if (rightOpHolder.getSType() == SType.INVOKE_MOCK) {
             // if method cannot be invoked, then mock it.
@@ -367,11 +372,18 @@ public class SymbolicExecutor {
 
     private void saveParameter(SMethodPath methodPath, Stmt unit) {
         Local ref = ((JIdentityStmt<?>) unit).getLeftOp();
-        z3t.saveSymbolicVar(
+        SVar param = z3t.saveSymbolicVar(
                 ref,
                 ref.getType(),
                 getVarType(methodPath, unit),
                 methodPath);
+
+        if (SortType.MAP.equals(param.getExpr().getSort()))
+            ctx.getMapInstance().parameterConstructor(param.getExpr());
+        else if (SortType.ARRAY.equals(param.getExpr().getSort()))
+            ctx.getLinkedListInstance().parameterConstructor(param.getExpr());
+        else if (SortType.OBJECT.equals(param.getExpr().getSort()))
+            ctx.getClassInstance().parameterConstructor(param.getExpr(), param.getClassType());
     }
 
     private void updateParameter(SMethodPath methodPath, Stmt unit) {

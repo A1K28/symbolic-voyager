@@ -571,6 +571,44 @@ public class Z3MapTest {
         return 2;
     }
 
+    @SymbolicTest({3})
+    @DisplayName("test_nested_map_1")
+    public int test_nested_map_1() {
+        Map map1 = new HashMap<>();
+        Map<String, Integer> map2 = new HashMap<>();
+        map2.put("ASD", 123);
+
+        map1.put("S", map2);
+
+        if (!map1.containsKey("S"))
+            return 0;
+
+        Map retrieved = (Map) map1.get("S");
+        if ((int) retrieved.get("ASD") != 123)
+            return 1;
+
+        if (retrieved.get("ASDAS") != null)
+            return 2;
+
+        return 3;
+    }
+
+//    @SymbolicTest({0,1,2,3})
+    @DisplayName("test_nested_map_winput_1")
+    public int test_nested_map_winput_1(Map map) {
+        if (!map.containsKey("S"))
+            return 0;
+
+        Map retrieved = (Map) map.get("S");
+        if ((int) retrieved.get("ASD") != 123)
+            return 1;
+
+        if (retrieved.get("ASDAS") != null)
+            return 2;
+
+        return 3;
+    }
+
     @SymbolicTest({1,2})
     @DisplayName("test_is_empty_2")
     public int test_is_empty_2(String a) {

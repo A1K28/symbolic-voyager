@@ -15,29 +15,26 @@ import com.microsoft.z3.*;
 import java.util.List;
 import java.util.Optional;
 
-public class Z3MapInstance implements IStack {
-    private final Z3ExtendedContext ctx;
-    private final Z3CachingFactory sortState;
+public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
     private final Z3SortUnion sortUnion;
-    private final Z3Stack<Expr, MapModel> stack;
+    private final Z3Stack<String, MapModel> stack;
     private final Z3Stack<Expr, Tuple<Expr>> discoveredKeys;
-    private final Z3ExtendedSolver solver;
     private final MapSort mapSort;
 
     public Z3MapInstance(Z3ExtendedContext context,
                          Z3ExtendedSolver solver,
                          Z3CachingFactory sortState,
                          Z3SortUnion sortUnion) {
-        this.ctx = context;
-        this.sortState = sortState;
+        super(context, solver);
         this.sortUnion = sortUnion;
-        this.solver = solver;
         this.stack = new Z3Stack<>();
         this.discoveredKeys = new Z3Stack<>();
 
         Sort keySort = sortUnion.getGenericSort();
         Sort valueSort = sortUnion.getGenericSort();
         this.mapSort = sortState.mkMapSort(keySort, valueSort);
+
+        defineMapFunc("MapArrayReferenceMap", SortType.MAP.value(ctx));
     }
 
     @Override
@@ -58,22 +55,28 @@ public class Z3MapInstance implements IStack {
 
     public Expr constructor(Expr var1) {
         MapModel mapModel = constructor(var1, false);
-        stack.add(var1, mapModel);
+        stack.add(evalReference(var1), mapModel);
         return var1;
     }
 
     public Expr constructor(Expr var1, Expr var2) {
         MapModel newModel = new MapModel(getModel(var2));
+        createMapping(var1);
         newModel.setReference(var1);
-        stack.add(var1, newModel);
+        stack.add(evalReference(var1), newModel);
         return var1;
+    }
 
+    public Expr parameterConstructor(Expr var1) {
+        MapModel mapModel = constructor(var1, true);
+        stack.add(evalReference(var1), mapModel);
+        return var1;
     }
 
     private MapModel constructor(Expr reference, boolean isSizeUnknown) {
-        // TODO: handle sorts?
+        createMapping(reference);
+
         Sort keySort = sortUnion.getGenericSort();
-        Sort valueSort = sortUnion.getGenericSort();
 
         ArrayExpr array;
         ArithExpr size;
@@ -93,7 +96,7 @@ public class Z3MapInstance implements IStack {
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {
-        return stack.getFirst(var1);
+        return stack.getFirst(evalReference(var1));
     }
 
     public List<Tuple<Expr>> getDiscoverableKeys() {
@@ -105,16 +108,15 @@ public class Z3MapInstance implements IStack {
         Expr retrieved = getByKey(model, key);
         BoolExpr isEmpty = mapSort.isEmpty(retrieved);
         Expr res = ctx.mkITE(isEmpty, mapSort.getSentinel(), retrieved);
-        return sortUnion.unwrapValue(
-                mapSort.getValue(res), mapSort.getValue(mapSort.getSentinel()));
+        Expr defaultValue = model.isSizeUnknown() ? ctx.getSentinel() : ctx.mkNull();
+        return sortUnion.unwrapValue(mapSort.getValue(res), defaultValue);
     }
 
     public Expr getOrDefault(Expr var1, Expr key, Expr def) {
         MapModel model = getModel(var1);
         Expr retrieved = getByKey(model, key);
         BoolExpr isEmpty = mapSort.isEmpty(retrieved);
-        Expr unwrapped = sortUnion.unwrapValue(
-                mapSort.getValue(retrieved), mapSort.getValue(mapSort.getSentinel()));
+        Expr unwrapped = sortUnion.unwrapValue(mapSort.getValue(retrieved), ctx.mkNull());
         return ctx.mkITE(isEmpty, def, unwrapped);
     }
 
@@ -294,7 +296,7 @@ public class Z3MapInstance implements IStack {
         ArrayExpr arr = mkArray(mapSort.getKeySort(), mapSort.getValueSort());
         target.setArray(arr);
         solver.add(ctx.mkEq(source.getArray(), arr));
-        stack.add(target.getReference(), target);
+        stack.add(evalReference(target.getReference()), target);
         return target.getReference();
     }
 
@@ -384,8 +386,7 @@ public class Z3MapInstance implements IStack {
         model.setSize(size);
         addDiscoveredKey(key);
 
-        Expr sentinelValue = mapSort.getValue(mapSort.getSentinel());
-        return sortUnion.unwrapValue(mapSort.getValue(previous), sentinelValue);
+        return sortUnion.unwrapValue(mapSort.getValue(previous), ctx.mkNull());
     }
 
     private void putAllTKSU(MapModel target, MapModel source) {
@@ -474,7 +475,7 @@ public class Z3MapInstance implements IStack {
 
     private MapModel copyModel(MapModel model) {
         MapModel newModel = new MapModel(model);
-        stack.add(newModel.getReference(), newModel);
+        stack.add(evalReference(newModel.getReference()), newModel);
         return newModel;
     }
 
@@ -483,14 +484,15 @@ public class Z3MapInstance implements IStack {
     }
 
     private MapModel getModel(Expr expr, boolean isSizeUnknown) {
-        if (stack.get(expr).isEmpty())
+        String ref = evalReference(expr);
+        if (stack.get(ref).isEmpty())
             return createModel(expr, isSizeUnknown);
-        return stack.get(expr).orElseThrow();
+        return stack.get(ref).orElseThrow();
     }
 
     private MapModel createModel(Expr expr, boolean isSizeUnknown) {
         MapModel mapModel = constructor(expr, isSizeUnknown);
-        stack.add(expr, mapModel);
+        stack.add(evalReference(expr), mapModel);
         return mapModel;
     }
 

@@ -188,6 +188,7 @@ public class Z3Translator {
                     SType.INVOKE_MOCK_SPECIAL_CONSTRUCTOR : SType.INVOKE_MOCK;
             return new SMethodExpr(val, sType, invoke, base, args, MethodPropagationType.MOCKED);
         } else {
+            log.warn("Method not defined: " + invoke + ". This may cause undefined results.");
             return new SMethodExpr(val, SType.OTHER, invoke, base, args, MethodPropagationType.IGNORED);
         }
     }
@@ -315,59 +316,7 @@ public class Z3Translator {
         throw new RuntimeException("Could not resolve type for: " + value);
     }
 
-    private Expr translateConditionValue(AbstractBinopExpr binop, Expr e1, Expr e2) {
-        if (binop instanceof JEqExpr)
-            return ctx.mkEq(e1, e2);
-        if (binop instanceof JNeExpr)
-            return ctx.mkNot(ctx.mkEq(e1, e2));
-        if (binop instanceof JGtExpr)
-            return ctx.mkGt(e1, e2);
-        if (binop instanceof JCmpgExpr || binop instanceof JGeExpr)
-            return ctx.mkGe(e1, e2);
-        if (binop instanceof JLtExpr)
-            return ctx.mkLt(e1, e2);
-        if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
-            return ctx.mkLe(e1, e2);
-        throw new RuntimeException("Condition could not be translated: " + binop);
-    }
-
-    private Expr handleMethodCall(AbstractInvokeExpr invoke,
-                                  VarType varType,
-                                  SMethodPath methodPath) {
-        System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature());
-
-        MethodSignature methodSignature = invoke.getMethodSignature();
-
-        List<Expr> args = new ArrayList<>();
-        Expr base = null;
-        if (invoke instanceof AbstractInstanceInvokeExpr i)
-            base = translateValue(i.getBase(), VarType.BASE_ARG, methodPath);
-        for (Value arg : invoke.getArgs())
-            args.add(translateValue(arg, VarType.METHOD_ARG, methodPath));
-        if (invoke instanceof JDynamicInvokeExpr i)
-            for (Value arg : i.getBootstrapArgs()) {
-                if (!(arg instanceof MethodType) && !(arg instanceof MethodHandle))
-                    args.add(translateValue(arg, VarType.METHOD_ARG, methodPath));
-            }
-
-        Optional<MethodModel> optional = MethodModel.get(methodSignature);
-        if (optional.isPresent()) {
-            MethodModel methodModel = optional.get();
-            if (methodModel.hasBase())
-                args.add(0, base);
-            return methodModel.apply(ctx, args);
-        } else {
-            Sort sort;
-            if (invoke.getMethodSignature().toString().contains(": void <init>"))
-                sort = ctx.mkUninterpretedSort(invoke.getMethodSignature().getDeclClassType().toString());
-            else
-                sort = translateType(invoke.getType());
-            return getSymbolicValue(invoke, sort, varType, methodPath);
-//            return ctx.mkFreshConst(invoke.toString(), sort);
-        }
-    }
-
-    private static Sort translateType(Type type) {
+    public static Sort translateType(Type type) {
         if (type instanceof PrimitiveType.BooleanType)
             return ctx.getBoolSort();
         if (type instanceof PrimitiveType.ByteType)
@@ -431,6 +380,58 @@ public class Z3Translator {
         // TODO: handle sets & maps correctly
 
         return SortType.OBJECT.value(ctx);
+    }
+
+    private Expr translateConditionValue(AbstractBinopExpr binop, Expr e1, Expr e2) {
+        if (binop instanceof JEqExpr)
+            return ctx.mkEq(e1, e2);
+        if (binop instanceof JNeExpr)
+            return ctx.mkNot(ctx.mkEq(e1, e2));
+        if (binop instanceof JGtExpr)
+            return ctx.mkGt(e1, e2);
+        if (binop instanceof JCmpgExpr || binop instanceof JGeExpr)
+            return ctx.mkGe(e1, e2);
+        if (binop instanceof JLtExpr)
+            return ctx.mkLt(e1, e2);
+        if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
+            return ctx.mkLe(e1, e2);
+        throw new RuntimeException("Condition could not be translated: " + binop);
+    }
+
+    private Expr handleMethodCall(AbstractInvokeExpr invoke,
+                                  VarType varType,
+                                  SMethodPath methodPath) {
+        System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature());
+
+        MethodSignature methodSignature = invoke.getMethodSignature();
+
+        List<Expr> args = new ArrayList<>();
+        Expr base = null;
+        if (invoke instanceof AbstractInstanceInvokeExpr i)
+            base = translateValue(i.getBase(), VarType.BASE_ARG, methodPath);
+        for (Value arg : invoke.getArgs())
+            args.add(translateValue(arg, VarType.METHOD_ARG, methodPath));
+        if (invoke instanceof JDynamicInvokeExpr i)
+            for (Value arg : i.getBootstrapArgs()) {
+                if (!(arg instanceof MethodType) && !(arg instanceof MethodHandle))
+                    args.add(translateValue(arg, VarType.METHOD_ARG, methodPath));
+            }
+
+        Optional<MethodModel> optional = MethodModel.get(methodSignature);
+        if (optional.isPresent()) {
+            MethodModel methodModel = optional.get();
+            if (methodModel.hasBase())
+                args.add(0, base);
+            return methodModel.apply(ctx, args);
+        } else {
+            Sort sort;
+            if (invoke.getMethodSignature().toString().contains(": void <init>"))
+                sort = ctx.mkUninterpretedSort(invoke.getMethodSignature().getDeclClassType().toString());
+            else
+                sort = translateType(invoke.getType());
+            return getSymbolicValue(invoke, sort, varType, methodPath);
+//            return ctx.mkFreshConst(invoke.toString(), sort);
+        }
     }
 
     private Optional<SVar> getSymbolicValue(Value value, VarType varType, SMethodPath methodPath) {

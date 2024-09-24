@@ -12,9 +12,8 @@ import java.util.Arrays;
 
 @Getter
 public class Z3ExtendedContext extends Context implements IStack {
-//    private final Z3CachingFactory sortState;
-//    private final Z3SetCollection z3SetCollection;
-//    private final Z3ListCollection z3ListCollection;
+    private final Expr sentinel;
+
     private final Z3ExtendedSolver solver;
     private final Z3ClassInstance classInstance;
     private final Z3MethodMockInstance methodMockInstance;
@@ -26,10 +25,12 @@ public class Z3ExtendedContext extends Context implements IStack {
         Z3CachingFactory sortState = new Z3CachingFactory(this);
         Z3SortUnion sortUnion = new Z3SortUnion(this);
 
+        this.sentinel = this.mkConst("sentinel", SortType.SENTINEL.value(this));
+
         Solver slvr = this.mkSolver();
         this.solver = new Z3ExtendedSolver(this, slvr, sortUnion);
 
-        this.classInstance = new Z3ClassInstance(this);
+        this.classInstance = new Z3ClassInstance(this, solver, sortUnion);
         this.methodMockInstance = new Z3MethodMockInstance(this, solver);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
@@ -37,8 +38,6 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     @Override
     public void push() {
-//        this.z3SetCollection.push();
-//        this.z3ListCollection.push();
         this.classInstance.push();
         this.methodMockInstance.push();
         this.mapInstance.push();
@@ -47,8 +46,6 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     @Override
     public void pop() {
-//        this.z3SetCollection.pop();
-//        this.z3ListCollection.pop();
         this.classInstance.pop();
         this.methodMockInstance.pop();
         this.mapInstance.pop();
@@ -76,5 +73,11 @@ public class Z3ExtendedContext extends Context implements IStack {
 
     public boolean containsAssertion(Expr assertion) {
         return Arrays.asList(solver.getAssertions()).contains(assertion);
+    }
+
+    public Expr mkDefault(Expr expr, Sort sort) {
+        if (SortType.SENTINEL.equals(expr.getSort()))
+            return mkFreshConst(expr.toString(), sort);
+        return expr;
     }
 }

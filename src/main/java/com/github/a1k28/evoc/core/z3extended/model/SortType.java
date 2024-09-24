@@ -6,12 +6,14 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public enum SortType {
-    NULL("Null"),
-    ARRAY("Array"),
-    MAP("Map"),
+    NULL("null"),
+    ARRAY("array"),
+    MAP("map"),
     REFERENCE("reference"),
-    SET("SET"),
-    OBJECT("Object");
+    SET("set"),
+    OBJECT("object"),
+    SENTINEL("sentinel"),
+    UNKNOWN("unknown");
 
     private final String value;
 

@@ -5,7 +5,6 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
-import com.github.a1k28.evoc.core.z3extended.instance.Z3LinkedListInstance;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.evoc.core.z3extended.model.*;
 import com.github.a1k28.evoc.helper.Logger;

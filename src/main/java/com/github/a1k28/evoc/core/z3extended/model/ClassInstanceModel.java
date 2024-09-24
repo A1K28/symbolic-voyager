@@ -12,7 +12,6 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @EqualsAndHashCode
 public class ClassInstanceModel {
-    private final int hashCode;
     private final Expr expr;
     private final Expr base;
     private final SClassInstance classInstance;

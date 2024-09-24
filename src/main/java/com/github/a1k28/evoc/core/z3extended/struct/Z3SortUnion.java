@@ -18,7 +18,7 @@ public class Z3SortUnion {
     public Z3SortUnion(Z3ExtendedContext ctx) {
         this.ctx = ctx;
         // Create the union datatype as before
-        constructors = new Constructor[11];
+        constructors = new Constructor[12];
         constructors[0] = ctx.mkConstructor("intType", "isIntKey", new String[] { "intValue" }, new Sort[] { ctx.getIntSort() }, null);
         constructors[1] = ctx.mkConstructor("stringKey", "isStringKey", new String[] { "stringValue" }, new Sort[] { ctx.getStringSort() }, null);
         constructors[2] = ctx.mkConstructor("boolType", "isBoolKey", new String[] { "boolValue" }, new Sort[] { ctx.getBoolSort() }, null);
@@ -30,6 +30,7 @@ public class Z3SortUnion {
         constructors[8] = ctx.mkConstructor("objectType", "isObjectKey", new String[] { "objectValue" }, new Sort[] { SortType.OBJECT.value(ctx) }, null);
         constructors[9] = ctx.mkConstructor("nullType", "isNullKey", new String[] { "nullValue" }, new Sort[] { SortType.NULL.value(ctx) }, null);
         constructors[10] = ctx.mkConstructor("fp64Type", "isFP64Key", new String[] { "fp64Value" }, new Sort[] { ctx.mkFPSort64() }, null);
+        constructors[11] = ctx.mkConstructor("unknownType", "isUnknownKey", new String[] { "unknownValue" }, new Sort[] { SortType.UNKNOWN.value(ctx) }, null);
         genericSort = ctx.mkDatatypeSort("sortUnion", constructors);
     }
 
@@ -93,6 +94,8 @@ public class Z3SortUnion {
             return 9;
         if (type == FPSort.class)
             return 10;
+        if (SortType.UNKNOWN.equals(sort))
+            return 11;
         throw new RuntimeException("Undefined type for: " + sort);
     }
 }
