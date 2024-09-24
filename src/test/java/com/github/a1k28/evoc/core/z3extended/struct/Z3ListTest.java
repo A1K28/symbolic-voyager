@@ -728,4 +728,19 @@ public class Z3ListTest {
 
         return 2;
     }
+
+    @SymbolicTest({2})
+    @DisplayName("test_multidimensional_array_1")
+    public int test_multidimensional_array_1() {
+        int[][] arr = new int[10][];
+        int[] innerArr = new int[2];
+        innerArr[0] = 10;
+        innerArr[1] = 20;
+        arr[3] = innerArr;
+        if (arr[3][0] != 10)
+            return 0;
+        if (arr[3][1] != 20)
+            return 1;
+        return 2;
+    }
 }
