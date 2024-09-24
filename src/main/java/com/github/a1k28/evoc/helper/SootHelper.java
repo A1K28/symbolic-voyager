@@ -5,15 +5,20 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import sootup.core.IdentifierFactory;
 import sootup.core.Project;
 import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.Jimple;
+import sootup.core.jimple.basic.Immediate;
+import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.common.constant.IntConstant;
-import sootup.core.jimple.common.expr.AbstractInvokeExpr;
-import sootup.core.jimple.common.expr.JEqExpr;
+import sootup.core.jimple.common.expr.*;
+import sootup.core.jimple.common.ref.JArrayRef;
+import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.JIfStmt;
+import sootup.core.jimple.common.stmt.JInvokeStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
 import sootup.core.model.Body;
@@ -40,6 +45,14 @@ import java.util.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootHelper {
     private static final Map<String, Class<?>> cachedMap = new HashMap<>();
+    private static ArrayMap arrayMap = null;
+
+    private static class ArrayMap {
+        private ClassType classType;
+        private MethodSignature initMethod;
+        private MethodSignature addByIndexMethod;
+        private MethodSignature getByIndexMethod;
+    }
 
     public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
         int javaVersion = getJavaVersion(Class.forName(className));
@@ -71,6 +84,8 @@ public class SootHelper {
                 project.getIdentifierFactory().getClassType(className);
 
         View<?> view = project.createView();
+        initArrayMap(view);
+
         return (Optional<SootClass<JavaSootClassSource>>) view.getClass(classType);
     }
 
@@ -293,6 +308,15 @@ public class SootHelper {
         for (;i < stmts.size(); i++) {
             Stmt current = stmts.get(i);
             if (parent.containsParent(current)) continue;
+
+            if (current instanceof JAssignStmt<?,?> assignStmt) {
+                SNode result = handleArrays(assignStmt, sMethodPath, parent);
+                if (result != null) {
+                    parent = result;
+                    continue;
+                }
+            }
+
             SNode node = sMethodPath.getNode(current);
             parent.addChild(node);
             parent = node;
@@ -302,49 +326,9 @@ public class SootHelper {
             return;
 
         if (parent.getType() == SType.SWITCH) {
-            JSwitchStmt switchStmt = (JSwitchStmt) parent.getUnit();
-            List<IntConstant> values = switchStmt.getValues();
-            parent = parent.getParent();
-            parent.removeLastChild();
-            for (int k = 0; k < values.size(); k++) {
-                JEqExpr eqExpr = Jimple.newEqExpr(switchStmt.getKey(), values.get(k));
-                JIfStmt ifStmt = Jimple.newIfStmt(eqExpr, switchStmt.getPositionInfo());
-                SNode ifNode = sMethodPath.createNode(ifStmt);
-                SNode elseNode = sMethodPath.createNode(ifStmt);
-                parent.addChild(ifNode);
-                parent.addChild(elseNode);
-                ifNode.setType(SType.BRANCH_TRUE);
-                elseNode.setType(SType.BRANCH_FALSE);
-                interpretSoot(block.getSuccessors().get(k), sMethodPath, ifNode);
-                parent = elseNode;
-            }
-            if (values.size() + 1 == block.getSuccessors().size())
-                interpretSoot(block.getSuccessors().get(values.size()), sMethodPath, parent);
+            parent = handleSwitch(parent, sMethodPath, block);
         } else if (parent.getType() == SType.BRANCH) {
-            parent = parent.getParent();
-            parent.removeLastChild();
-
-            List<BasicBlock<?>> successors = (List<BasicBlock<?>>) block.getSuccessors();
-            assert successors.size() == 2;
-
-            Optional<SNode> ifOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_FALSE);
-            Optional<SNode> elseOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_TRUE);
-
-            if (ifOpt.isPresent()) {
-                parent.addChild(ifOpt.get());
-            } else {
-                SNode ifNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_FALSE);
-                parent.addChild(ifNode);
-                interpretSoot(successors.get(0), sMethodPath, ifNode);
-            }
-
-            if (elseOpt.isPresent()) {
-                parent.addChild(elseOpt.get());
-            } else {
-                SNode elseNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_TRUE);
-                parent.addChild(elseNode);
-                interpretSoot(successors.get(1), sMethodPath, elseNode);
-            }
+            parent = handleBranch(parent, sMethodPath, block);
         } else {
             for (BasicBlock<?> successor : block.getSuccessors()) {
                 interpretSoot(successor, sMethodPath, parent);
@@ -369,6 +353,107 @@ public class SootHelper {
 //            parent.addChild(node);
 //            interpretSoot(catchBlock, sMethodPath, node);
 //        }
+    }
+
+    private static SNode handleArrays(JAssignStmt assignStmt, SMethodPath sMethodPath, SNode parent) {
+        if (assignStmt.getRightOp() instanceof JNewArrayExpr) {
+            ClassType classType = arrayMap.classType;
+            JNewExpr jNewExpr = Jimple.newNewExpr(classType);
+            JAssignStmt newAssignStmt = Jimple.newAssignStmt(
+                    assignStmt.getLeftOp(), jNewExpr, assignStmt.getPositionInfo());
+
+            SNode assignmentNode = sMethodPath.getNode(newAssignStmt);
+            parent.addChild(assignmentNode);
+
+            MethodSignature constructor = arrayMap.initMethod;
+            JSpecialInvokeExpr specialInvokeExpr = Jimple
+                    .newSpecialInvokeExpr((Local) assignStmt.getLeftOp(), constructor);
+            JInvokeStmt invokeStmt = Jimple.newInvokeStmt(
+                    specialInvokeExpr, assignStmt.getPositionInfo());
+
+            SNode invokeNode = sMethodPath.getNode(invokeStmt);
+            parent.addChild(invokeNode);
+
+            return invokeNode;
+        } else if (assignStmt.getLeftOp() instanceof JArrayRef arrayRef) {
+            Local base = arrayRef.getBase();
+            Immediate index = arrayRef.getIndex();
+            Immediate value = (Immediate) assignStmt.getRightOp();
+            MethodSignature addMethodSignature = arrayMap.addByIndexMethod;
+            JInterfaceInvokeExpr interfaceInvoke = Jimple
+                    .newInterfaceInvokeExpr(base, addMethodSignature, index, value);
+            JInvokeStmt invokeStmt = Jimple.newInvokeStmt(
+                    interfaceInvoke, assignStmt.getPositionInfo());
+            SNode invokeNode = sMethodPath.getNode(invokeStmt);
+            parent.addChild(invokeNode);
+
+            return invokeNode;
+        } else if (assignStmt.getRightOp() instanceof JArrayRef arrayRef) {
+            Local base = arrayRef.getBase();
+            Immediate index = arrayRef.getIndex();
+            Immediate leftOp = (Immediate) assignStmt.getLeftOp();
+            MethodSignature addMethodSignature = arrayMap.getByIndexMethod;
+            JInterfaceInvokeExpr interfaceInvoke = Jimple
+                    .newInterfaceInvokeExpr(base, addMethodSignature, index);
+            JAssignStmt jAssignStmt = Jimple.newAssignStmt(
+                    leftOp, interfaceInvoke, assignStmt.getPositionInfo());
+
+            SNode invokeNode = sMethodPath.getNode(jAssignStmt);
+            parent.addChild(invokeNode);
+
+            return invokeNode;
+        }
+        return null;
+    }
+
+    private static SNode handleSwitch(SNode parent, SMethodPath sMethodPath, BasicBlock<?> block) {
+        JSwitchStmt switchStmt = (JSwitchStmt) parent.getUnit();
+        List<IntConstant> values = switchStmt.getValues();
+        parent = parent.getParent();
+        parent.removeLastChild();
+        for (int k = 0; k < values.size(); k++) {
+            JEqExpr eqExpr = Jimple.newEqExpr(switchStmt.getKey(), values.get(k));
+            JIfStmt ifStmt = Jimple.newIfStmt(eqExpr, switchStmt.getPositionInfo());
+            SNode ifNode = sMethodPath.createNode(ifStmt);
+            SNode elseNode = sMethodPath.createNode(ifStmt);
+            parent.addChild(ifNode);
+            parent.addChild(elseNode);
+            ifNode.setType(SType.BRANCH_TRUE);
+            elseNode.setType(SType.BRANCH_FALSE);
+            interpretSoot(block.getSuccessors().get(k), sMethodPath, ifNode);
+            parent = elseNode;
+        }
+        if (values.size() + 1 == block.getSuccessors().size())
+            interpretSoot(block.getSuccessors().get(values.size()), sMethodPath, parent);
+        return parent;
+    }
+
+    private static SNode handleBranch(SNode parent, SMethodPath sMethodPath, BasicBlock<?> block) {
+        parent = parent.getParent();
+        parent.removeLastChild();
+
+        List<BasicBlock<?>> successors = (List<BasicBlock<?>>) block.getSuccessors();
+        assert successors.size() == 2;
+
+        Optional<SNode> ifOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_FALSE);
+        Optional<SNode> elseOpt = sMethodPath.getNodeOptional(block.getTail(), SType.BRANCH_TRUE);
+
+        if (ifOpt.isPresent()) {
+            parent.addChild(ifOpt.get());
+        } else {
+            SNode ifNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_FALSE);
+            parent.addChild(ifNode);
+            interpretSoot(successors.get(0), sMethodPath, ifNode);
+        }
+
+        if (elseOpt.isPresent()) {
+            parent.addChild(elseOpt.get());
+        } else {
+            SNode elseNode = sMethodPath.getNode(block.getTail(), SType.BRANCH_TRUE);
+            parent.addChild(elseNode);
+            interpretSoot(successors.get(1), sMethodPath, elseNode);
+        }
+        return parent;
     }
 
     // interpret soot graph
@@ -432,6 +517,39 @@ public class SootHelper {
                     }
                 }
             }
+        }
+    }
+
+    private static void initArrayMap(View<?> view) {
+        if (arrayMap == null) {
+            IdentifierFactory identifierFactory = view.getIdentifierFactory();
+            ClassType listClass = identifierFactory
+                    .getClassType(List.class.getCanonicalName());
+            ClassType arrayClass = identifierFactory
+                    .getClassType(ArrayList.class.getCanonicalName());
+
+            MethodSignature constructor = identifierFactory.getMethodSignature(
+                    arrayClass, "<init>", VoidType.getInstance(), Collections.emptyList());
+
+            Type intType = identifierFactory.getType("int");
+            Type objectType = identifierFactory.getType(Object.class.getCanonicalName());
+            MethodSignature addMethod = identifierFactory.getMethodSignature(
+                    listClass,
+                    "add",
+                    VoidType.getInstance(),
+                    List.of(intType, objectType));
+
+            MethodSignature getMethod = identifierFactory.getMethodSignature(
+                    listClass,
+                    "get",
+                    objectType,
+                    List.of(intType));
+
+            arrayMap = new ArrayMap();
+            arrayMap.classType = arrayClass;
+            arrayMap.initMethod = constructor;
+            arrayMap.addByIndexMethod = addMethod;
+            arrayMap.getByIndexMethod = getMethod;
         }
     }
 

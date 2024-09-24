@@ -37,7 +37,6 @@ public abstract class Z3AbstractHybridInstance {
     }
 
     protected String evalReference(Expr reference) {
-        System.out.println(reference);
         solver.check(); // obligatory check
         Expr strRefExpr = arrayReferenceMap.apply(reference);
         Expr strRef = solver.getModel().eval(strRefExpr, true);
@@ -45,7 +44,6 @@ public abstract class Z3AbstractHybridInstance {
     }
 
     protected Optional<String> evalReferenceStrict(Expr reference) {
-        System.out.println(reference);
         Expr strRefExpr = arrayReferenceMap.apply(reference);
         if (!solver.isUnsatisfiable(ctx.mkEq(strRefExpr, ctx.mkString(""))))
             return Optional.empty();
@@ -59,7 +57,6 @@ public abstract class Z3AbstractHybridInstance {
         String res = expr.toString();
         if (res.startsWith("\"") && res.endsWith("\""))
             res = res.substring(1, res.length()-1);
-        System.out.println(res);
         return res;
     }
 }

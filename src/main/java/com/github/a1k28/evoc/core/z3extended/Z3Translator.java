@@ -238,10 +238,12 @@ public class Z3Translator {
             return res;
         }
         // TODO: handle arrays
-        if (value instanceof JNewExpr
-                || value instanceof JNewMultiArrayExpr
-                || value instanceof JNewArrayExpr) {
+        if (value instanceof JNewExpr) {
             return ctx.mkFreshConst(value.toString(), translateType(value.getType()));
+        }
+        if (value instanceof JNewArrayExpr
+                || value instanceof JNewMultiArrayExpr) {
+            return ctx.mkFreshConst(value.toString(), SortType.ARRAY.value(ctx));
         }
         if (value instanceof JArrayRef) {
             // Create an integer sort for array indices
