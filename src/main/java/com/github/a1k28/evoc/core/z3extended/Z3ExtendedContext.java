@@ -74,10 +74,4 @@ public class Z3ExtendedContext extends Context implements IStack {
     public boolean containsAssertion(Expr assertion) {
         return Arrays.asList(solver.getAssertions()).contains(assertion);
     }
-
-    public Expr mkDefault(Expr expr, Sort sort) {
-        if (SortType.SENTINEL.equals(expr.getSort()))
-            return mkFreshConst(expr.toString(), sort);
-        return expr;
-    }
 }
