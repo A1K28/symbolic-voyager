@@ -231,7 +231,7 @@ public class Z3Translator {
 //                Optional<SVar> optional = getSymbolicValue(base, varType, methodPath);
 //                if (optional.isPresent()) return optional.get().getExpr();
 //            }
-            Expr res = handleMethodCall(abstractInvoke, type, varType, methodPath);
+            Expr res = handleMethodCall(abstractInvoke, varType, methodPath);
 //            if (base != null)
 //                updateSymbolicVar(base, res, varType, methodPath);
             return res;
@@ -332,7 +332,6 @@ public class Z3Translator {
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke,
-                                  Type type,
                                   VarType varType,
                                   SMethodPath methodPath) {
         System.out.println("IN HANDLE METHOD CALL: " + invoke.getMethodSignature());

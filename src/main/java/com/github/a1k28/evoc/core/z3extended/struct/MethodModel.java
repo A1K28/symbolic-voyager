@@ -17,7 +17,10 @@ public enum MethodModel {
 //    SOOT_COMPARE("<sootup.dummy.InvokeDynamic: java.util.Comparator compare()>", true),
 //    SOOT_UNARY_OPERATOR_APPLY("<sootup.dummy.InvokeDynamic: java.util.function.UnaryOperator apply()>", true),
 
-    // Integers
+    // objects
+    OBJECT_EQUALS(Object.class, "<java.lang.Object: boolean equals(java.lang.Object)>", true),
+
+    // integers
     INT_VALUE(Integer.class, "int intValue()", true),
     INT_VALUE_OF(Integer.class,"java.lang.Integer valueOf(int)", false),
 
@@ -53,17 +56,17 @@ public enum MethodModel {
 ////    LIST_STREAM("<java.util.List: java.util.stream.Stream stream()>", true),
     LIST_LAST_INDEX_OF(List.class,"int lastIndexOf(java.lang.Object)", true),
     LIST_OF_OBJECT_ARR(List.class,"java.util.List of(java.lang.Object[])", true),
-    LIST_OF(List.class,"java.util.List of()", true),
-    LIST_OF_1(List.class,"java.util.List of(java.lang.Object)", true),
-    LIST_OF_2(List.class,"java.util.List of(java.lang.Object,java.lang.Object)", true),
-    LIST_OF_3(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_4(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_5(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_6(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_7(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_8(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_9(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
-    LIST_OF_10(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", true),
+    LIST_OF(List.class,"java.util.List of()", false),
+    LIST_OF_1(List.class,"java.util.List of(java.lang.Object)", false),
+    LIST_OF_2(List.class,"java.util.List of(java.lang.Object,java.lang.Object)", false),
+    LIST_OF_3(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_4(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_5(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_6(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_7(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_8(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_9(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
+    LIST_OF_10(List.class,"java.util.List of(java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object,java.lang.Object)", false),
 //
 //    // replaceAll ?
 //    // sort ?
@@ -157,6 +160,8 @@ public enum MethodModel {
 //            case SOOT_COMPARE -> ctx.mkInt(1);
 //            case SOOT_UNARY_OPERATOR_APPLY -> ctx.mkInt(0);
 
+            case OBJECT_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
+
             case INT_VALUE -> args.get(0);
             case INT_VALUE_OF -> args.get(0);
 
@@ -172,7 +177,7 @@ public enum MethodModel {
 //            case SET_REMOVE -> ctx.mkSetRemove(args.get(0), args.get(1));
 
             case LIST_INIT -> ctx.getLinkedListInstance().constructor(args.get(0));
-            case LIST_INIT_WITH_CAPACITY -> ctx.getLinkedListInstance().constructor(args.get(0), (IntExpr) args.get(1));
+            case LIST_INIT_WITH_CAPACITY -> ctx.getLinkedListInstance().constructor(args.get(0));
             case LIST_INIT_WITH_COLLECTION -> ctx.getLinkedListInstance().constructor(args.get(0), args.get(1));
             case LIST_ADD -> ctx.getLinkedListInstance().add(args.get(0), args.get(1));
             case LIST_ADD_BY_INDEX -> ctx.getLinkedListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));
@@ -195,9 +200,9 @@ public enum MethodModel {
             case LIST_CONTAINS -> ctx.getLinkedListInstance().contains(args.get(0), args.get(1));
             case LIST_CONTAINS_ALL -> ctx.getLinkedListInstance().containsAll(args.get(0), args.get(1));
             case LIST_CLEAR -> ctx.getLinkedListInstance().clear(args.get(0));
-            case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4, LIST_OF_5,
-                    LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
-                    -> null;
+            case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4,
+                    LIST_OF_5, LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
+                    -> ctx.getLinkedListInstance().constructorOf(args);
 
             case MAP_INIT -> ctx.getMapInstance().constructor(args.get(0));
             case MAP_INIT_FROM_MAP -> ctx.getMapInstance().constructor(args.get(0), args.get(1));

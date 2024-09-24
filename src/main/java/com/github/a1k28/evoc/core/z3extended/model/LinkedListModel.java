@@ -17,22 +17,19 @@ public class LinkedListModel {
     private Expr tailReference;
     private IntExpr size;
     private IntExpr refCounter;
-    private boolean isSizeUnknown;
 
     public LinkedListModel(Expr reference,
                            ArrayExpr referenceMap,
                            Expr headReference,
                            Expr tailReference,
                            IntExpr size,
-                           IntExpr refCounter,
-                           boolean isSizeUnknown) {
+                           IntExpr refCounter) {
         this.reference = reference;
         this.referenceMap = referenceMap;
         this.headReference = headReference;
         this.tailReference = tailReference;
         this.size = size;
         this.refCounter = refCounter;
-        this.isSizeUnknown = isSizeUnknown;
     }
 
     public LinkedListModel(LinkedListModel model) {
@@ -42,6 +39,5 @@ public class LinkedListModel {
         this.tailReference = model.tailReference;
         this.size = model.size;
         this.refCounter = model.refCounter;
-        this.isSizeUnknown = model.isSizeUnknown;
     }
 }

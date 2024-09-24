@@ -1,12 +1,20 @@
 package com.github.a1k28.evoc.core.z3extended.sort;
 
-import com.microsoft.z3.ArrayExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.TupleSort;
+import com.microsoft.z3.*;
+import lombok.Getter;
 
+@Getter
 public class ArrayAndExprSort extends AbstractSort {
-    public ArrayAndExprSort(TupleSort sort) {
-        super(sort);
+    private final TupleSort sort;
+
+    public ArrayAndExprSort(Context ctx, String name, Sort arraySort, Sort exprSort) {
+        this.sort = ctx.mkTupleSort(
+                ctx.mkSymbol(name),
+                new Symbol[]{
+                        ctx.mkSymbol("array"),
+                        ctx.mkSymbol("expr")},
+                new Sort[]{arraySort, exprSort}
+        );
     }
 
     public Expr mkDecl(Expr array, Expr expr) {

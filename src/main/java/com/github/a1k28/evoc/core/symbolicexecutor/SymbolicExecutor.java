@@ -417,48 +417,23 @@ public class SymbolicExecutor {
         Z3ExtendedContext ctx = Z3Translator.getContext();
         Z3ExtendedSolver solver = ctx.getSolver();
 
+        ArrayExpr set1 = ctx.mkEmptySet(ctx.mkIntSort());
+        ArrayExpr set2 = ctx.mkEmptySet(ctx.mkIntSort());
 
-        // Define the sort for the function (Int -> Int)
-        Sort[] domain = new Sort[]{ctx.getIntSort()};
-        Sort range = ctx.getIntSort();
+        set1 = ctx.mkSetAdd(set1, ctx.mkInt(1));
+        set1 = ctx.mkSetAdd(set1, ctx.mkInt(3));
+        set2 = ctx.mkSetAdd(set2, ctx.mkInt(3));
+        set2 = ctx.mkSetAdd(set2, ctx.mkInt(1));
 
-        // Declare the recursive function
-        FuncDecl f = ctx.mkRecFuncDecl(ctx.mkSymbol("factorial"), domain, range);
+        FuncDecl mapper = ctx.mkFreshFuncDecl("Mapper", new Sort[]{ctx.mkSetSort(ctx.mkIntSort())}, ctx.mkIntSort());
 
-        // Create variables for the function
-        IntExpr n = ctx.mkIntConst("n");
+        Expr res1 = mapper.apply(set1);
+        Expr res2 = mapper.apply(set2);
 
-        // Define the function body
-        BoolExpr recursionCondition = ctx.mkGt(n, ctx.mkInt(0));
-        IntExpr recursiveCase = (IntExpr) ctx.mkMul(n, f.apply(ctx.mkSub(n, ctx.mkInt(1))));
-        IntExpr baseCase = ctx.mkInt(1);
+        BoolExpr condition = ctx.mkEq(res1, res2);
 
-        // Combine the cases
-        Expr<IntSort> body = ctx.mkITE(recursionCondition, recursiveCase, baseCase);
-
-        ctx.AddRecDef(f, new Expr[]{n}, body);
-
-        // Now you can use the factorial function in your constraints
-        // For example, to check if factorial(5) == 120:
-        solver.add(ctx.mkEq(f.apply(ctx.mkInt(5)), ctx.mkInt(120)));
-
-        if (solver.check() == Status.SATISFIABLE) {
-            System.out.println("Factorial function is correctly defined");
-            System.out.println(solver.getModel());
-        } else {
-            System.out.println("Error in factorial function definition or constraint");
-        }
-
-
-
-
-//        Z3SortUnion sortUnion = new Z3SortUnion(ctx);
-//
-//        Sort arrayValueSort = sortUnion.getGenericSort();
-//        ArraySort arraySort = ctx.mkArraySort(ctx.mkIntSort(), arrayValueSort);
-//
-//        solver.check();
-//        Model model = solver.getModel();
-//        String asd = "asdawd";
+        solver.add(ctx.mkNot(condition));
+        Status status = solver.check();
+        String asd = "asd";
     }
 }

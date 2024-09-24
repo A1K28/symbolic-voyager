@@ -1,11 +1,25 @@
 package com.github.a1k28.evoc.core.z3extended.sort;
 
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.TupleSort;
+import com.microsoft.z3.*;
+import lombok.Getter;
 
+@Getter
 public class LinkedListNodeSort extends AbstractSort {
-    public LinkedListNodeSort(TupleSort sort) {
-        super(sort);
+    private final TupleSort sort;
+
+    public LinkedListNodeSort(Context ctx,
+                              String name,
+                              Sort referenceSort,
+                              Sort valueSort) {
+        this.sort = ctx.mkTupleSort(
+                ctx.mkSymbol(name),
+                new Symbol[]{
+                        ctx.mkSymbol("value"),
+                        ctx.mkSymbol("ref"),
+                        ctx.mkSymbol("nextRef"),
+                        ctx.mkSymbol("prevRef")},
+                new Sort[]{valueSort, referenceSort, referenceSort, referenceSort}
+        );
     }
 
     public Expr mkDecl(Expr element, Expr ref, Expr nextRef, Expr prevRef) {

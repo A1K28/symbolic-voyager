@@ -5,9 +5,5 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public abstract class AbstractSort {
-    protected final TupleSort sort;
-
-    public TupleSort getSort() {
-        return this.sort;
-    }
+    public abstract TupleSort getSort();
 }

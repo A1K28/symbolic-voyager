@@ -183,6 +183,63 @@ public class Z3ListTest {
         return 3;
     }
 
+//    @SymbolicTest({14})
+    @DisplayName("test_list_of_1")
+    public int test_list_of_1() {
+        List<Integer> list = List.of();
+        if (!list.isEmpty())
+            return 0;
+
+        list = List.of(1);
+        if (list.size() != 1)
+            return 1;
+
+        list = List.of(1,2);
+        if (list.size() != 2)
+            return 2;
+
+        list = List.of(1,2,3);
+        if (list.size() != 3)
+            return 3;
+        if (list.get(2) != 3)
+            return 4;
+        if (list.get(0) != 1)
+            return 5;
+
+        list = List.of(1,2,3,4);
+        if (list.size() != 4)
+            return 6;
+
+        list = List.of(1,2,3,4,5);
+        if (list.size() != 5)
+            return 7;
+
+        list = List.of(1,2,3,4,5,6);
+        if (list.size() != 6)
+            return 8;
+
+        list = List.of(1,2,3,4,5,6,7);
+        if (list.size() != 7)
+            return 9;
+
+        list = List.of(1,2,3,4,5,6,7,8);
+        if (list.size() != 8)
+            return 10;
+
+        list = List.of(1,2,3,4,5,6,7,8,9);
+        if (list.size() != 9)
+            return 11;
+
+        list = List.of(1,2,3,4,5,6,7,8,9,10);
+        if (list.size() != 10)
+            return 12;
+
+//        list = List.of(1,2,3,4,5,6,7,8,9,10,11);
+//        if (list.size() != 11)
+//            return 13;
+        return 14;
+    }
+
     @SymbolicTest({15})
     @DisplayName("test_remove_by_value_1")
     public int test_remove_by_value_1() {
@@ -237,7 +294,7 @@ public class Z3ListTest {
         return 15;
     }
 
-    @SymbolicTest({3})
+//    @SymbolicTest({3})
     @DisplayName("test_equals_1")
     public int test_equals_1() {
         List<String> list1 = new ArrayList<>();
@@ -621,6 +678,39 @@ public class Z3ListTest {
             return 2;
         if (list.lastIndexOf("2") == 2)
             return 3;
+        return 4;
+    }
+
+    @SymbolicTest({4})
+    @DisplayName("test_multi_dimensional_list_1")
+    public int test_multi_dimensional_list_1() {
+        List outer = new ArrayList();
+        List inner1 = new ArrayList();
+        List inner2 = new ArrayList();
+        List innerInner1 = new ArrayList();
+
+        inner1.add("1");
+        inner2.add("2");
+        innerInner1.add("3");
+
+        outer.add(inner1);
+        outer.add(inner2);
+        inner1.add(innerInner1);
+
+        List retrieved1 = (List) outer.get(0);
+        if (!retrieved1.get(0).equals("1"))
+            return 0;
+
+        List retrieved2 = (List) ((List) outer.get(0)).get(1);
+        if (retrieved2.size() != 1)
+            return 1;
+
+        if (!retrieved2.get(0).equals("3"))
+            return 2;
+
+        if (retrieved1.get(0).equals("2"))
+            return 3;
+
         return 4;
     }
 

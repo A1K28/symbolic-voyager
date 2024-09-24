@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.core.z3extended.struct;
 import com.github.a1k28.evoc.core.z3extended.model.SortContainer;
 import com.github.a1k28.evoc.core.z3extended.sort.ArrayAndExprSort;
 import com.github.a1k28.evoc.core.z3extended.sort.LinkedListNodeSort;
+import com.github.a1k28.evoc.core.z3extended.sort.LinkedListSort;
 import com.github.a1k28.evoc.core.z3extended.sort.MapSort;
 import com.microsoft.z3.*;
 
@@ -18,63 +19,53 @@ public class Z3CachingFactory {
     }
 
     public MapSort mkMapSort(Sort key, Sort value) {
-        return getMapSort(key, value).getSort();
+        return getMapSort(key, value);
     }
 
-    public Expr mkMapSentinel(Sort key, Sort value) {
-        return getMapSort(key, value).getSentinel();
+    public LinkedListSort mkLinkedListSort(Sort referenceSort, ArraySort referenceMapSort) {
+        return getLinkedListSort(referenceSort, referenceMapSort);
     }
 
-    public LinkedListNodeSort mkLinkedListSort(Sort keySort, Sort valueSort) {
-        return getLinkedListSort(keySort, valueSort);
+    public LinkedListNodeSort mkLinkedListNodeSort(Sort keySort, Sort valueSort) {
+        return getLinkedListNodeSort(keySort, valueSort);
     }
 
     public ArrayAndExprSort mkArrayAndExprHolder(Sort arraySort, Sort exprSort) {
         return getArrayAndExprHolder(arraySort, exprSort);
     }
 
-    private SortContainer<MapSort> getMapSort(Sort key, Sort value) {
+    private MapSort getMapSort(Sort key, Sort value) {
         String keyName = key.getName().toString();
         String valueName = value.getName().toString();
         String strValue = "mapOptional:"+keyName+":"+valueName;
         if (cache.containsKey(strValue))
-            return (SortContainer<MapSort>) cache.get(strValue);
+            return (MapSort) cache.get(strValue);
 
-        TupleSort tupleSort = ctx.mkTupleSort(
-                ctx.mkSymbol(strValue),
-                new Symbol[]{
-                        ctx.mkSymbol("key"),
-                        ctx.mkSymbol("value"),
-                        ctx.mkSymbol("isEmpty")},
-                new Sort[]{key, value, ctx.getBoolSort()}
-        );
-        Expr sentinel = tupleSort.mkDecl().apply(
-                ctx.mkConst("sentinelKey", key),
-                ctx.mkConst("sentinelValue", value),
-                ctx.mkTrue());
-        MapSort sort = new MapSort(tupleSort);
-        SortContainer container = new SortContainer(sort, sentinel);
-        cache.put(strValue, container);
-        return container;
+        MapSort sort = new MapSort(ctx, strValue, key, value);
+        cache.put(strValue, sort);
+        return sort;
     }
 
-    private LinkedListNodeSort getLinkedListSort(Sort keySort, Sort valueSort) {
+    private LinkedListSort getLinkedListSort(Sort referenceSort, ArraySort referenceMapSort) {
+        String keyName = referenceSort.getName().toString();
+        String valueName = referenceMapSort.getName().toString();
+        String strValue = "linkedList:"+keyName+":"+valueName;
+        if (cache.containsKey(strValue))
+            return (LinkedListSort) cache.get(strValue);
+
+        LinkedListSort sort = new LinkedListSort(ctx, strValue, referenceSort, referenceMapSort);
+        cache.put(strValue, sort);
+        return sort;
+    }
+
+    private LinkedListNodeSort getLinkedListNodeSort(Sort keySort, Sort valueSort) {
         String keyName = keySort.getName().toString();
         String valueName = valueSort.getName().toString();
-        String strValue = "linkedList:"+keyName+":"+valueName;
+        String strValue = "linkedListNode:"+keyName+":"+valueName;
         if (cache.containsKey(strValue))
             return (LinkedListNodeSort) cache.get(strValue);
 
-        TupleSort tupleSort = ctx.mkTupleSort(
-                ctx.mkSymbol(strValue),
-                new Symbol[]{
-                        ctx.mkSymbol("value"),
-                        ctx.mkSymbol("ref"),
-                        ctx.mkSymbol("nextRef"),
-                        ctx.mkSymbol("prevRef")},
-                new Sort[]{valueSort, keySort, keySort, keySort}
-        );
-        LinkedListNodeSort sort = new LinkedListNodeSort(tupleSort);
+        LinkedListNodeSort sort = new LinkedListNodeSort(ctx, strValue, keySort, valueSort);
         cache.put(strValue, sort);
         return sort;
     }
@@ -86,14 +77,7 @@ public class Z3CachingFactory {
         if (cache.containsKey(strValue))
             return (ArrayAndExprSort) cache.get(strValue);
 
-        TupleSort tupleSort = ctx.mkTupleSort(
-                ctx.mkSymbol(strValue),
-                new Symbol[]{
-                        ctx.mkSymbol("array"),
-                        ctx.mkSymbol("expr")},
-                new Sort[]{arraySort, exprSort}
-        );
-        ArrayAndExprSort sort = new ArrayAndExprSort(tupleSort);
+        ArrayAndExprSort sort = new ArrayAndExprSort(ctx, strValue, arraySort, exprSort);
         cache.put(strValue, sort);
         return sort;
     }

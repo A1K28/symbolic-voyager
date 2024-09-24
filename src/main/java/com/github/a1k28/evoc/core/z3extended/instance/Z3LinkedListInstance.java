@@ -4,6 +4,7 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.github.a1k28.evoc.core.z3extended.model.LinkedListModel;
+import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.sort.ArrayAndExprSort;
 import com.github.a1k28.evoc.core.z3extended.sort.LinkedListNodeSort;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3CachingFactory;
@@ -11,19 +12,21 @@ import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.microsoft.z3.*;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.UUID;
 
 public class Z3LinkedListInstance implements IStack {
 
     private final Z3ExtendedContext ctx;
     private final Z3SortUnion sortUnion;
-    private final Z3Stack<Expr, LinkedListModel> stack;
+    private final Z3Stack<String, LinkedListModel> stack;
     private final Z3ExtendedSolver solver;
     private final Sort valueSort;
     private final LinkedListNodeSort nodeSort;
     private final Sort referenceSort;
     private final ArrayAndExprSort arrayAndSizeHolderSort;
     private final ArraySort arraySort;
+    private FuncDecl<SeqSort> arrayReferenceMap;
 
     private FuncDecl searchRecFunc;
     private FuncDecl findNodeByValueFunc;
@@ -48,9 +51,13 @@ public class Z3LinkedListInstance implements IStack {
 
         this.valueSort = sortUnion.getGenericSort();
         this.referenceSort = ctx.mkIntSort();
-        this.nodeSort = sortState.mkLinkedListSort(referenceSort, valueSort);
+        this.nodeSort = sortState.mkLinkedListNodeSort(referenceSort, valueSort);
         this.arraySort = ctx.mkArraySort(referenceSort, nodeSort.getSort());
         this.arrayAndSizeHolderSort = sortState.mkArrayAndExprHolder(arraySort, ctx.mkIntSort());
+        this.arrayReferenceMap = ctx
+                .mkFuncDecl("MapASDAD",
+                        SortType.ARRAY.value(ctx),
+                        ctx.mkStringSort());
 
         defineSearchFunc();
         defineFindNodeByValueFunc();
@@ -76,24 +83,32 @@ public class Z3LinkedListInstance implements IStack {
     }
 
     public Expr constructor(Expr var1) {
-        return constructor(var1, null, false).getReference();
-    }
-
-    public Expr constructor(Expr var1, IntExpr capacity) {
-        return constructor(var1, null, false).getReference();
+        return constructor(var1, null, null, false).getReference();
     }
 
     public Expr constructor(Expr var1, Expr var2) {
-        return constructor(var1, var2, false).getReference();
+        return constructor(var1, var2, null, false).getReference();
     }
 
-    private LinkedListModel constructor(Expr reference,
-                                        Expr collection,
-                                        boolean isSizeUnknown) {
+    public Expr constructorOf(List<Expr> vars) {
+        Expr[] args = null;
+        if (vars.size() > 0)
+            args = vars.toArray(new Expr[0]);
+
+        Expr reference = ctx.mkFreshConst("reference", SortType.ARRAY.value(ctx));
+        return constructor(reference, null, args, false).getReference();
+    }
+
+    private LinkedListModel constructor(
+            Expr reference, Expr collection, Expr[] args, boolean isSizeUnknown) {
         IntExpr size;
         IntExpr refCounter = ctx.mkInt(2);
         Expr headRef = ctx.mkInt(0);
         Expr tailRef = ctx.mkInt(1);
+
+        Expr strRefExpr = ctx.mkString(UUID.randomUUID().toString());
+        BoolExpr condition = ctx.mkEq(arrayReferenceMap.apply(reference), strRefExpr);
+        solver.add(condition);
 
         Expr nill = sortUnion.wrapValue(ctx.mkNull());
 
@@ -124,19 +139,25 @@ public class Z3LinkedListInstance implements IStack {
         referenceMap = ctx.mkStore(referenceMap, tailRef, tail);
 
         LinkedListModel linkedListModel = new LinkedListModel(
-                reference, referenceMap, headRef, tailRef, size, refCounter, isSizeUnknown);
-        stack.add(reference, linkedListModel);
+                reference, referenceMap, headRef, tailRef, size, refCounter);
+        stack.add(evalStr(reference), linkedListModel);
 
         if (collection != null) {
             addAll(reference, collection);
         }
 
+        if (args != null) {
+            for (Expr arg : args) {
+                add(reference, arg);
+            }
+        }
+
         return linkedListModel;
     }
 
-    public Optional<LinkedListModel> getInitial(Expr var1) {
-        return stack.getFirst(var1);
-    }
+//    public Optional<LinkedListModel> getInitial(Expr var1) {
+//        return stack.getFirst(var1);
+//    }
 
     public BoolExpr add(Expr var1, Expr element) {
         LinkedListModel model = copyModel(getModel(var1));
@@ -279,7 +300,7 @@ public class Z3LinkedListInstance implements IStack {
 
         model.setReferenceMap(referenceMap);
         model.setSize(size);
-        model.setSizeUnknown(false);
+//        model.setSizeUnknown(false);
         return null;
     }
 
@@ -287,7 +308,8 @@ public class Z3LinkedListInstance implements IStack {
         LinkedListModel model = getModel(var1);
         Expr ref = getReferenceByIndex(model.getReferenceMap(), model.getHeadReference(), index);
         Expr retrieved = ctx.mkSelect(model.getReferenceMap(), ref);
-        return sortUnion.unwrapValue(nodeSort.getValue(retrieved), ctx.mkNull());
+        Expr res = sortUnion.unwrapValue(nodeSort.getValue(retrieved), ctx.mkNull());
+        return res;
     }
 
     public Expr hashCode(Expr var1) {
@@ -471,20 +493,21 @@ public class Z3LinkedListInstance implements IStack {
     }
 
     private LinkedListModel getModel(Expr expr, boolean isSizeUnknown) {
-        if (stack.get(expr).isEmpty())
-            return createModel(expr, isSizeUnknown);
-        return stack.get(expr).orElseThrow();
+        String reference = evalStr(expr);
+        if (stack.get(reference).isEmpty())
+            return createModel(expr, reference, isSizeUnknown);
+        return stack.get(reference).orElseThrow();
     }
 
-    private LinkedListModel createModel(Expr expr, boolean isSizeUnknown) {
-        LinkedListModel listModel = constructor(expr, null, isSizeUnknown);
-        stack.add(expr, listModel);
+    private LinkedListModel createModel(Expr expr, String reference, boolean isSizeUnknown) {
+        LinkedListModel listModel = constructor(expr, null, null, isSizeUnknown);
+        stack.add(reference, listModel);
         return listModel;
     }
 
     private LinkedListModel copyModel(LinkedListModel model) {
         LinkedListModel newModel = new LinkedListModel(model);
-        stack.add(newModel.getReference(), newModel);
+        stack.add(evalStr(newModel.getReference()), newModel);
         return newModel;
     }
 
@@ -889,5 +912,22 @@ public class Z3LinkedListInstance implements IStack {
         refCounter = (IntExpr) ctx.mkAdd(refCounter, ctx.mkInt(1));
         model.setRefCounter(refCounter);
         return ref;
+    }
+
+    private String evalStr(Expr referenceExpr) {
+        solver.check();
+        Expr strRefExpr = arrayReferenceMap.apply(referenceExpr);
+//        Expr strRefExpr = ctx.mkSelect(arrayReferenceHolder, referenceExpr);
+        Expr strRef = solver.getModel().eval(strRefExpr, true);
+//        return ref;
+//        return referenceExpr.toString();
+        return parseStr(strRef);
+    }
+
+    private String parseStr(Expr expr) {
+        String res = expr.toString();
+        if (res.startsWith("\"") && res.endsWith("\""))
+            res = res.substring(1, res.length()-1);
+        return res;
     }
 }

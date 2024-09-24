@@ -1,13 +1,26 @@
 package com.github.a1k28.evoc.core.z3extended.sort;
 
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.Sort;
-import com.microsoft.z3.TupleSort;
+import com.microsoft.z3.*;
+import lombok.Getter;
 
+@Getter
 public class MapSort extends AbstractSort {
-    public MapSort(TupleSort sort) {
-        super(sort);
+    private final TupleSort sort;
+    private final Expr sentinel;
+
+    public MapSort(Context ctx, String name, Sort key, Sort value) {
+        this.sort = ctx.mkTupleSort(
+                ctx.mkSymbol(name),
+                new Symbol[]{
+                        ctx.mkSymbol("key"),
+                        ctx.mkSymbol("value"),
+                        ctx.mkSymbol("isEmpty")},
+                new Sort[]{key, value, ctx.getBoolSort()}
+        );
+        this.sentinel = sort.mkDecl().apply(
+                ctx.mkConst("sentinelKey", key),
+                ctx.mkConst("sentinelValue", value),
+                ctx.mkTrue());
     }
 
     public Expr mkDecl(Expr key, Expr element, BoolExpr isEmpty) {
