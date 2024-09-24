@@ -35,6 +35,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
     private FuncDecl removeAllFunc;
     private FuncDecl retainAllFunc;
     private FuncDecl addAllFunc;
+    private FuncDecl fillCapacityFunc;
 
     public Z3LinkedListInstance(Z3ExtendedContext context,
                                 Z3ExtendedSolver solver,
@@ -63,6 +64,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
         defineRemoveAllFunc();
         defineRetainAllFunc();
         defineAddAllFunc();
+        defineFillCapacityFunc();
     }
 
     @Override
@@ -76,11 +78,15 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
     }
 
     public Expr constructor(Expr var1) {
-        return constructor(var1, null, null, false).getReference();
+        return constructor(var1, null, null, null, false).getReference();
+    }
+
+    public Expr constructor(Expr var1, IntExpr capacity) {
+        return constructor(var1, null, null, capacity, false).getReference();
     }
 
     public Expr constructor(Expr var1, Expr var2) {
-        return constructor(var1, var2, null, false).getReference();
+        return constructor(var1, var2, null, null, false).getReference();
     }
 
     public Expr constructorOf(List<Expr> vars) {
@@ -89,15 +95,15 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
             args = vars.toArray(new Expr[0]);
 
         Expr reference = ctx.mkFreshConst("reference", SortType.ARRAY.value(ctx));
-        return constructor(reference, null, args, false).getReference();
+        return constructor(reference, null, args, null, false).getReference();
     }
 
     public Expr parameterConstructor(Expr var1) {
-        return constructor(var1, null, null, true).getReference();
+        return constructor(var1, null, null, null, true).getReference();
     }
 
     private LinkedListModel constructor(
-            Expr reference, Expr collection, Expr[] args, boolean isSizeUnknown) {
+            Expr reference, Expr collection, Expr[] args, IntExpr capacity, boolean isSizeUnknown) {
         createMapping(reference);
 
         IntExpr size;
@@ -139,12 +145,12 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
 
         if (collection != null) {
             addAll(reference, collection);
-        }
-
-        if (args != null) {
+        } else if (args != null) {
             for (Expr arg : args) {
                 add(reference, arg);
             }
+        } else if (capacity != null) {
+            fillByCapacity(linkedListModel, head, capacity);
         }
 
         return linkedListModel;
@@ -483,6 +489,18 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
         return (ArrayExpr) ctx.mkITE(shouldAdd, referenceMap, originalReferenceMap);
     }
 
+    private void fillByCapacity(LinkedListModel model, Expr head, IntExpr capacity) {
+        ArrayExpr referenceMap = model.getReferenceMap();
+        referenceMap = (ArrayExpr) fillCapacityFunc.apply(
+                nodeSort.getNextRef(head),
+                referenceMap,
+                mkNullValue(),
+                ctx.mkInt(2),
+                ctx.mkAdd(capacity, ctx.mkInt(2)));
+        model.setReferenceMap(referenceMap);
+        model.setRefCounter((IntExpr) ctx.mkAdd(model.getRefCounter(), capacity));
+    }
+
     private LinkedListModel getModel(Expr var1) {
         return getModel(var1, true);
     }
@@ -495,7 +513,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
     }
 
     private LinkedListModel createModel(Expr expr, boolean isSizeUnknown) {
-        return constructor(expr, null, null, isSizeUnknown);
+        return constructor(expr, null, null, null, isSizeUnknown);
     }
 
     private LinkedListModel copyModel(LinkedListModel model) {
@@ -874,6 +892,43 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
                 sourceRefMap,
                 targetSize,
                 refCounter
+        }, body);
+    }
+
+    private void defineFillCapacityFunc() {
+        this.fillCapacityFunc = ctx.mkRecFuncDecl(
+                ctx.mkSymbol("LinkedListFillCapacityFunc"),
+                new Sort[]{referenceSort, arraySort, valueSort,
+                        ctx.mkIntSort(), ctx.mkIntSort()},
+                arraySort);
+
+        Expr targetRef = ctx.mkBound(0, referenceSort);
+        ArrayExpr targetRefMap = (ArrayExpr) ctx.mkBound(1, arraySort);
+        Expr defaultValue = ctx.mkBound(2, valueSort);
+        IntExpr idx = (IntExpr) ctx.mkBound(3, ctx.mkIntSort());
+        IntExpr capacity = (IntExpr) ctx.mkBound(4, ctx.mkIntSort());
+
+        BoolExpr hasReachedTheEnd = ctx.mkEq(idx, capacity);
+        BoolExpr shouldAdd = ctx.mkTrue();
+
+        Expr recursiveCase = fillCapacityFunc.apply(
+                targetRef,
+                addBeforeReference(targetRefMap, targetRef, defaultValue, idx, shouldAdd),
+                defaultValue,
+                ctx.mkAdd(idx, ctx.mkInt(1)),
+                capacity);
+
+        Expr body = ctx.mkITE(
+                hasReachedTheEnd,
+                targetRefMap,
+                recursiveCase);
+
+        ctx.AddRecDef(fillCapacityFunc, new Expr[]{
+                targetRef,
+                targetRefMap,
+                defaultValue,
+                idx,
+                capacity
         }, body);
     }
 

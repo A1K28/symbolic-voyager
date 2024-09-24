@@ -356,7 +356,7 @@ public class SootHelper {
     }
 
     private static SNode handleArrays(JAssignStmt assignStmt, SMethodPath sMethodPath, SNode parent) {
-        if (assignStmt.getRightOp() instanceof JNewArrayExpr) {
+        if (assignStmt.getRightOp() instanceof JNewArrayExpr jNewArrayExpr) {
             ClassType classType = arrayMap.classType;
             JNewExpr jNewExpr = Jimple.newNewExpr(classType);
             JAssignStmt newAssignStmt = Jimple.newAssignStmt(
@@ -365,9 +365,10 @@ public class SootHelper {
             SNode assignmentNode = sMethodPath.getNode(newAssignStmt);
             parent.addChild(assignmentNode);
 
+            Immediate capacity = jNewArrayExpr.getSize();
             MethodSignature constructor = arrayMap.initMethod;
             JSpecialInvokeExpr specialInvokeExpr = Jimple
-                    .newSpecialInvokeExpr((Local) assignStmt.getLeftOp(), constructor);
+                    .newSpecialInvokeExpr((Local) assignStmt.getLeftOp(), constructor, capacity);
             JInvokeStmt invokeStmt = Jimple.newInvokeStmt(
                     specialInvokeExpr, assignStmt.getPositionInfo());
 
@@ -528,10 +529,13 @@ public class SootHelper {
             ClassType arrayClass = identifierFactory
                     .getClassType(ArrayList.class.getCanonicalName());
 
-            MethodSignature constructor = identifierFactory.getMethodSignature(
-                    arrayClass, "<init>", VoidType.getInstance(), Collections.emptyList());
-
             Type intType = identifierFactory.getType("int");
+            MethodSignature constructor = identifierFactory.getMethodSignature(
+                    arrayClass,
+                    "<init>",
+                    VoidType.getInstance(),
+                    List.of(intType));
+
             Type objectType = identifierFactory.getType(Object.class.getCanonicalName());
             MethodSignature addMethod = identifierFactory.getMethodSignature(
                     listClass,

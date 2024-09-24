@@ -9,8 +9,8 @@ import java.util.List;
 
 public class Z3ListTest {
     @SymbolicTest({4})
-    @DisplayName("simple_index_test_1")
-    public int simple_index_test_1() {
+    @DisplayName("test_simple_index_1")
+    public int test_simple_index_1() {
         List<String> list = new ArrayList<>();
         list.add("1");
         list.add("2");
@@ -42,8 +42,8 @@ public class Z3ListTest {
     }
 
     @SymbolicTest({9})
-    @DisplayName("index_test_1")
-    public int index_test_1() {
+    @DisplayName("test_index_1")
+    public int test_index_1() {
         List<String> list = new ArrayList<>();
         list.add("1");
         list.add("2");
@@ -73,8 +73,8 @@ public class Z3ListTest {
     }
 
     @SymbolicTest({7})
-    @DisplayName("index_test_with_remove_1")
-    public int index_test_with_remove_1() {
+    @DisplayName("test_index_with_remove_1")
+    public int test_index_with_remove_1() {
         List<String> list = new ArrayList<>();
         list.add("1");
         list.add("2");
@@ -103,8 +103,8 @@ public class Z3ListTest {
     }
 
     @SymbolicTest({2})
-    @DisplayName("index_test_with_size_1")
-    public int index_test_with_size_1() {
+    @DisplayName("test_index_with_size_1")
+    public int test_index_with_size_1() {
         List<String> list = new ArrayList<>();
         list.add("1");
         list.add("2");
@@ -714,15 +714,18 @@ public class Z3ListTest {
         return 4;
     }
 
-    @SymbolicTest({1})
+    @SymbolicTest({2})
     @DisplayName("test_array_1")
     public int test_array_1() {
         int[] arr = new int[10];
         arr[0] = 20;
+        arr[3] = 14;
 
         if (arr[0] != 20)
             return 0;
+        if (arr[3] != 14)
+            return 1;
 
-        return 1;
+        return 2;
     }
 }
