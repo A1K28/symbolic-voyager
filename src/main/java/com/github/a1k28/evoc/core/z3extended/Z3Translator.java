@@ -8,7 +8,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.MethodModel;
 import com.github.a1k28.evoc.helper.Logger;
-import com.github.a1k28.evoc.helper.SootHelper;
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.*;
@@ -24,7 +24,7 @@ import sootup.core.types.*;
 
 import java.util.*;
 
-import static com.github.a1k28.evoc.helper.SootHelper.isConstructorCall;
+import static com.github.a1k28.evoc.core.sootup.SootInterpreter.isConstructorCall;
 
 public class Z3Translator {
     private static volatile Z3ExtendedContext ctx;
@@ -477,7 +477,7 @@ public class Z3Translator {
 
     public SVar updateSymbolicVar(
             Value variable, Expr expression, VarType varType, SMethodPath methodPath) {
-        Class<?> classType = SootHelper.translateType(variable.getType());
+        Class<?> classType = SootInterpreter.translateType(variable.getType());
         return updateSymbolicVar(variable, expression, varType, methodPath, classType);
     }
 

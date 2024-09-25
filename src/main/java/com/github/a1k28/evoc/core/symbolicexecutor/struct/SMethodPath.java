@@ -5,7 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
-import com.github.a1k28.evoc.helper.SootHelper;
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import lombok.Getter;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JCaughtExceptionRef;
@@ -22,11 +22,14 @@ import java.util.*;
 public class SMethodPath {
     private static final Logger log = Logger.getInstance(SMethodPath.class);
 
+    // fixed parameters
     private final Body body;
     private final SNode root;
     private final Method method;
     private final Map<Stmt, List<SNode>> sNodeMap; // used for GOTO tracking
     private final SClassInstance classInstance;
+
+    // dynamic parameters
     private SParamList paramList;
     private SatisfiableResults satisfiableResults;
     private JumpNode jumpNode;
@@ -75,26 +78,21 @@ public class SMethodPath {
         return Optional.empty();
     }
 
+    public SNode createNode(Stmt unit) {
+        SType type = getType(unit);
+        return createNode(unit, type);
+    }
+
     public SNode createNode(Stmt unit, SType type) {
-        SNode sNode;
-        if (type == SType.CATCH)
-            sNode = new SCatchNode(unit, type);
-        else
-            sNode = new SNode(unit, type);
+        SNode sNode = new SNode(unit, type);
         if (!sNodeMap.containsKey(unit))
             sNodeMap.put(unit, new ArrayList<>());
         sNodeMap.get(unit).add(sNode);
         return sNode;
     }
 
-
-    public SNode createNode(Stmt unit) {
-        SType type = getType(unit);
-        SNode sNode;
-        if (type == SType.CATCH)
-            sNode = new SCatchNode(unit, type);
-        else
-            sNode = new SNode(unit, type);
+    public SCatchNode createCatchNode(Stmt unit, ClassType exceptionType) {
+        SCatchNode sNode = new SCatchNode(unit, exceptionType);
         if (!sNodeMap.containsKey(unit))
             sNodeMap.put(unit, new ArrayList<>());
         sNodeMap.get(unit).add(sNode);
@@ -110,9 +108,9 @@ public class SMethodPath {
 
     public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
         List<HandlerNode> handlerNodes = new ArrayList<>();
-        findHandlerNodes(node, handlerNodes, true);
+//        findHandlerNodes(node, handlerNodes, true);
         for (HandlerNode handlerNode : handlerNodes) {
-            Class handlerType = SootHelper.getClass(handlerNode.getNode().getExceptionType());
+            Class handlerType = SootInterpreter.getClass(handlerNode.getNode().getExceptionType());
             if (handlerType.isAssignableFrom(exception))
                 return handlerNode;
         }
@@ -121,7 +119,7 @@ public class SMethodPath {
 
     public List<HandlerNode> getHandlerNodes(SNode node) {
         List<HandlerNode> handlerNodes = new ArrayList<>();
-        findHandlerNodes(node, handlerNodes, false);
+//        findHandlerNodes(node, handlerNodes, false);
         return handlerNodes;
     }
 
@@ -141,56 +139,56 @@ public class SMethodPath {
         return sNodes;
     }
 
-    private void findHandlerNodes(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
-        findHandlerNodesHelper(node, handlerNodes, findAll);
-        if (jumpNode != null && handlerNodes.isEmpty()) {
-            jumpNode.getMethodPath().findHandlerNodes(jumpNode.getNode(), handlerNodes, findAll);
-        }
-    }
+//    private void findHandlerNodes(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
+//        findHandlerNodesHelper(node, handlerNodes, findAll);
+//        if (jumpNode != null && handlerNodes.isEmpty()) {
+//            jumpNode.getMethodPath().findHandlerNodes(jumpNode.getNode(), handlerNodes, findAll);
+//        }
+//    }
 
-    private void findHandlerNodesHelper(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
-        if (node == null) return;
-        if (node.getCatchBlocks().isEmpty())
-            findHandlerNodesHelper(node.getParent(), handlerNodes, findAll);
-        else {
-            getTopLevelCatchBlocks(node, findAll).forEach(catchNode ->
-                    handlerNodes.add(new HandlerNode(this, catchNode)));
-        }
-    }
+//    private void findHandlerNodesHelper(SNode node, List<HandlerNode> handlerNodes, boolean findAll) {
+//        if (node == null) return;
+//        if (node.getCatchBlocks().isEmpty())
+//            findHandlerNodesHelper(node.getParent(), handlerNodes, findAll);
+//        else {
+//            getTopLevelCatchBlocks(node, findAll).forEach(catchNode ->
+//                    handlerNodes.add(new HandlerNode(this, catchNode)));
+//        }
+//    }
 
-    private static List<SCatchNode> getTopLevelCatchBlocks(SNode node, boolean findAll) {
-        List<SCatchNode> nodes = new ArrayList<>();
-        Map<SCatchNode, Integer> depthMap = new HashMap<>();
-        int maxDepth = 0;
-        for (SCatchNode catchNode : node.getCatchBlocks()) {
-            int depth = getExceptionDepth(catchNode);
-            maxDepth = Math.max(depth, maxDepth);
-            depthMap.put(catchNode, getExceptionDepth(catchNode));
-        }
-        if (findAll) {
-            // sort
-            List<Map.Entry<SCatchNode, Integer>> list = new ArrayList<>(depthMap.entrySet());
-            list.sort(Map.Entry.comparingByValue());
-            for (int i = list.size()-1; i >= 0; i--)
-                nodes.add(list.get(i).getKey());
-        } else {
-            int finalMaxDepth = maxDepth;
-            depthMap.entrySet().stream()
-                    .filter(e -> e.getValue() == finalMaxDepth)
-                    .forEach(e -> nodes.add(e.getKey()));
-        }
-        return nodes;
-    }
+//    private static List<SCatchNode> getTopLevelCatchBlocks(SNode node, boolean findAll) {
+//        List<SCatchNode> nodes = new ArrayList<>();
+//        Map<SCatchNode, Integer> depthMap = new HashMap<>();
+//        int maxDepth = 0;
+//        for (SCatchNode catchNode : node.getCatchBlocks()) {
+//            int depth = getExceptionDepth(catchNode);
+//            maxDepth = Math.max(depth, maxDepth);
+//            depthMap.put(catchNode, getExceptionDepth(catchNode));
+//        }
+//        if (findAll) {
+//            // sort
+//            List<Map.Entry<SCatchNode, Integer>> list = new ArrayList<>(depthMap.entrySet());
+//            list.sort(Map.Entry.comparingByValue());
+//            for (int i = list.size()-1; i >= 0; i--)
+//                nodes.add(list.get(i).getKey());
+//        } else {
+//            int finalMaxDepth = maxDepth;
+//            depthMap.entrySet().stream()
+//                    .filter(e -> e.getValue() == finalMaxDepth)
+//                    .forEach(e -> nodes.add(e.getKey()));
+//        }
+//        return nodes;
+//    }
 
-    private static int getExceptionDepth(SNode node) {
-        if (node.getCatchBlocks().isEmpty()) return 0;
-        int max = 0;
-        for (SNode catchBlock : node.getCatchBlocks()) {
-            int res = 1 + getExceptionDepth(catchBlock);
-            max = Math.max(res, max);
-        }
-        return max;
-    }
+//    private static int getExceptionDepth(SNode node) {
+//        if (node.getCatchBlocks().isEmpty()) return 0;
+//        int max = 0;
+//        for (SNode catchBlock : node.getCatchBlocks()) {
+//            int res = 1 + getExceptionDepth(catchBlock);
+//            max = Math.max(res, max);
+//        }
+//        return max;
+//    }
 
     private static SType getType(Stmt unit) {
         Class<? extends Stmt> clazz = unit.getClass();

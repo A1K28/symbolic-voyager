@@ -14,12 +14,9 @@ import java.util.List;
 public class SCatchNode extends SNode {
     private ClassType exceptionType;
 
-    public SCatchNode() {
-        super();
-    }
-
-    public SCatchNode(Stmt unit, SType sType) {
-        super(unit, sType);
+    public SCatchNode(Stmt unit, ClassType exceptionType) {
+        super(unit, SType.CATCH);
+        this.exceptionType = exceptionType;
     }
 
     @Override

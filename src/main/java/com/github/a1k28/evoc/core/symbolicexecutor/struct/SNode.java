@@ -16,12 +16,12 @@ public class SNode {
     protected SType type;
     private SNode parent;
     private final List<SNode> children;
-    private final List<SCatchNode> catchBlocks;
+//    private final List<SCatchNode> catchBlocks;
 
     public SNode() {
         this.unit = null;
         this.children = new ArrayList<>();
-        this.catchBlocks = new ArrayList<>();
+//        this.catchBlocks = new ArrayList<>();
         this.type = SType.ROOT;
     }
 
@@ -29,20 +29,20 @@ public class SNode {
         this.unit = unit;
         this.type = sType;
         this.children = new ArrayList<>();
-        this.catchBlocks = new ArrayList<>();
+//        this.catchBlocks = new ArrayList<>();
     }
 
     public void addChild(SNode child) {
-        if (child.getType() == SType.CATCH) {
-            if (!this.catchBlocks.contains(child))
-                this.catchBlocks.add((SCatchNode) child);
-            if (this.getType() == SType.CATCH)
-                child.setParent(this);
-        } else {
-            if (!this.children.contains(child))
-                this.children.add(child);
-            child.setParent(this);
-        }
+//        if (child.getType() == SType.CATCH) {
+//            if (!this.catchBlocks.contains(child))
+//                this.catchBlocks.add((SCatchNode) child);
+//            if (this.getType() == SType.CATCH)
+//                child.setParent(this);
+//        } else {
+//        }
+        if (!this.children.contains(child))
+            this.children.add(child);
+        child.setParent(this);
     }
 
     public void removeLastChild() {
@@ -70,8 +70,6 @@ public class SNode {
         System.out.println(this);
         for (SNode child : getChildren())
             child.print(level);
-        for (SNode child : getCatchBlocks())
-            child.print(level);
     }
 
     @Override
@@ -82,9 +80,6 @@ public class SNode {
     private boolean containsParent(Stmt unit, Stmt original) {
         if (this.unit != null && this.unit.equals(unit)) return true;
         if (original != null && this.unit == original) return false; // terminate recursion
-        for (Stmt catchStmt : this.catchBlocks.stream().map(SNode::getUnit).toList()) {
-            if (catchStmt.equals(unit)) return true;
-        }
         if (original == null) original = this.unit;
         if (this.parent != null) return this.parent.containsParent(unit, original);
         return false;

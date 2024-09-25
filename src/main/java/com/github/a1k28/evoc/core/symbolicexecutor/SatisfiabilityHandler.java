@@ -8,7 +8,7 @@ import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.evoc.core.z3extended.model.*;
 import com.github.a1k28.evoc.helper.Logger;
-import com.github.a1k28.evoc.helper.SootHelper;
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
 
@@ -103,7 +103,7 @@ public class SatisfiabilityHandler {
             JReturnStmt stmt = (JReturnStmt) node.getUnit();
             Expr expr = z3t.translateValue(
                     stmt.getOp(), VarType.RETURN_VALUE, methodPath);
-            Class<?> classType = SootHelper.translateType(stmt.getOp().getType());
+            Class<?> classType = SootInterpreter.translateType(stmt.getOp().getType());
             SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
                     expr,
                     VarType.RETURN_VALUE,
@@ -126,7 +126,7 @@ public class SatisfiabilityHandler {
             return new SMethodMockEvaluated(methodMockVar,
                     null,
                     evaluatedParams,
-                    SootHelper.getClass(exprModel.getExceptionType().toString()),
+                    SootInterpreter.getClass(exprModel.getExceptionType().toString()),
                     methodMockVar.getMethod());
         Object returnValue = exprModel.getRetVal() == null ? null :
                 evaluateSatisfiableExpression(methodPath, exprModel.getRetVal());

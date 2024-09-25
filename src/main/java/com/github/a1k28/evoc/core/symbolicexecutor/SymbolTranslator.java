@@ -9,7 +9,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-import static com.github.a1k28.evoc.helper.SootHelper.translateField;
+import static com.github.a1k28.evoc.core.sootup.SootInterpreter.translateField;
 
 @NoArgsConstructor
 public class SymbolTranslator {

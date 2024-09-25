@@ -10,7 +10,7 @@ import com.github.a1k28.evoc.core.z3extended.model.IStack;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
-import com.github.a1k28.evoc.helper.SootHelper;
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.microsoft.z3.Expr;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
@@ -26,7 +26,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.a1k28.evoc.helper.SootHelper.*;
+import static com.github.a1k28.evoc.core.sootup.SootInterpreter.*;
 
 public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack {
     private final Z3Stack<String, ClassInstanceModel> stack;
@@ -109,7 +109,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         for (JavaSootField field : instance.getFields()) {
             String name = field.toString();
             Expr defaultValue = getDefaultValue(field.getType());
-            Class<?> classType = SootHelper.translateType(field.getType());
+            Class<?> classType = SootInterpreter.translateType(field.getType());
             instance.getSymbolicFieldStack().add(name, classType, defaultValue, VarType.FIELD);
         }
 
@@ -135,7 +135,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
     private SClassInstance createClassInstance(Class<?> clazz)
             throws ClassNotFoundException {
         SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());
-        List<JavaSootField> fields = SootHelper.getFields(sootClass);
+        List<JavaSootField> fields = SootInterpreter.getFields(sootClass);
         SClassInstance instance = new SClassInstance(clazz, sootClass, fields);
         return instance;
     }
