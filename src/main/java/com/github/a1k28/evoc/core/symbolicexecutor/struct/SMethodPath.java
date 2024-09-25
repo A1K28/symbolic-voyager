@@ -7,6 +7,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import lombok.Getter;
+import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JCaughtExceptionRef;
 import sootup.core.jimple.common.ref.JParameterRef;
@@ -106,15 +107,19 @@ public class SMethodPath {
         return this;
     }
 
-    public HandlerNode getHandlerNode(SNode node, Class<?> exception) {
-        List<HandlerNode> handlerNodes = new ArrayList<>();
-//        findHandlerNodes(node, handlerNodes, true);
-        for (HandlerNode handlerNode : handlerNodes) {
-            Class handlerType = SootInterpreter.getClass(handlerNode.getNode().getExceptionType());
-            if (handlerType.isAssignableFrom(exception))
-                return handlerNode;
+    public Optional<HandlerNode> findHandlerNode(SNode node, Class<?> type) {
+        if (node == null) {
+            if (jumpNode == null) return Optional.empty();
+            return jumpNode.getMethodPath().findHandlerNode(jumpNode.getNode(), type);
         }
-        return null;
+        for (Trap trap : body.getTraps()) {
+            if (!trap.getBeginStmt().equals(node.getUnit())) continue;
+            Class<?> trapType = SootInterpreter.getClass(trap.getExceptionType());
+            if (!trapType.isAssignableFrom(type)) continue;
+            SCatchNode catchNode = (SCatchNode) sNodeMap.get(trap.getHandlerStmt()).get(0);
+            return Optional.of(new HandlerNode(this, catchNode));
+        }
+        return findHandlerNode(node.getParent(), type);
     }
 
     public List<HandlerNode> getHandlerNodes(SNode node) {

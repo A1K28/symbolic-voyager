@@ -18,6 +18,7 @@ import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SymbolicExecutor {
@@ -262,9 +263,16 @@ public class SymbolicExecutor {
         Class exceptionType = sMethodPath.getSymbolicVarStack()
                 .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
                 .getClassType();
-        HandlerNode handlerNode = sMethodPath.getHandlerNode(node, exceptionType);
-        if (handlerNode != null) {
-            analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
+        Optional<HandlerNode> handlerNode = sMethodPath.findHandlerNode(node, exceptionType);
+        if (handlerNode.isPresent()) {
+            // parent is null
+            handlerNode.get().getNode().setParent(node);
+            // usually only has 1 child
+            for (SNode child : handlerNode.get().getNode().getChildren())
+                analyzePaths(handlerNode.get().getMethodPath(), child);
+            handlerNode.get().getNode().setParent(null);
+        } else {
+            // TODO: handle
         }
         pop(sMethodPath);
         return SType.THROW;

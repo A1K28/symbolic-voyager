@@ -52,9 +52,11 @@ class SootParser {
         int i = 0;
         if (parent.getType() == SType.CATCH) i = 1;
 
+        boolean allCovered = true;
         for (;i < stmts.size(); i++) {
             Stmt current = stmts.get(i);
             if (parent.containsParent(current)) continue;
+            allCovered = false;
 
             if (current instanceof JAssignStmt<?,?> assignStmt) {
                 SNode result = handleArrays(assignStmt, sMethodPath, parent);
@@ -69,23 +71,33 @@ class SootParser {
             parent = node;
         }
 
-        if (parent.getType() == SType.GOTO)
-            return;
+        if (exceptionBlocks != null) {
+            addCatchBlocksAndTheirDescendants(block, exceptionBlocks);
+        }
+
+        // helps avoid infinite recursion
+        if (allCovered) return;
 
         if (parent.getType() == SType.SWITCH) {
-            parent = handleSwitch(parent, sMethodPath, block, exceptionBlocks);
+            handleSwitch(parent, sMethodPath, block, exceptionBlocks);
         } else if (parent.getType() == SType.BRANCH) {
-            parent = handleBranch(parent, sMethodPath, block, exceptionBlocks);
+            handleBranch(parent, sMethodPath, block, exceptionBlocks);
         } else {
             for (BasicBlock<?> successor : block.getSuccessors()) {
                 interpretSootBody(successor, sMethodPath, parent, exceptionBlocks);
             }
         }
+    }
 
-        if (exceptionBlocks != null) {
-            Map<ClassType, BasicBlock> catchBlocks
-                    = (Map<ClassType, BasicBlock>) block.getExceptionalSuccessors();
-            catchBlocks.forEach((key, value) -> exceptionBlocks.add(new ExceptionBlock(key, value)));
+    private static void addCatchBlocksAndTheirDescendants(
+            BasicBlock<?> block, Set<ExceptionBlock> exceptionBlocks) {
+        Map<ClassType, BasicBlock> catchBlocks
+                = (Map<ClassType, BasicBlock>) block.getExceptionalSuccessors();
+        for (Map.Entry<ClassType, BasicBlock> entry : catchBlocks.entrySet()) {
+            ExceptionBlock exceptionBlock = new ExceptionBlock(entry.getKey(), entry.getValue());
+            if (exceptionBlocks.contains(exceptionBlock)) continue;
+            exceptionBlocks.add(exceptionBlock);
+            addCatchBlocksAndTheirDescendants(entry.getValue(), exceptionBlocks);
         }
     }
 
@@ -141,10 +153,10 @@ class SootParser {
         return null;
     }
 
-    private static SNode handleSwitch(SNode parent,
-                                      SMethodPath sMethodPath,
-                                      BasicBlock<?> block,
-                                      Set<ExceptionBlock> exceptionBlocks) {
+    private static void handleSwitch(SNode parent,
+                                     SMethodPath sMethodPath,
+                                     BasicBlock<?> block,
+                                     Set<ExceptionBlock> exceptionBlocks) {
         JSwitchStmt switchStmt = (JSwitchStmt) parent.getUnit();
         List<IntConstant> values = switchStmt.getValues();
         parent = parent.getParent();
@@ -163,13 +175,12 @@ class SootParser {
         }
         if (values.size() + 1 == block.getSuccessors().size())
             interpretSootBody(block.getSuccessors().get(values.size()), sMethodPath, parent, exceptionBlocks);
-        return parent;
     }
 
-    private static SNode handleBranch(SNode parent,
-                                      SMethodPath sMethodPath,
-                                      BasicBlock<?> block,
-                                      Set<ExceptionBlock> exceptionBlocks) {
+    private static void handleBranch(SNode parent,
+                                     SMethodPath sMethodPath,
+                                     BasicBlock<?> block,
+                                     Set<ExceptionBlock> exceptionBlocks) {
         parent = parent.getParent();
         parent.removeLastChild();
 
@@ -194,7 +205,6 @@ class SootParser {
             parent.addChild(elseNode);
             interpretSootBody(successors.get(1), sMethodPath, elseNode, exceptionBlocks);
         }
-        return parent;
     }
 
 //    private static void dfs(
