@@ -15,20 +15,20 @@ public class SatisfiableResult {
     private final List<SVarEvaluated> symbolicParameterValues;
     private final List<SMethodMockEvaluated> mockedMethodValues;
     private final SVarEvaluated returnValue;
-    private final boolean continuable;
+    private final Class exceptionType;
 
     public SatisfiableResult(BoolExpr[] z3Assertions,
                              List<SVarEvaluated> symbolicFieldValues,
                              List<SVarEvaluated> symbolicParameterValues,
                              List<SMethodMockEvaluated> mockedMethodValues,
                              SVarEvaluated returnValue,
-                             boolean continuable) {
+                             Class exceptionType) {
         this.z3Assertions = Arrays.asList(z3Assertions);
         this.symbolicFieldValues = symbolicFieldValues;
         this.symbolicParameterValues = symbolicParameterValues;
         this.mockedMethodValues = mockedMethodValues;
         this.returnValue = returnValue;
-        this.continuable = continuable;
+        this.exceptionType = exceptionType;
     }
 
     public Object getParameter(String name) {

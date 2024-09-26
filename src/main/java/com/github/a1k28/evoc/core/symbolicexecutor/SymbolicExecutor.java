@@ -256,23 +256,23 @@ public class SymbolicExecutor {
 
     private SType handleThrows(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        push(sMethodPath);
         Class exceptionType = sMethodPath.getSymbolicVarStack()
                 .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
                 .getClassType();
         Optional<HandlerNode> handlerNode = sMethodPath.findHandlerNode(node, exceptionType);
         if (handlerNode.isPresent()) {
+            push(sMethodPath);
             // parent is null
             handlerNode.get().getNode().setParent(node);
             // usually only has 1 child
             for (SNode child : handlerNode.get().getNode().getChildren())
                 analyzePaths(handlerNode.get().getMethodPath(), child);
             handlerNode.get().getNode().setParent(null);
+            pop(sMethodPath);
+            return SType.THROW;
         } else {
-            // TODO: handle
+            return SType.THROW_END;
         }
-        pop(sMethodPath);
-        return SType.THROW;
     }
 
     private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)

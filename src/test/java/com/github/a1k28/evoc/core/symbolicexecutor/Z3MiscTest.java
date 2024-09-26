@@ -145,6 +145,14 @@ public class Z3MiscTest {
         return 3;
     }
 
+    @SymbolicTest(value = {0}, exceptionType = {IllegalArgumentException.class})
+    @DisplayName("test_exception_thrown_1")
+    public int test_exception_thrown_1(int k) {
+        if (k == 20)
+            throw new IllegalArgumentException();
+        return 0;
+    }
+
     @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {

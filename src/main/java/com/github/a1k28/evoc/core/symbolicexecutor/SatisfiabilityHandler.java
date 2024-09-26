@@ -12,6 +12,7 @@ import com.github.a1k28.evoc.helper.Logger;
 import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
+import sootup.core.jimple.common.stmt.JThrowStmt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,18 +41,27 @@ public class SatisfiabilityHandler {
             log.warn("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
         }
-        if (SType.INVOKE == type || SType.GOTO == type || SType.THROW == type)
+        if (SType.INVOKE == type || SType.GOTO == type || SType.THROW == type) {
             return Z3Status.SATISFIABLE_END;
+        }
+        if (SType.THROW_END == type) {
+            Class exceptionType = sMethodPath.getSymbolicVarStack()
+                    .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
+                    .getClassType();
+            handleSatisfiability(sMethodPath, null, exceptionType);
+            return Z3Status.SATISFIABLE_END;
+        }
         if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
             SVarEvaluated returnValue = getReturnValue(sMethodPath, node);
-            handleSatisfiability(sMethodPath, returnValue);
+            handleSatisfiability(sMethodPath, returnValue, null);
             return Z3Status.SATISFIABLE_END;
         }
         return Z3Status.SATISFIABLE;
     }
 
-    private void handleSatisfiability(SMethodPath sMethodPath, SVarEvaluated returnValue) {
+    private void handleSatisfiability(
+            SMethodPath sMethodPath, SVarEvaluated returnValue, Class exceptionType) {
         log.info("Path is satisfiable - " + sMethodPath.getMethod().getName());
 
         List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
@@ -92,7 +102,7 @@ public class SatisfiabilityHandler {
                 parametersEvaluated,
                 mockedMethodsEvaluated,
                 returnValue,
-                true
+                exceptionType
         );
 
         sMethodPath.getSatisfiableResults().getResults().add(satisfiableResult);

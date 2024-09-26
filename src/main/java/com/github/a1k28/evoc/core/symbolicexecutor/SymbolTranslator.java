@@ -39,7 +39,7 @@ public class SymbolTranslator {
 
             // return val
             Object returnVal = null;
-            if (returnType != Void.class)
+            if (returnType != Void.class && res.getExceptionType() == null)
                 returnVal = parse(res.getReturnValue().getEvaluated(), returnType);
 
             // fields
@@ -83,7 +83,7 @@ public class SymbolTranslator {
             }
 
             ParsedResult parsedResult = new ParsedResult(
-                    returnVal, parameters, parsedFields, mockedMethodValues);
+                    returnVal, parameters, parsedFields, mockedMethodValues, res.getExceptionType());
             evalMap.put(res, parsedResult);
         }
         return evalMap;

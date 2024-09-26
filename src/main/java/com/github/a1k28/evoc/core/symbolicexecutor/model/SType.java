@@ -14,6 +14,7 @@ public enum SType {
     INVOKE_MOCK_SPECIAL_CONSTRUCTOR,
     SWITCH,
     THROW,
+    THROW_END,
     CATCH,
     ENTER_MONITOR,
     EXIT_MONITOR,

@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SymbolicTestEngine implements TestEngine {
     private static final Logger log = Logger.getInstance(SymbolicTestEngine.class);
     private final Map<UniqueId, Set<Integer>> reachableCodes = new HashMap<>();
+    private final Map<UniqueId, Set<Class>> reachableExceptions = new HashMap<>();
     private final SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
 
     static {
@@ -54,7 +55,10 @@ public class SymbolicTestEngine implements TestEngine {
                     UniqueId methodUniqueId = uniqueId.append("method", method.getName());
                     List<Integer> rcArr = Arrays.stream(method.getAnnotation(SymbolicTest.class).value())
                             .boxed().toList();
+                    List<Class> reArr = Arrays.stream(method.getAnnotation(SymbolicTest.class).exceptionType())
+                            .toList();
                     reachableCodes.put(methodUniqueId, new HashSet<>(rcArr));
+                    reachableExceptions.put(methodUniqueId, new HashSet<>(reArr));
                     rootDescriptor.addChild(new TestMethodTestDescriptor(methodUniqueId, testClass, method, null));
                 } else if (method.isAnnotationPresent(BasicTest.class)) {
                     UniqueId methodUniqueId = uniqueId.append("junit:method", method.getName());
@@ -97,7 +101,8 @@ public class SymbolicTestEngine implements TestEngine {
                 assertMethodCorrectness(
                         methodDescriptor.getTestClass(),
                         methodDescriptor.getTestMethod(),
-                        reachableCodes.get(uniqueId));
+                        reachableCodes.get(uniqueId),
+                        reachableExceptions.get(uniqueId));
             }
         } catch (Throwable e) {
             listener.executionFinished(methodDescriptor, TestExecutionResult.failed(e));
@@ -113,9 +118,10 @@ public class SymbolicTestEngine implements TestEngine {
     }
 
 
-    private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes)
+    private void assertMethodCorrectness(Class testClass, Method testMethod, Set<Integer> reachableCodes, Set<Class> reachableExceptions)
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         Set<Integer> reachedCodes = new HashSet<>();
+        Set<Class> reachedExceptions = new HashSet<>();
         symbolicExecutor.refresh();
         CLIOptions.targetClass = testClass.getName();
         SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
@@ -128,21 +134,35 @@ public class SymbolicTestEngine implements TestEngine {
             overwriteFields(testClass, instance, res.getParsedFields());
             createMocks(res.getMethodMockValues());
 
-            int expected = (int) res.getParsedReturnValue();
+            if (res.getExceptionType() == null) {
+                int expected = (int) res.getParsedReturnValue();
+                log.debug(String.format("Trying to assert parameters: %s" +
+                                " with expected: %s",
+                        paramsString, expected));
+                int actual = (int) testMethod.invoke(instance, parameters);
+                assertEquals(expected, actual);
+                assertTrue(reachableCodes.contains(expected));
+                reachedCodes.add(expected);
+            } else {
+                log.debug(String.format("Trying to assert parameters: %s" +
+                                " with expected exception: %s",
+                        paramsString, res.getExceptionType()));
+                try {
+                    testMethod.invoke(instance, parameters);
+                } catch (Throwable e) {
+                    Class clazz = e.getCause().getClass();
+                    assertEquals(res.getExceptionType(), clazz);
+                    assertTrue(reachableExceptions.contains(clazz));
+                    reachableExceptions.add(clazz);
+                }
+            }
 
-            log.debug(String.format("Trying to assert parameters: %s" +
-                            " with expected: %s",
-                    paramsString, expected));
-
-            int actual = (int) testMethod.invoke(instance, parameters);
-
-            assertEquals(expected, actual);
-            assertTrue(reachableCodes.contains(expected));
-            reachedCodes.add(expected);
             MockAPI.resetMockState();
         }
         reachableCodes.removeAll(reachedCodes);
+        reachableExceptions.removeAll(reachableExceptions);
         assertTrue(reachableCodes.isEmpty());
+        assertTrue(reachableExceptions.isEmpty());
     }
 
     private void createMocks(List<MethodMockResult> mockResults) {

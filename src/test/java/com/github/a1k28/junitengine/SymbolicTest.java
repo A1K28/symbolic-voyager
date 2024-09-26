@@ -8,5 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.ANNOTATION_TYPE, ElementType.METHOD})
 public @interface SymbolicTest {
-    int[] value();
+    int[] value() default {};
+    Class[] exceptionType() default {};
 }
