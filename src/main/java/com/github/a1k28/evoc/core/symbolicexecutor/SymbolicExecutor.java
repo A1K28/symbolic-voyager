@@ -102,9 +102,9 @@ public class SymbolicExecutor {
         }
 
         // expand paths by allowing method mocks to throw exceptions
-//        if (type == SType.INVOKE_MOCK) {
-//            mockThrowsAndPropagate(sMethodPath, node);
-//        }
+        if (type == SType.INVOKE_MOCK) {
+            mockThrowsAndPropagate(sMethodPath, node);
+        }
 
         Z3Status status = satHandler.checkSatisfiability(sMethodPath, node, type);
         if (Z3Status.SATISFIABLE == status)
@@ -151,17 +151,20 @@ public class SymbolicExecutor {
             }
 
 //            // handle mocks
-//            if (wrapped.getSType() == SType.INVOKE_MOCK) {
-//                String name = node.getUnit().toString();
-//                List<Expr> params = translateExpressions(method, sMethodPath);
-//                Method javaMethod = (Method) SootHelper.getMethod(method.getInvokeExpr());
-//                SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
-//                SVar sMethodMockVar = sMethodPath.getSymbolicVarStack().add(
-//                        name, null, null, VarType.METHOD_MOCK, javaMethod, params);
-//                if (topMethodPath != sMethodPath)
-//                    topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-//                return SType.INVOKE_MOCK;
-//            }
+            if (wrapped.getSType() == SType.INVOKE_MOCK) {
+                String name = node.getUnit().toString();
+                List<Expr> params = translateExpressions(method, sMethodPath);
+                Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
+                SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
+                Expr reference = ctx.getMethodMockInstance().constructor(
+                        javaMethod, params, null, null).getReferenceExpr();
+                SVar sMethodMockVar = new SVar(name, reference,
+                        VarType.METHOD_MOCK, null, true);
+                sMethodPath.getSymbolicVarStack().add(sMethodMockVar);
+                if (topMethodPath != sMethodPath)
+                    topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
+                return SType.INVOKE_MOCK;
+            }
 
             // set all values to default
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
@@ -220,17 +223,11 @@ public class SymbolicExecutor {
             Expr retValExpr = z3t.translateValue(rightOp, rightOpVarType, sMethodPath);
             Expr reference = ctx.getMethodMockInstance().constructor(
                     method, params, null, retValExpr).getReferenceExpr();
-//            Expr expr = z3t.translateMockValue(
-//                    rightOp, rightOpVarType, method, params, sMethodPath, topMethodPath);
-            SMethodMockVar sMethodMockVar = new SMethodMockVar(
-                    z3t.getValueName(leftOp), retValExpr, VarType.METHOD_MOCK, classType,
-                    true, reference, method, params);
-            topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-//            SVar sMethodMockVar = z3t.updateSymbolicVar(
-//                    leftOp, reference, VarType.METHOD_MOCK, topMethodPath, classType, method, params);
-//            if (topMethodPath != sMethodPath)
-//                topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-//            z3t.updateSymbolicVar(leftOp, reference, VarType.METHOD_MOCK, topMethodPath, classType);
+            SVar sMethodMockVar = new SVar(z3t.getValueName(leftOp), reference,
+                    VarType.METHOD_MOCK, classType, true);
+            sMethodPath.getSymbolicVarStack().add(sMethodMockVar);
+            if (topMethodPath != sMethodPath)
+                topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
             return SType.INVOKE_MOCK;
         } else {
             Class classType = SootInterpreter.translateType(rightOp.getType());
@@ -280,25 +277,27 @@ public class SymbolicExecutor {
 
     private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        SMethodMockVar methodMockVar;
+        SVar methodMockVar;
 
         if (node.getUnit() instanceof JAssignStmt assignStmt) {
-            methodMockVar = (SMethodMockVar) sMethodPath.getSymbolicVarStack()
+            methodMockVar = sMethodPath.getTopMethodPath().getSymbolicVarStack()
                     .get(z3t.getValueName(assignStmt.getLeftOp())).orElseThrow();
         } else {
-            methodMockVar = (SMethodMockVar) sMethodPath.getSymbolicVarStack()
+            methodMockVar = sMethodPath.getTopMethodPath().getSymbolicVarStack()
                     .get(node.getUnit().toString()).orElseThrow();
         }
 
-        for (HandlerNode handlerNode : sMethodPath.getHandlerNodes(node)) {
+        List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
+        for (HandlerNode handlerNode : handlerNodes) {
             push(sMethodPath);
-            methodMockVar.setThrowType(handlerNode.getNode().getExceptionType());
+            ctx.getMethodMockInstance().setExceptionType(
+                    methodMockVar.getExpr(), handlerNode.getNode().getExceptionType());
             analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
             pop(sMethodPath);
         }
 
         // clear throws so that further paths assume a return value (if non-void)
-        methodMockVar.setThrowType(null);
+        ctx.getMethodMockInstance().setExceptionType(methodMockVar.getExpr(), null);
     }
 
     private SType handleReturn(SMethodPath sMethodPath, SNode node)
@@ -316,10 +315,11 @@ public class SymbolicExecutor {
                     stmt.getOp(), assignStmt.getRightOp().getType(), VarType.RETURN_VALUE, sMethodPath);
 
             Value leftOp = assignStmt.getLeftOp();
-            VarType leftOpVarType = getVarType(sMethodPath, leftOp);
+            Value rightOp = assignStmt.getRightOp();
+            VarType varType = getVarType(sMethodPath, rightOp);
 
             Class classType = SootInterpreter.translateType(assignStmt.getRightOp().getType());
-            z3t.updateSymbolicVar(leftOp, expr, leftOpVarType, jn.getMethodPath(), classType);
+            z3t.updateSymbolicVar(leftOp, expr, varType, jn.getMethodPath(), classType);
         }
 
         List<SNode> children = jn.getNode().getChildren();

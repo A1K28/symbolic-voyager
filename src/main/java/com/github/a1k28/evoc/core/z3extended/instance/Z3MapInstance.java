@@ -25,7 +25,7 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
                          Z3ExtendedSolver solver,
                          Z3CachingFactory sortState,
                          Z3SortUnion sortUnion) {
-        super(context, solver);
+        super(context, solver, "MapInstance", SortType.MAP.value(context));
         this.sortUnion = sortUnion;
         this.stack = new Z3Stack<>();
         this.discoveredKeys = new Z3Stack<>();
@@ -33,8 +33,6 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
         Sort keySort = sortUnion.getGenericSort();
         Sort valueSort = sortUnion.getGenericSort();
         this.mapSort = sortState.mkMapSort(keySort, valueSort);
-
-        defineMapFunc("MapArrayReferenceMap", SortType.MAP.value(ctx));
     }
 
     @Override

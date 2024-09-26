@@ -188,7 +188,7 @@ public class Z3Translator {
                     SType.INVOKE_MOCK_SPECIAL_CONSTRUCTOR : SType.INVOKE_MOCK;
             return new SMethodExpr(val, sType, invoke, base, args, MethodPropagationType.MOCKED);
         } else {
-            log.warn("Method not defined: " + invoke + ". This may cause undefined results.");
+            log.warn("Method not defined: " + invoke + ". This may cause unexpected results.");
             return new SMethodExpr(val, SType.OTHER, invoke, base, args, MethodPropagationType.IGNORED);
         }
     }

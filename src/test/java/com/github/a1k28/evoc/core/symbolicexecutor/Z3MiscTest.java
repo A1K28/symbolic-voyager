@@ -145,7 +145,7 @@ public class Z3MiscTest {
         return 3;
     }
 
-    //@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {
         NOPService nopService = new NOPService();
@@ -157,7 +157,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_2")
     public int test_method_mock_2(int a, int b) {
         NOPService nopService = new NOPService();
@@ -169,7 +169,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_try_catch_1")
     public int test_method_mock_with_try_catch_1(int a, int b) {
         NOPService nopService = new NOPService();
@@ -185,7 +185,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_with_nested_try_catch_1")
     public int test_method_mock_with_nested_try_catch_1(int a) {
         try {
@@ -198,7 +198,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_nested_try_catch_2")
     public int test_method_mock_with_nested_try_catch_2(int a, int b) {
         try {
@@ -213,7 +213,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3,4})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_method_mock_with_nested_try_catch_3")
     public int test_method_mock_with_nested_try_catch_3(int a, int b) {
         try {

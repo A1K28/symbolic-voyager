@@ -41,7 +41,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
                                 Z3ExtendedSolver solver,
                                 Z3CachingFactory sortState,
                                 Z3SortUnion sortUnion) {
-        super(context, solver);
+        super(context, solver, "LinkedListInstance", SortType.ARRAY.value(context));
         this.sortUnion = sortUnion;
         this.stack = new Z3Stack<>();
 
@@ -50,8 +50,6 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
         this.nodeSort = sortState.mkLinkedListNodeSort(referenceSort, valueSort);
         this.arraySort = ctx.mkArraySort(referenceSort, nodeSort.getSort());
         this.arrayAndSizeHolderSort = sortState.mkArrayAndExprHolder(arraySort, ctx.mkIntSort());
-
-        defineMapFunc("LinkedListArrayReferenceMap", SortType.ARRAY.value(ctx));
 
         defineSearchFunc();
         defineFindNodeByValueFunc();

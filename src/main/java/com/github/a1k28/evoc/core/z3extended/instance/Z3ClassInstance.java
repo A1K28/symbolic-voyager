@@ -35,11 +35,9 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
     public Z3ClassInstance(Z3ExtendedContext ctx,
                            Z3ExtendedSolver solver,
                            Z3SortUnion sortUnion) {
-        super(ctx, solver);
+        super(ctx, solver, "ClassInstance", sortUnion.getGenericSort());
         this.stack = new Z3Stack<>();
         this.sortUnion = sortUnion;
-
-        defineMapFunc("ClassArrayReferenceMap", sortUnion.getGenericSort());
     }
 
     @Override

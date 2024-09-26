@@ -116,25 +116,24 @@ public class SatisfiabilityHandler {
     }
 
     private SMethodMockEvaluated handleMockExpression(SMethodPath methodPath, SVar var) {
-        SMethodMockVar methodMockVar = (SMethodMockVar) var;
         MethodMockExprModel exprModel = ctx.getMethodMockInstance()
-                .get(methodMockVar.getReferenceExpr());
+                .get(var.getExpr());
         List<Object> evaluatedParams = exprModel.getArgs().stream()
                 .map(e -> evaluateSatisfiableExpression(methodPath, e))
                 .collect(Collectors.toList());
         if (exprModel.throwsException())
-            return new SMethodMockEvaluated(methodMockVar,
+            return new SMethodMockEvaluated(var,
                     null,
                     evaluatedParams,
                     SootInterpreter.getClass(exprModel.getExceptionType().toString()),
-                    methodMockVar.getMethod());
+                    exprModel.getMethod());
         Object returnValue = exprModel.getRetVal() == null ? null :
                 evaluateSatisfiableExpression(methodPath, exprModel.getRetVal());
-        return new SMethodMockEvaluated(methodMockVar,
+        return new SMethodMockEvaluated(var,
                 returnValue,
                 evaluatedParams,
                 null,
-                methodMockVar.getMethod());
+                exprModel.getMethod());
     }
 
     private Object evaluateSatisfiableExpression(SMethodPath methodPath, Expr expr, String name) {
@@ -199,8 +198,6 @@ public class SatisfiabilityHandler {
 
     private ClassInstanceModel getClassInstanceModel(SMethodPath methodPath, Expr expr) {
         SVar sVar = methodPath.getSymbolicVarStack().get(expr).orElseThrow();
-        if (sVar.getType() == VarType.METHOD_MOCK)
-            expr = ((SMethodMockVar) sVar).getReferenceExpr();
         Optional<ClassInstanceModel> optional = ctx.getClassInstance().getInstance(expr);
         if (optional.isPresent()) {
             return optional.get();

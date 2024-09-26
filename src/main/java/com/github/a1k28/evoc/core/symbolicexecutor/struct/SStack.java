@@ -61,17 +61,6 @@ public class SStack extends Z3Stack<String, SVar> implements IStack {
         stack.get(index).get(key).add(sVar);
     }
 
-    public List<SMethodMockVar> getAllMocks(Method method) {
-        return stack.stream()
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .filter(e -> e instanceof SMethodMockVar)
-                .map(e -> (SMethodMockVar) e)
-                .filter(e -> e.getMethod().equals(method))
-                .collect(Collectors.toList());
-    }
-
     public Optional<SVar> getDeclaration(String key) {
         for (int i = 0; i <= index; i++) {
             if (stack.get(i).containsKey(key)) {

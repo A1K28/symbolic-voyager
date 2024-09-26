@@ -1,28 +1,29 @@
 package com.github.a1k28.evoc.core.z3extended.instance;
 
+import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
-import com.github.a1k28.evoc.core.z3extended.model.MethodMockExprModel;
-import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.evoc.core.z3extended.model.IStack;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
+import com.github.a1k28.evoc.core.z3extended.model.MethodMockExprModel;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3SortUnion;
+import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
+import com.microsoft.z3.ArrayExpr;
 import com.microsoft.z3.Expr;
 import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public class Z3MethodMockInstance implements IStack {
-    private final Context ctx;
-    private final Z3ExtendedSolver solver;
+public class Z3MethodMockInstance extends Z3AbstractHybridInstance implements IStack {
+    private final Z3SortUnion sortUnion;
     private final Z3Stack<String, MethodMockExprModel> stack;
 
-    public Z3MethodMockInstance(Context ctx,
-                                Z3ExtendedSolver solver) {
-        this.ctx = ctx;
-        this.solver = solver;
+    public Z3MethodMockInstance(Z3ExtendedContext ctx,
+                                Z3ExtendedSolver solver,
+                                Z3SortUnion sortUnion) {
+        super(ctx, solver, "MethodMockInstance",
+                ctx.mkArraySort(ctx.mkIntSort(), sortUnion.getGenericSort()));
+        this.sortUnion = sortUnion;
         this.stack = new Z3Stack<>();
     }
 
@@ -39,53 +40,53 @@ public class Z3MethodMockInstance implements IStack {
     public MethodMockExprModel constructor(
             Method method, List<Expr> args, ClassType throwType, Expr retVal)
             throws ClassNotFoundException {
-        Expr referenceExpr = getInput(method, args);
-        String refExprStr = evalStr(referenceExpr);
-        Optional<MethodMockExprModel> optional = stack.get(refExprStr);
-        if (optional.isPresent()) return optional.get();
+        Expr ref = retVal == null ? getInput(method, args) : retVal;
+        Expr wrappedRef = wrapValue(ref);
+        Optional<String> reference = evalReferenceStrict(wrappedRef);
+        if (reference.isPresent()) return stack.get(reference.get()).orElseThrow();
+
+        createMapping(wrappedRef);
 
         MethodMockExprModel model = new MethodMockExprModel(
-                referenceExpr,
+                ref,
                 method,
                 args,
                 throwType,
                 retVal);
-        stack.add(refExprStr, model);
+        stack.add(evalReference(wrappedRef), model);
         return model;
     }
 
-    public MethodMockExprModel get(Expr referenceExpr) {
-        return stack.get(evalStr(referenceExpr)).orElse(null);
+    public MethodMockExprModel setExceptionType(Expr reference, ClassType exceptionType) {
+        String ref = evalReference(wrapValue(reference));
+        MethodMockExprModel model = stack.get(ref).orElseThrow();
+        model.setExceptionType(exceptionType);
+        stack.add(ref, model);
+        return model;
+    }
+
+    public MethodMockExprModel get(Expr reference) {
+        return stack.get(evalReference(wrapValue(reference))).orElse(null);
+    }
+
+    private Expr wrapValue(Expr reference) {
+        if (reference instanceof ArrayExpr<?,?>)
+            return reference;
+        ArrayExpr input = ctx.mkConstArray(ctx.mkIntSort(), sortUnion.wrapValue(ctx.mkNull()));
+        input = ctx.mkStore(input, ctx.mkInt(0), sortUnion.wrapValue(reference));
+        return input;
     }
 
     // if parameters are equal, make sure the method mocks the same return value
     private Expr getInput(Method method, List<Expr> args) {
-        Expr referenceExpr = ctx.mkString(UUID.randomUUID().toString());
-//        Expr referenceExpr = ctx.mkFreshConst("mockReference", SortType.METHOD_MOCK.value(ctx));
-        for (MethodMockExprModel model : stack.getAll()) {
-            if (!method.equals(model.getMethod())) continue;
-            if (model.getArgs().size() != args.size()) continue;
-            BoolExpr eq = ctx.mkTrue();
+        ArrayExpr input = ctx.mkConstArray(ctx.mkIntSort(), sortUnion.wrapValue(ctx.mkNull()));
+        Expr methodName = ctx.mkString(method.getName());
+        input = ctx.mkStore(input, ctx.mkInt(0), sortUnion.wrapValue(methodName));
+        if (args != null) {
             for (int i = 0; i < args.size(); i++) {
-                Expr e1 = args.get(i);
-                Expr e2 = model.getArgs().get(i);
-                eq = ctx.mkAnd(eq, ctx.mkEq(e1, e2));
+                input = ctx.mkStore(input, ctx.mkInt(i+1), sortUnion.wrapValue(args.get(i)));
             }
-            referenceExpr = ctx.mkITE(eq, model.getReferenceExpr(), referenceExpr);
         }
-        return referenceExpr;
-    }
-
-    private String evalStr(Expr referenceExpr) {
-        solver.check(); // obligatory check
-        Expr refExprEvaluated = solver.getModel().eval(referenceExpr, true);
-        return parseStr(refExprEvaluated);
-    }
-
-    private String parseStr(Expr expr) {
-        String res = expr.toString();
-        if (res.startsWith("\"") && res.endsWith("\""))
-            res = res.substring(1, res.length()-1);
-        return res;
+        return input;
     }
 }

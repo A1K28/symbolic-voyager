@@ -22,12 +22,14 @@ import java.util.UUID;
 public abstract class Z3AbstractHybridInstance {
     protected final Z3ExtendedContext ctx;
     protected final Z3ExtendedSolver solver;
+    private final FuncDecl<SeqSort> arrayReferenceMap;
 
-    private FuncDecl<SeqSort> arrayReferenceMap;
-
-    protected void defineMapFunc(String name, Sort sort) {
-        this.arrayReferenceMap = ctx
-                .mkFuncDecl(name, sort, ctx.mkStringSort());
+    protected Z3AbstractHybridInstance(
+            Z3ExtendedContext ctx, Z3ExtendedSolver solver, String name, Sort sort) {
+        this.ctx = ctx;
+        this.solver = solver;
+        this.arrayReferenceMap = ctx.mkFuncDecl(
+                name+"ArrayReferenceMap", sort, ctx.mkStringSort());
     }
 
     protected void createMapping(Expr reference) {
@@ -51,7 +53,6 @@ public abstract class Z3AbstractHybridInstance {
         Expr strRef = solver.getModel().eval(strRefExpr, true);
         return Optional.of(parseStr(strRef));
     }
-
 
     private String parseStr(Expr expr) {
         String res = expr.toString();

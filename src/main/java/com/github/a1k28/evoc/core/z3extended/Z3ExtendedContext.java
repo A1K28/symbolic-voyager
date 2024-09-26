@@ -31,7 +31,7 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.solver = new Z3ExtendedSolver(this, slvr, sortUnion);
 
         this.classInstance = new Z3ClassInstance(this, solver, sortUnion);
-        this.methodMockInstance = new Z3MethodMockInstance(this, solver);
+        this.methodMockInstance = new Z3MethodMockInstance(this, solver, sortUnion);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
     }
