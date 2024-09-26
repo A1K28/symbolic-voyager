@@ -149,7 +149,7 @@ public enum MethodModel {
         System.out.println("APPLYING: " + clazz.getName() + ": " + signature);
 
         // TODO: maybe change this??
-        if (this.signature.matches("boolean equals\\(.*\\)") && args.size() == 2) {
+        if (this.signature.matches(".*boolean equals\\(.*\\).*") && args.size() == 2) {
             boolean eq1 = SortType.NULL.equals(args.get(0).getSort());
             boolean eq2 = SortType.NULL.equals(args.get(1).getSort());
             if (eq1 && eq2) return ctx.mkBool(true);

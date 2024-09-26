@@ -110,6 +110,16 @@ public class SymbolTranslator {
             return (T) newMap;
         }
 
+        if (type == List.class) {
+            if (value == null) return (T) new ArrayList<>();
+            List<?> list = (List<?>) value;
+            List newList = new ArrayList();
+            for (Object val : list) {
+                newList.add(parseString(val));
+            }
+            return (T) list;
+        }
+
         if (value instanceof ClassInstanceVar v)
             return (T) parseObject(v);
 

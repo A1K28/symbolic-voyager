@@ -5,6 +5,7 @@ import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
+import com.github.a1k28.evoc.core.z3extended.instance.Z3LinkedListInstance;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.evoc.core.z3extended.model.*;
 import com.github.a1k28.evoc.helper.Logger;
@@ -154,6 +155,8 @@ public class SatisfiabilityHandler {
             evaluated = handleMapSatisfiability(expr);
         } else if (SortType.ARRAY.equals(expr.getSort())) {
             evaluated = handleListSatisfiability(expr);
+        } else if (SortType.SET.equals(expr.getSort())) {
+            evaluated = handleSetSatisfiability(expr);
         } else if (SortType.OBJECT.equals(expr.getSort())) {
             evaluated = handleObjectSatisfiability(methodPath, expr);
         } else {
@@ -175,24 +178,26 @@ public class SatisfiabilityHandler {
     }
 
     private Object handleListSatisfiability(Expr expr) {
+        throw new RuntimeException("List interpretations are not yet supported");
 //        Z3LinkedListInstance linkedListInstance = ctx.getLinkedListInstance();
 //        LinkedListModel listModel = linkedListInstance.getInitial(expr).orElseThrow();
-        throw new RuntimeException("List interpretations are not yet supported");
+//        int size = solver.minimizeInteger(listModel.getSize());
+//        return solver.createInitialList(listModel, size);
     }
 
+    private Object handleSetSatisfiability(Expr expr) {
+        throw new RuntimeException("Set interpretations are not yet supported");
+    }
 
     private Object handleObjectSatisfiability(SMethodPath methodPath, Expr expr) {
         ClassInstanceModel model = getClassInstanceModel(methodPath, expr);
         SClassInstance classInstance = model.getClassInstance();
         ClassInstanceVar classInstanceVar = new ClassInstanceVar(classInstance.getClazz());
-        System.out.println("===================================");
         for (SVar sVar : classInstance.getSymbolicFieldStack().getAll()) {
             if (!sVar.isDeclaration()) continue;
             Object evaluated = evaluateSatisfiableExpression(methodPath, sVar.getExpr());
-            System.out.println(sVar.getName() + " - " + evaluated);
             classInstanceVar.getFields().put(sVar.getName(), evaluated);
         }
-        System.out.println("===================================");
         return classInstanceVar;
     }
 

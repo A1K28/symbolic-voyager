@@ -13,6 +13,7 @@ import com.github.a1k28.evoc.core.z3extended.struct.Z3Stack;
 import com.microsoft.z3.*;
 
 import java.util.List;
+import java.util.Optional;
 
 public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IStack {
 
@@ -154,9 +155,9 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
         return linkedListModel;
     }
 
-//    public Optional<LinkedListModel> getInitial(Expr var1) {
-//        return stack.getFirst(var1);
-//    }
+    public Optional<LinkedListModel> getInitial(Expr var1) {
+        return stack.getFirst(evalReference(var1));
+    }
 
     public BoolExpr add(Expr var1, Expr element) {
         LinkedListModel model = copyModel(getModel(var1));

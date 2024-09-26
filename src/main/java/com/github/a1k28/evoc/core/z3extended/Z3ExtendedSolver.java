@@ -1,6 +1,8 @@
 package com.github.a1k28.evoc.core.z3extended;
 
+import com.github.a1k28.evoc.core.z3extended.instance.Z3LinkedListInstance;
 import com.github.a1k28.evoc.core.z3extended.instance.Z3MapInstance;
+import com.github.a1k28.evoc.core.z3extended.model.LinkedListModel;
 import com.github.a1k28.evoc.core.z3extended.model.MapModel;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.core.z3extended.model.Tuple;
@@ -84,6 +86,19 @@ public class Z3ExtendedSolver {
         add(ctx.mkEq(x, ctx.mkInt(result)));
 
         return result;
+    }
+
+    // TODO: finish implementation
+    public List createInitialList(LinkedListModel listModel, int size) {
+        List target = new ArrayList();
+        Z3LinkedListInstance linkedListInstance = ctx.getLinkedListInstance();
+        for (int i = 0; i < size; i++) {
+            Expr res = linkedListInstance.get(listModel.getReference(), ctx.mkInt(i));
+            solver.check(); // obligatory check
+            Object evaluated = solver.getModel().eval(res, true);
+            target.add(evaluated);
+        }
+        return target;
     }
 
     public Map createInitialMap(MapModel mapModel, int size) {
