@@ -37,12 +37,9 @@ public class CommandLineRunner {
             SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
             Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
 
-            Set<String> set = new HashSet<>();
+            // TODO: reduce test cases whose paths are covered by other test cases
             for (SatisfiableResult satisfiableResult : sr.getResults()) {
                 ParsedResult res = evalMap.get(satisfiableResult);
-                String uniqueKey = Parser.serialize(res.getParsedReturnValue());
-                if (set.contains(uniqueKey)) continue;
-                set.add(uniqueKey);
                 testGeneratorModels.add(new TestGeneratorModel(method, res));
 
             }
