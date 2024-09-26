@@ -42,6 +42,7 @@ class SootParser {
                     basicBlock.getHead(), exceptionBlock.getType());
             interpretSootBody(basicBlock, sMethodPath, catchNode, null);
         }
+        sMethodPath.sortTraps();
     }
 
     private static void interpretSootBody(BasicBlock<?> block,
