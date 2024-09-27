@@ -5,6 +5,9 @@ import com.github.a1k28.evoc.core.z3extended.model.StatusDTO;
 import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Z3ObjectTest {
     @SymbolicTest({2})
     @DisplayName("test_object_1")
@@ -123,6 +126,28 @@ public class Z3ObjectTest {
         if (debt != customerInfoDTO.getDebt())
             return 1;
         if (null == customerInfoDTO.getStatus())
+            return 2;
+        return 3;
+    }
+
+    @SymbolicTest({2,3})
+    @DisplayName("test_object_inside_list_1")
+    public int test_object_inside_list_1(String customerId) {
+        CustomerInfoDTO dto1 = new CustomerInfoDTO();
+        dto1.setCustomerId(customerId);
+
+        CustomerInfoDTO dto2 = new CustomerInfoDTO();
+        dto2.setCustomerId(customerId+"ASD");
+
+        List<CustomerInfoDTO> list = new ArrayList();
+        list.add(dto1);
+        list.add(dto2);
+
+        if (!list.get(0).getCustomerId().equals(customerId))
+            return 0;
+        if (!list.get(1).getCustomerId().equals(customerId+"ASD"))
+            return 1;
+        if (list.get(1).getCustomerId().equals("afjawifjASD"))
             return 2;
         return 3;
     }
