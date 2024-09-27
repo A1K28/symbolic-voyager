@@ -32,6 +32,9 @@ public class CommandLineRunner {
             // skip if non-public
             if (!Modifier.isPublic(method.getModifiers())) continue;
 
+            // skip getters and setters
+            if (method.getName().startsWith("get") || method.getName().startsWith("set")) continue;
+
             symbolicExecutor.refresh();
             SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
             Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
@@ -40,8 +43,10 @@ public class CommandLineRunner {
             for (SatisfiableResult satisfiableResult : sr.getResults()) {
                 ParsedResult res = evalMap.get(satisfiableResult);
                 testGeneratorModels.add(new TestGeneratorModel(method, res));
-
             }
+
+            // TODO: remove
+            break;
         }
 
         JUnitTestAssembler.assembleTest(clazz, testGeneratorModels);
@@ -52,6 +57,7 @@ public class CommandLineRunner {
             Set<String> variableTypes = LocalTypeExtractor
                     .extract(Class.forName(CLIOptions.targetClass)).stream()
                     .filter(CommandLineRunner::shouldConsiderType)
+                    .map(CLIOptions::parseWin)
                     .collect(Collectors.toSet());
             if (variableTypes.isEmpty()) return;
 
@@ -87,15 +93,17 @@ public class CommandLineRunner {
     private static boolean shouldConsiderType(String type) {
         if (CLIOptions.shouldPropagate(type)) return false;
         if ("void".equals(type)) return false;
-        if (type.startsWith("java.")) return false;
-        if (type.equals("byte")
-                || type.equals("short")
-                || type.equals("int")
-                || type.equals("long")
-                || type.equals("float")
-                || type.equals("double")
-                || type.equals("char")
-                || type.equals("boolean")) return false;
+        if (type.startsWith("java")) return false;
+        if (type.startsWith("org")) return false;
+        if (type.equals("byte") || type.equals("byte[]")
+                || type.equals("short") || type.equals("short[]")
+                || type.equals("int") || type.equals("int[]")
+                || type.equals("long") || type.equals("long[]")
+                || type.equals("float") || type.equals("float[]")
+                || type.equals("double") || type.equals("double[]")
+                || type.equals("char") || type.equals("char[]")
+                || type.equals("boolean") || type.equals("boolean[]"))
+            return false;
         return true;
     }
 

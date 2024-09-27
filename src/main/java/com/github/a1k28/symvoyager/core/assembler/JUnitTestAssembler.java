@@ -24,13 +24,15 @@ public class JUnitTestAssembler {
             throws IOException, TemplateException {
         String className = clazz.getSimpleName();
         String testClassName = className + "Test";
-        String targetPath = clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String targetPath = clazz.getProtectionDomain().getCodeSource().getLocation().getPath().replace("/", File.separator);
         String testPath = targetPath.replace(File.separator+"target"+File.separator+"classes", File.separator+"src"+File.separator+"test"+File.separator+"java"+File.separator);
         String fileName = testPath + clazz.getPackageName().replace(".", File.separator) + File.separator + testClassName + ".java";
         Set<String> imports = new HashSet<>();
         List<MethodCallModel> methodCallModels = new ArrayList<>();
         Map<String, Integer> nameCount = new HashMap<>();
         boolean mocksExist = false;
+
+        log.trace("targetPath: " + targetPath);
 
         for (TestGeneratorModel testGeneratorModel : testGeneratorModels) {
             Method method = testGeneratorModel.getMethod();
@@ -98,7 +100,7 @@ public class JUnitTestAssembler {
 
         // Configure Freemarker
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_31);
-        cfg.setClassForTemplateLoading(JUnitTestAssembler.class, "/");
+        cfg.setClassForTemplateLoading(JUnitTestAssembler.class, File.separator);
         Template template = cfg.getTemplate("junit5-template.ftl");
 
 //        // Write to file

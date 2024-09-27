@@ -9,6 +9,7 @@ public enum SortType {
     NULL("null"),
     ARRAY("array"),
     MAP("map"),
+    CLASS("class"),
     REFERENCE("reference"),
     SET("set"),
     OBJECT("object"),

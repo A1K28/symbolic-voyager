@@ -5,6 +5,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.File;
 import java.util.ListIterator;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -41,6 +42,6 @@ public class FalseReturnsMutator implements Mutator {
     }
 
     private String getClassNameRaw(Class clazz) {
-        return clazz.getName().replace(".", "/");
+        return clazz.getName().replace(".", File.separator);
     }
 }

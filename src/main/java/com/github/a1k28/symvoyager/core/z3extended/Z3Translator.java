@@ -1,17 +1,19 @@
 package com.github.a1k28.symvoyager.core.z3extended;
 
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
+import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
+import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.core.z3extended.model.SortType;
 import com.github.a1k28.symvoyager.core.z3extended.struct.MethodModel;
 import com.github.a1k28.symvoyager.helper.Logger;
-import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
-import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.*;
+import com.microsoft.z3.IntNum;
+import com.microsoft.z3.IntSort;
+import com.microsoft.z3.Sort;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.constant.*;
@@ -21,6 +23,7 @@ import sootup.core.jimple.common.ref.JFieldRef;
 import sootup.core.jimple.visitor.AbstractExprVisitor;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
+import sootup.java.core.types.JavaClassType;
 
 import java.util.*;
 
@@ -255,13 +258,18 @@ public class Z3Translator {
             return ctx.mkArrayConst(value.toString(), intSort, elementSort);
         }
         if (value instanceof AbstractUnopExpr unop) {
-            if (value instanceof JLengthExpr)
-                return ctx.mkLength(translateValue(value, varType, methodPath));
-            if (unop instanceof JNegExpr)
-                return ctx.mkNot(translateValue(value, varType, methodPath));
+            if (value instanceof JLengthExpr lengthExpr) {
+                Expr expr = translateValue(lengthExpr.getOp(), varType, methodPath);
+                if (SortType.ARRAY.equals(expr.getSort()))
+                    return ctx.getLinkedListInstance().size(expr);
+                return ctx.mkLength(expr);
+            }
+            if (unop instanceof JNegExpr negExpr)
+                return ctx.mkNot(translateValue(negExpr.getOp(), varType, methodPath));
         }
         if (value instanceof AbstractExprVisitor visitor) {
             // TODO: handle
+            throw new RuntimeException("Visitors are not yet supported: " + visitor);
         }
         if (value instanceof AbstractBinopExpr binop) {
             SAssignment holder = translateAndWrapValues(
@@ -304,16 +312,15 @@ public class Z3Translator {
         }
         if (value instanceof NullConstant)
             return ctx.mkNull();
-//        else if (value instanceof JInstanceOfExpr)
-//            return ctx.mkMod(left, right);
-//        else if (value instanceof JNewArrayExpr)
-//            return ctx.mkMod(left, right);
-//        else if (value instanceof JNewExpr)
-//            return ctx.mkMod(left, right);
-//        else if (value instanceof JNewMultiArrayExpr)
-//            return ctx.mkMod(left, right);
-//        else if (value instanceof JPhiExpr)
-//            return ctx.mkMod(left, right);
+        else if (value instanceof JInstanceOfExpr instance)
+            // TODO: this won't work on unknown expressions
+            return ctx.mkBool(translateType(instance.getOp().getType())
+                    .equals(translateType(instance.getCheckType())));
+        else if (value instanceof JPhiExpr)
+            throw new RuntimeException("JPhiExpr are not yet supported: " + value);
+        else if (type instanceof JavaClassType) {
+            return getSymbolicValue(value, type, varType, methodPath);
+        }
 
         throw new RuntimeException("Could not resolve type for: " + value);
     }
@@ -372,15 +379,14 @@ public class Z3Translator {
             return ctx.mkStringSort();
         if (Set.class.isAssignableFrom(clazz))
             return SortType.SET.value(ctx);
-//            return ctx.mkSetSort(SortType.OBJECT.value(ctx));
         if (List.class.isAssignableFrom(clazz))
             return SortType.ARRAY.value(ctx);
-//            return ctx.mkListSort("ArrayList", SortType.OBJECT.value(ctx));
         if (Map.class.isAssignableFrom(clazz))
             return SortType.MAP.value(ctx);
+        if (Class.class.isAssignableFrom(clazz))
+            return SortType.CLASS.value(ctx);
 
         // TODO: handle sets & maps correctly
-
         return SortType.OBJECT.value(ctx);
     }
 

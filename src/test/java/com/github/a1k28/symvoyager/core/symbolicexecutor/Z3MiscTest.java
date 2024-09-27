@@ -213,7 +213,7 @@ public class Z3MiscTest {
 
     @SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_try_catch_1")
-    public int test_method_mock_with_try_catch_1(int a, int b) {
+    public int test_method_mock_with_try_catch_1(int a, int b) throws SQLException {
         NOPService nopService = new NOPService();
         try {
             int res = nopService.calculate(a, b);
@@ -410,7 +410,7 @@ public class Z3MiscTest {
         }
     }
 
-//    @SymbolicTest({0,1,2,3,4,5})
+    @SymbolicTest({0,1,2,3,4,5})
     @DisplayName("test_nested_double_try_catch_1")
     public int test_nested_double_try_catch_1(int param) {
         try {
@@ -477,6 +477,18 @@ public class Z3MiscTest {
         }
     }
 
+    @SymbolicTest({0,1})
+    @DisplayName("test_array_param_passing_1")
+    public int test_array_param_passing_1(int param1, int param2) {
+        Integer[] ints = new Integer[2];
+        ints[0] = param1;
+        ints[1] = param2;
+        int res = test_array_param_passing_1_helper((Object[]) ints);
+        if (res > param1)
+            return 0;
+        return 1;
+    }
+
     private void test_method_mock_with_nested_try_catch_1_helper(int a) {
         NOPService nopService = new NOPService();
         nopService.calculate(a);
@@ -485,5 +497,15 @@ public class Z3MiscTest {
     private int test_method_mock_with_nested_try_catch_2_helper(int a, int b) {
         NOPService nopService = new NOPService();
         return nopService.calculate(a,b);
+    }
+
+    private int test_array_param_passing_1_helper(Object... params) {
+        if (Z3MiscTest.class == params[0].getClass())
+            return 2;
+        return params.length;
+//        Object[] a = params;
+//        if (params[0] > params[1])
+//            return params[0];
+//        return params[1];
     }
 }

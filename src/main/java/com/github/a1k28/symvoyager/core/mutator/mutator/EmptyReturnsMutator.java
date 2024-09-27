@@ -2,6 +2,7 @@ package com.github.a1k28.symvoyager.core.mutator.mutator;
 
 import org.objectweb.asm.tree.*;
 
+import java.io.File;
 import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -99,6 +100,6 @@ public class EmptyReturnsMutator implements Mutator {
     }
 
     private String getClassNameRaw(Class clazz) {
-        return clazz.getName().replace(".", "/");
+        return clazz.getName().replace(".", File.separator);
     }
 }

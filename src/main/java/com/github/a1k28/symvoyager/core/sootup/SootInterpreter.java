@@ -21,16 +21,17 @@ import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 import sootup.java.core.language.JavaLanguage;
+import sootup.java.core.types.JavaClassType;
 
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootParser.*;
+import static com.github.a1k28.symvoyager.core.sootup.SootParser.initArrayMap;
+import static com.github.a1k28.symvoyager.core.sootup.SootParser.interpretSoot;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootInterpreter {
@@ -80,7 +81,7 @@ public class SootInterpreter {
             Class<?>[] types = method.getParameterTypes();
             if (types.length != sootTypes.size()) continue;
             for (int i = 0; i < types.length; i++)
-                if (!types[i].getName().equals(sootTypes.get(i).toString()))
+                if (!types[i].getTypeName().equals(sootTypes.get(i).toString()))
                     continue outer;
             return sootMethod;
         }
@@ -99,7 +100,7 @@ public class SootInterpreter {
             Class<?>[] methodParamTypes = method.getParameterTypes();
             if (methodParamTypes.length != sootParamTypes.size()) continue;
             for (int i = 0; i < methodParamTypes.length; i++)
-                if (!methodParamTypes[i].getName().equals(sootParamTypes.get(i).toString()))
+                if (!methodParamTypes[i].getTypeName().equals(sootParamTypes.get(i).toString()))
                     continue outer;
             return method;
         }
@@ -116,8 +117,11 @@ public class SootInterpreter {
             int majorVersion = dis.readUnsignedShort();
 
             return mapVersionToJava(majorVersion, minorVersion);
-        } catch (IOException e) {
-            throw new RuntimeException("Error reading class file", e);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // TODO: remove default
+            return 17;
+//            throw new RuntimeException("Error reading class file", e);
         }
     }
 
@@ -174,9 +178,18 @@ public class SootInterpreter {
                 return translateType(((ArrayType) type).getElementType()).arrayType();
             if (type.getClass() == UnknownType.class)
                 return Object.class;
+            if (type instanceof JavaClassType classType && type.toString().endsWith("[]")) {
+                JavaClassType javaClassType = new JavaClassType(
+                        classType.getClassName().substring(0, classType.getClassName().length()-2),
+                        classType.getPackageName());
+                return translateType(javaClassType).arrayType();
+            }
             return Class.forName(type.toString());
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            // modify behavior
+            e.printStackTrace();
+            return null;
+//            throw new IllegalStateException(e);
         }
     }
 
@@ -186,14 +199,14 @@ public class SootInterpreter {
 
     private static void addFields(SootClass<?> sootClass, List<JavaSootField> fields) throws ClassNotFoundException {
         sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) fields.add(j);});
-        if (sootClass.hasSuperclass()) {
-            // TODO: stop within the same package?
-            String name = sootClass.getSuperclass().get().toString();
-            if (!name.equals(Object.class.getName())) {
-                SootClass<?> parent = SootInterpreter.getSootClass(sootClass.getSuperclass().get().toString());
-                addFields(parent, fields);
-            }
-        }
+//        if (sootClass.hasSuperclass()) {
+//            // TODO: stop within the same package?
+//            String name = sootClass.getSuperclass().get().toString();
+//            if (!name.equals(Object.class.getName())) {
+//                SootClass<?> parent = SootInterpreter.getSootClass(sootClass.getSuperclass().get().toString());
+//                addFields(parent, fields);
+//            }
+//        }
     }
 
     private static void print(StmtGraph<?> cfg, Stmt current, int level) {

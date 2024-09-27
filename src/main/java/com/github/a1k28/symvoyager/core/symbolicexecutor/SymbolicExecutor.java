@@ -1,5 +1,6 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
+import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.github.a1k28.symvoyager.helper.OSDependentZ3Loader.loadZ3Library;
+
 public class SymbolicExecutor {
     private static final Logger log = Logger.getInstance(SymbolicExecutor.class);
     private final Z3Translator z3t;
@@ -29,7 +32,7 @@ public class SymbolicExecutor {
     private final SatisfiabilityHandler satHandler;
 
     static {
-        System.load(System.getProperty("java.library.path") + File.separator + "libz3.dylib");
+        loadZ3Library(System.getProperty("java.library.path") + File.separator);
         Runtime.getRuntime().addShutdownHook(new Thread(Z3Translator::close));
     }
 
@@ -275,6 +278,9 @@ public class SymbolicExecutor {
 
     private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
+        if (CLIOptions.disableMockExploration)
+            return;
+
         Expr mockReferenceExpr;
 
         if (node.getUnit() instanceof JAssignStmt assignStmt) {
