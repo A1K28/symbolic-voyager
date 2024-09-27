@@ -1,7 +1,10 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
 import com.github.a1k28.evoc.core.sootup.SootInterpreter;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.HandlerNode;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.JumpNode;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
 import com.github.a1k28.evoc.helper.Logger;
 import lombok.Getter;
 import sootup.core.jimple.basic.Trap;
@@ -11,12 +14,10 @@ import sootup.core.jimple.common.ref.JParameterRef;
 import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.javabytecode.stmt.*;
 import sootup.core.model.Body;
-import sootup.core.model.Position;
 import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 public class SMethodPath {
@@ -27,8 +28,8 @@ public class SMethodPath {
     private final SNode root;
     private final Method method;
     private final Map<Stmt, List<SNode>> sNodeMap; // used for GOTO tracking
+    private final Map<Stmt, List<Stmt>> handlerMap;
     private final SClassInstance classInstance;
-    private List<Trap> traps;
 
     // dynamic parameters
     private SParamList paramList;
@@ -42,7 +43,7 @@ public class SMethodPath {
         this.method = method;
         this.root = new SNode();
         this.sNodeMap = new HashMap<>();
-        this.traps = new ArrayList<>();
+        this.handlerMap = new HashMap<>();
     }
 
     public SMethodPath(SMethodPath skeleton,
@@ -54,7 +55,7 @@ public class SMethodPath {
         this.method = skeleton.method;
         this.root = skeleton.root;
         this.sNodeMap = skeleton.sNodeMap;
-        this.traps = skeleton.traps;
+        this.handlerMap = skeleton.handlerMap;
         this.paramList = paramList;
         this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
         this.jumpNode = jumpNode;
@@ -115,12 +116,21 @@ public class SMethodPath {
                 return Optional.empty();
             return jumpNode.getMethodPath().findHandlerNode(jumpNode.getNode(), type);
         }
-        for (Trap trap : traps) {
-            if (!trap.getBeginStmt().equals(node.getUnit())) continue;
-            Class<?> trapType = SootInterpreter.getClass(trap.getExceptionType());
-            if (!trapType.isAssignableFrom(type)) continue;
-            SCatchNode catchNode = (SCatchNode) sNodeMap.get(trap.getHandlerStmt()).get(0);
-            return Optional.of(new HandlerNode(this, catchNode));
+        if (handlerMap.containsKey(node.getUnit())) {
+            for (Stmt handlerStmt : handlerMap.get(node.getUnit())) {
+                Trap trap = null;
+                for (Trap t : body.getTraps()) {
+                    if (t.getHandlerStmt().equals(handlerStmt)) {
+                        trap = t;
+                        break;
+                    }
+                }
+                assert trap != null;
+                Class<?> trapType = SootInterpreter.getClass(trap.getExceptionType());
+                if (!trapType.isAssignableFrom(type)) continue;
+                SCatchNode catchNode = (SCatchNode) sNodeMap.get(trap.getHandlerStmt()).get(0);
+                return Optional.of(new HandlerNode(this, catchNode));
+            }
         }
         return findHandlerNode(node.getParent(), type);
     }
@@ -151,10 +161,19 @@ public class SMethodPath {
             if (jumpNode == null) return;
             jumpNode.getMethodPath().findHandlerNodes(jumpNode.getNode(), handlerNodes);
         } else {
-            for (Trap trap : traps) {
-                if (!trap.getBeginStmt().equals(node.getUnit())) continue;
-                SCatchNode catchNode = (SCatchNode) sNodeMap.get(trap.getHandlerStmt()).get(0);
-                handlerNodes.add(new HandlerNode(this, catchNode));
+            if (handlerMap.containsKey(node.getUnit())) {
+                for (Stmt handlerStmt : handlerMap.get(node.getUnit())) {
+                    Trap trap = null;
+                    for (Trap t : body.getTraps()) {
+                        if (t.getHandlerStmt().equals(handlerStmt)) {
+                            trap = t;
+                            break;
+                        }
+                    }
+                    assert trap != null;
+                    SCatchNode catchNode = (SCatchNode) sNodeMap.get(trap.getHandlerStmt()).get(0);
+                    handlerNodes.add(new HandlerNode(this, catchNode));
+                }
             }
             findHandlerNodes(node.getParent(), handlerNodes);
         }
@@ -174,21 +193,6 @@ public class SMethodPath {
             }
         }
         return sNodes;
-    }
-
-    public void sortTraps() {
-        List<TrapWithPosition> trapsWithPositions = body.getTraps().stream().map(trap -> {
-            SNode node = sNodeMap.get(trap.getHandlerStmt()).get(0);
-            if (node.getType() == SType.CATCH) {
-                node = node.getChildren().get(0);
-            }
-            Position position = node.getUnit().getPositionInfo().getStmtPosition();
-            return new TrapWithPosition(trap, position);
-        }).toList();
-        this.traps = trapsWithPositions.stream()
-                .sorted(Comparator.comparingInt(e -> e.getPosition().getFirstLine()))
-                .map(TrapWithPosition::getTrap)
-                .collect(Collectors.toList());
     }
 
     private static SType getType(Stmt unit) {

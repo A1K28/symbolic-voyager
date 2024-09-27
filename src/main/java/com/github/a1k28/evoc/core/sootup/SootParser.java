@@ -3,6 +3,7 @@ package com.github.a1k28.evoc.core.sootup;
 import com.github.a1k28.evoc.core.sootup.model.ArrayMap;
 import com.github.a1k28.evoc.core.sootup.model.ExceptionBlock;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.SType;
+import com.github.a1k28.evoc.core.symbolicexecutor.model.StmtWithPosition;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SCatchNode;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.SNode;
@@ -21,6 +22,7 @@ import sootup.core.jimple.common.stmt.JIfStmt;
 import sootup.core.jimple.common.stmt.JInvokeStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.jimple.javabytecode.stmt.JSwitchStmt;
+import sootup.core.model.Position;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.ClassType;
 import sootup.core.types.Type;
@@ -28,6 +30,7 @@ import sootup.core.types.VoidType;
 import sootup.core.views.View;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 class SootParser {
@@ -42,15 +45,34 @@ class SootParser {
                     basicBlock.getHead(), exceptionBlock.getType());
             interpretSootBody(basicBlock, sMethodPath, catchNode, null);
         }
-        sMethodPath.sortTraps();
     }
+
+//    private Map sortMap() {
+//        List<StmtWithPosition> trapsWithPositions = body.getTraps().stream().map(trap -> {
+//            SNode node = sNodeMap.get(trap.getHandlerStmt()).get(0);
+//            if (node.getType() == SType.CATCH) {
+//                node = node.getChildren().get(0);
+//            }
+//            Position position = node.getUnit().getPositionInfo().getStmtPosition();
+//            return new TrapWithPosition(trap, position);
+//        }).toList();
+//        this.traps = trapsWithPositions.stream()
+//                .sorted(Comparator.comparingInt(e -> e.getPosition().getFirstLine()))
+//                .map(TrapWithPosition::getTrap)
+//                .collect(Collectors.toList());
+//        public void sortTraps() {
+//        }
+//    }
 
     private static void interpretSootBody(BasicBlock<?> block,
                                           SMethodPath sMethodPath,
                                           SNode parent,
                                           Set<ExceptionBlock> exceptionBlocks) {
+        addExceptionsToHandlerMap(block, sMethodPath);
+
         List<Stmt> stmts = block.getStmts();
         int i = 0;
+
         if (parent.getType() == SType.CATCH) i = 1;
 
         boolean allCovered = true;
@@ -86,6 +108,28 @@ class SootParser {
         } else {
             for (BasicBlock<?> successor : block.getSuccessors()) {
                 interpretSootBody(successor, sMethodPath, parent, exceptionBlocks);
+            }
+        }
+    }
+
+    private static void addExceptionsToHandlerMap(BasicBlock block, SMethodPath sMethodPath) {
+        Map<ClassType, BasicBlock> exceptionalSuccessors = (Map<ClassType, BasicBlock>) block.getExceptionalSuccessors();
+        if (!exceptionalSuccessors.isEmpty()) {
+            Stmt head = block.getHead();
+            if (!sMethodPath.getHandlerMap().containsKey(head)) {
+                List<StmtWithPosition> stmtWithPositions = new ArrayList<>();
+                for (Map.Entry<ClassType, BasicBlock> entry : exceptionalSuccessors.entrySet()) {
+                    Stmt handlerStmt = entry.getValue().getHead();
+                    Position position = entry.getValue().getTail().getPositionInfo().getStmtPosition();
+                    stmtWithPositions.add(new StmtWithPosition(handlerStmt, position));
+                }
+                Collections.sort(stmtWithPositions,
+                        Comparator.comparingInt(e -> e.getPosition().getFirstLine()));
+                List<Stmt> s = stmtWithPositions.stream()
+                        .sorted(Comparator.comparingInt(e -> e.getPosition().getFirstLine()))
+                        .map(StmtWithPosition::getHandlerStmt)
+                        .collect(Collectors.toList());
+                sMethodPath.getHandlerMap().put(head, s);
             }
         }
     }

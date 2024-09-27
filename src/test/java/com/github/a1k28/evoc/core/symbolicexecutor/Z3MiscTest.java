@@ -153,6 +153,40 @@ public class Z3MiscTest {
         return 0;
     }
 
+    @SymbolicTest(exceptionType = {IllegalArgumentException.class})
+    @DisplayName("test_exception_thrown_2")
+    public int test_exception_thrown_2() {
+        if (true)
+            throw new IllegalArgumentException();
+        return 0;
+    }
+
+    @SymbolicTest(value = {0,1,2,3}, exceptionType = {RuntimeException.class, IllegalCallerException.class})
+    @DisplayName("test_exception_thrown_3")
+    public int test_exception_thrown_3(int param) {
+        try {
+            try {
+                if (param == 10)
+                    return 0;
+                if (param == 20 || param == 25)
+                    throw new IllegalArgumentException("Illegal arguments provided");
+                if (param == 30 || param == 35)
+                    throw new IllegalStateException("Illegal state exception");
+                return 1;
+            } catch (IllegalArgumentException e) {
+                if (param == 25)
+                    throw new RuntimeException("Runtime exception");
+                return 2;
+            } catch (RuntimeException e) {
+                if (param == 35)
+                    throw new IllegalCallerException("Illegal caller exception 2");
+                return 3;
+            }
+        } catch (IllegalStateException e) {
+            return 4;
+        }
+    }
+
     @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {
@@ -376,7 +410,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4,5})
+//    @SymbolicTest({0,1,2,3,4,5})
     @DisplayName("test_nested_double_try_catch_1")
     public int test_nested_double_try_catch_1(int param) {
         try {

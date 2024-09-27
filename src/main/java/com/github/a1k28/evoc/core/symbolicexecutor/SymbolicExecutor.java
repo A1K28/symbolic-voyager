@@ -1,5 +1,6 @@
 package com.github.a1k28.evoc.core.symbolicexecutor;
 
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
 import com.github.a1k28.evoc.core.symbolicexecutor.struct.*;
 import com.github.a1k28.evoc.core.z3extended.Z3ExtendedContext;
@@ -7,7 +8,6 @@ import com.github.a1k28.evoc.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.evoc.core.z3extended.Z3Translator;
 import com.github.a1k28.evoc.core.z3extended.model.SortType;
 import com.github.a1k28.evoc.helper.Logger;
-import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.microsoft.z3.*;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
@@ -256,18 +256,16 @@ public class SymbolicExecutor {
 
     private SType handleThrows(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        Class exceptionType = sMethodPath.getSymbolicVarStack()
-                .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
+        Class<?> exceptionType = sMethodPath.getSymbolicVarStack()
+                .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).orElseThrow()
                 .getClassType();
         Optional<HandlerNode> handlerNode = sMethodPath.findHandlerNode(node, exceptionType);
         if (handlerNode.isPresent()) {
             push(sMethodPath);
-            // parent is null
-            handlerNode.get().getNode().setParent(node);
-            // usually only has 1 child
-            for (SNode child : handlerNode.get().getNode().getChildren())
-                analyzePaths(handlerNode.get().getMethodPath(), child);
-            handlerNode.get().getNode().setParent(null);
+            List<SNode> children = handlerNode.get().getNode().getChildren();
+            assert children.size() == 1;
+            children.get(0).print(1);
+            analyzePaths(handlerNode.get().getMethodPath(), children.get(0));
             pop(sMethodPath);
             return SType.THROW;
         } else {
@@ -277,27 +275,27 @@ public class SymbolicExecutor {
 
     private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
             throws ClassNotFoundException {
-        SVar methodMockVar;
+        Expr mockReferenceExpr;
 
         if (node.getUnit() instanceof JAssignStmt assignStmt) {
-            methodMockVar = sMethodPath.getTopMethodPath().getSymbolicVarStack()
-                    .get(z3t.getValueName(assignStmt.getLeftOp())).orElseThrow();
+            mockReferenceExpr = sMethodPath.getTopMethodPath().getSymbolicVarStack()
+                    .get(z3t.getValueName(assignStmt.getLeftOp())).orElseThrow().getExpr();
         } else {
-            methodMockVar = sMethodPath.getTopMethodPath().getSymbolicVarStack()
-                    .get(node.getUnit().toString()).orElseThrow();
+            mockReferenceExpr = sMethodPath.getTopMethodPath().getSymbolicVarStack()
+                    .get(node.getUnit().toString()).orElseThrow().getExpr();
         }
 
         List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
         for (HandlerNode handlerNode : handlerNodes) {
             push(sMethodPath);
             ctx.getMethodMockInstance().setExceptionType(
-                    methodMockVar.getExpr(), handlerNode.getNode().getExceptionType());
+                    mockReferenceExpr, handlerNode.getNode().getExceptionType());
             analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
             pop(sMethodPath);
         }
 
         // clear throws so that further paths assume a return value (if non-void)
-        ctx.getMethodMockInstance().setExceptionType(methodMockVar.getExpr(), null);
+        ctx.getMethodMockInstance().setExceptionType(mockReferenceExpr, null);
     }
 
     private SType handleReturn(SMethodPath sMethodPath, SNode node)

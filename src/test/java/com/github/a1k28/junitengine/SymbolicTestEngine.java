@@ -153,14 +153,14 @@ public class SymbolicTestEngine implements TestEngine {
                     Class clazz = e.getCause().getClass();
                     assertEquals(res.getExceptionType(), clazz);
                     assertTrue(reachableExceptions.contains(clazz));
-                    reachableExceptions.add(clazz);
+                    reachedExceptions.add(clazz);
                 }
             }
 
             MockAPI.resetMockState();
         }
         reachableCodes.removeAll(reachedCodes);
-        reachableExceptions.removeAll(reachableExceptions);
+        reachableExceptions.removeAll(reachedExceptions);
         assertTrue(reachableCodes.isEmpty());
         assertTrue(reachableExceptions.isEmpty());
     }
