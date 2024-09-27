@@ -1,5 +1,7 @@
 package com.github.a1k28.symvoyager.core.cli.model;
 
+import com.github.a1k28.symvoyager.helper.Logger;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -58,6 +60,7 @@ public class CLIOptions {
                     mockablePackages.add(v.strip());
             }
             case RECURSION_LIMIT -> gotoLimit = Integer.parseInt(value);
+            case LOG_LEVEL -> Logger.setLoggingLevel(Logger.Level.fromValue(value));
         }
     }
 

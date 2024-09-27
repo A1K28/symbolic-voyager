@@ -35,10 +35,18 @@ public class Logger {
 
     public enum Level {
         INFO, DEBUG, TRACE;
+
+        public static Level fromValue(String value) {
+            for (Level l : Level.values()) {
+                if (l.name().equals(value))
+                    return l;
+            }
+            return Level.INFO;
+        }
     }
 
     private static final ConcurrentMap<Class<?>, Logger> cache = new ConcurrentHashMap<>();
-    private static Level level = Level.TRACE;
+    private static Level level = Level.INFO;
     private final Class<?> clazz;
 
     public static Logger getInstance(Class<?> clazz) {

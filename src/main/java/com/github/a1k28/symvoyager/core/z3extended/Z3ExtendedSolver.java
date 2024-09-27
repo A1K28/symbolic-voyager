@@ -227,7 +227,7 @@ public class Z3ExtendedSolver {
         Status status = solver.check();
         solver.pop();
         if (status == Status.UNKNOWN)
-            log.warn("UNKNOWN status for expression: " + x);
+            log.warn("Unknown status for expression: " + x);
         return status;
     }
 }

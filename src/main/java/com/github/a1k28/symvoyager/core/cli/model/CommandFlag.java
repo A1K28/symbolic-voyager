@@ -9,7 +9,8 @@ public enum CommandFlag {
     WHITELISTED_PACKAGES("wp", "whitelisted-packages", true, "Whitelisted packages that are allowed to be propagated (comma separated list)."),
     MOCKABLE_CLASSES("mc", "mockable-classes", true, "Classes that should be mocked (comma separated list)."),
     MOCKABLE_PACKAGES("mp", "mockable-packages", true, "Packages that should be mocked (comma separated list)."),
-    RECURSION_LIMIT("rc", "recursion-limit", true, "Recursion/Loop limit. Default value is 20.");
+    RECURSION_LIMIT("rc", "recursion-limit", true, "Recursion/Loop limit. Default value is 20."),
+    LOG_LEVEL("ll", "log-level", true, "Possible values: INFO, DEBUG, TRACE");
 
     private final String option;
     private final String longOption;

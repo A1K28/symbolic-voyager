@@ -37,7 +37,7 @@ public class SatisfiabilityHandler {
 
     Z3Status checkSatisfiability(SMethodPath sMethodPath, SNode node, SType type) {
         if (solver.check() != Status.SATISFIABLE) {
-            log.warn("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
+            log.info("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
         }
         if (SType.INVOKE == type || SType.GOTO == type || SType.THROW == type) {
