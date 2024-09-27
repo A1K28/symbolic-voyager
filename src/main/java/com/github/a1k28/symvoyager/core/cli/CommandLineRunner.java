@@ -27,7 +27,7 @@ public class CommandLineRunner {
         List<TestGeneratorModel> testGeneratorModels = new ArrayList<>();
         for (Method method : clazz.getDeclaredMethods()) {
             // skip if void
-            if ("void".equals(method.getReturnType().getName())) continue;
+            if (Void.class.equals(method.getReturnType())) continue;
 
             // skip if non-public
             if (!Modifier.isPublic(method.getModifiers())) continue;
