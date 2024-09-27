@@ -1,10 +1,9 @@
 package com.github.a1k28.evoc.core.symbolicexecutor.struct;
 
+import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import com.github.a1k28.evoc.core.symbolicexecutor.model.*;
 import com.github.a1k28.evoc.helper.Logger;
-import com.github.a1k28.evoc.core.sootup.SootInterpreter;
 import lombok.Getter;
-import sootup.core.jimple.basic.StmtPositionInfo;
 import sootup.core.jimple.basic.Trap;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.ref.JCaughtExceptionRef;
@@ -112,7 +111,8 @@ public class SMethodPath {
 
     public Optional<HandlerNode> findHandlerNode(SNode node, Class<?> type) {
         if (node == null) {
-            if (jumpNode == null) return Optional.empty();
+            if (jumpNode == null)
+                return Optional.empty();
             return jumpNode.getMethodPath().findHandlerNode(jumpNode.getNode(), type);
         }
         for (Trap trap : traps) {
