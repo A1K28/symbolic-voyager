@@ -1,15 +1,15 @@
 package com.github.a1k28.junitengine;
 
-import com.github.a1k28.evoc.core.cli.model.CLIOptions;
-import com.github.a1k28.evoc.core.symbolicexecutor.SymbolTranslator;
-import com.github.a1k28.evoc.core.symbolicexecutor.SymbolicExecutor;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.MethodMockResult;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.ParsedResult;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResult;
-import com.github.a1k28.evoc.core.symbolicexecutor.model.SatisfiableResults;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVar;
-import com.github.a1k28.evoc.core.symbolicexecutor.struct.SVarEvaluated;
-import com.github.a1k28.evoc.helper.Logger;
+import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolTranslator;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolicExecutor;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodMockResult;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.ParsedResult;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SatisfiableResult;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVarEvaluated;
+import com.github.a1k28.symvoyager.helper.Logger;
 import com.github.a1k28.supermock.MockAPI;
 import org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor;
 import org.junit.platform.engine.*;
@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.github.a1k28.evoc.core.sootup.SootInterpreter.translateField;
+import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
 import static com.github.a1k28.supermock.MockAPI.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,8 +34,8 @@ public class SymbolicTestEngine implements TestEngine {
     private final SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
 
     static {
-        CLIOptions.whitelistedPackages = Set.of("com.github.a1k28.evoc.core");
-        CLIOptions.mockablePackages = Set.of("com.github.a1k28.evoc.outsidescope");
+        CLIOptions.whitelistedPackages = Set.of("com.github.a1k28.symvoyager.core");
+        CLIOptions.mockablePackages = Set.of("com.github.a1k28.symvoyager.outsidescope");
     }
 
     @Override

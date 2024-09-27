@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.github.a1k28</groupId>
-  <artifactId>evoc</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>symbolic-voyager</artifactId>
+  <version>1.0</version>
   <packaging>jar</packaging>
 
-  <name>evoc</name>
+  <name>symbolic-voyager</name>
   <url>http://maven.apache.org</url>
 
   <properties>
@@ -130,4 +130,22 @@
       <version>2.3.33</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>com.github.a1k28.symvoyager.core.cli.CommandLineRunner</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>lib</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
