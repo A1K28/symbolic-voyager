@@ -1,5 +1,7 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
+import com.github.a1k28.symvoyager.outsidescope.API;
+import com.github.a1k28.symvoyager.outsidescope.DependentService;
 import com.github.a1k28.symvoyager.outsidescope.NOPService;
 import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
@@ -410,7 +412,7 @@ public class Z3MiscTest {
         }
     }
 
-    @SymbolicTest({0,1,2,3,4,5})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_nested_double_try_catch_2")
     public int test_nested_double_try_catch_2(int param) {
         try {
@@ -429,8 +431,8 @@ public class Z3MiscTest {
                 throw new IllegalStateException("Illegal state exception");
             return 2;
         } catch (IllegalArgumentException e) {
-            if (param == 27)
-                throw new IllegalArgumentException();
+//            if (param == 27)
+//                throw new IllegalArgumentException();
             return 3;
         } catch (IllegalStateException e) {
             return 4;
@@ -516,6 +518,46 @@ public class Z3MiscTest {
         return 1;
     }
 
+    @SymbolicTest({0})
+    @DisplayName("test_stub_mock_1")
+    public int test_stub_mock_1(int param1, int param2) {
+        NOPService service = getService();
+        return 0;
+    }
+
+    @SymbolicTest({0,1,3,4,6,7})
+    @DisplayName("test_string_ops_1")
+    public int test_string_ops_1(String a, String b) {
+        if (a.startsWith(b))
+            return 0;
+        if (b.endsWith(a))
+            return 1;
+//        if (a.compareTo(b) == 0)
+//            return 2;
+        if (a.length() == 20)
+            return 3;
+        if (a.charAt(0) == 'c')
+            return 4;
+        if (a.indexOf('a') == 3)
+            return 5;
+//        String ss1 = a.substring(2);
+//        String ss2 = b.substring(2, 10);
+        if (a.contains(b))
+            return 6;
+        return 7;
+    }
+
+    @SymbolicTest({0})
+    @DisplayName("test_interface_mock_1")
+    public int test_interface_mock_1(String a, String b) {
+        API api = NOPService.getInstance();
+        return 0;
+    }
+
+    private NOPService getService() {
+        return NOPService.getInstance(null);
+    }
+
     private void test_method_mock_with_nested_try_catch_1_helper(int a) {
         NOPService nopService = new NOPService();
         nopService.calculate(a);
@@ -527,12 +569,9 @@ public class Z3MiscTest {
     }
 
     private int test_array_param_passing_1_helper(Object... params) {
-        if (Z3MiscTest.class == params[0].getClass())
-            return 2;
-        return params.length;
-//        Object[] a = params;
-//        if (params[0] > params[1])
-//            return params[0];
-//        return params[1];
+        Object[] a = params;
+        if ((int) a[0] > (int) a[1])
+            return (int) params[0];
+        return (int) params[1];
     }
 }

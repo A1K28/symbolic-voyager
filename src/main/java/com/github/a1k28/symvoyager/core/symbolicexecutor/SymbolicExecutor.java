@@ -154,20 +154,17 @@ public class SymbolicExecutor {
             }
 
 //            // handle mocks
-            if (wrapped.getSType() == SType.INVOKE_MOCK) {
-                String name = node.getUnit().toString();
-                List<Expr> params = translateExpressions(method, sMethodPath);
-                Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
-                SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
-                Expr reference = ctx.getMethodMockInstance().constructor(
-                        javaMethod, params, null, null).getReferenceExpr();
-                SVar sMethodMockVar = new SVar(name, reference,
-                        VarType.METHOD_MOCK, null, true);
-                sMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-                if (topMethodPath != sMethodPath)
-                    topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-                return SType.INVOKE_MOCK;
-            }
+//            if (wrapped.getSType() == SType.INVOKE_MOCK) {
+//                String name = node.getUnit().toString();
+//                List<Expr> params = translateExpressions(method, sMethodPath);
+//                Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
+//                Expr reference = ctx.getMethodMockInstance().constructor(
+//                        javaMethod, params, null, null).getReferenceExpr();
+//                SVar var = new SVar(name, reference,
+//                        VarType.METHOD_MOCK, null, true);
+//                sMethodPath.getSymbolicVarStack().add(var);
+//                return SType.INVOKE_MOCK;
+//            }
 
             // set all values to default
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
@@ -177,6 +174,10 @@ public class SymbolicExecutor {
                 Expr expr = ctx.getClassInstance().constructor(
                         leftOpExpr, SootInterpreter.getClass(classType)).getExpr();
                 ctx.getClassInstance().initialize(expr, type);
+            }
+
+            if (method.getPropagationType() != MethodPropagationType.PROPAGATE) {
+                return SType.OTHER;
             }
 
             JumpNode jumpNode = new JumpNode(sMethodPath, node);
@@ -222,18 +223,16 @@ public class SymbolicExecutor {
             Class classType = SootInterpreter.translateType(rightOp.getType());
             List<Expr> params = translateExpressions(methodExpr, sMethodPath);
             Method method = (Method) SootInterpreter.getMethod(methodExpr.getInvokeExpr());
-            SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
             Expr retValExpr = z3t.translateValue(rightOp, rightOpVarType, sMethodPath);
             Expr reference = ctx.getMethodMockInstance().constructor(
                     method, params, null, retValExpr).getReferenceExpr();
-            SVar sMethodMockVar = new SVar(z3t.getValueName(leftOp), reference,
+            SVar var = new SVar(z3t.getValueName(leftOp), reference,
                     VarType.METHOD_MOCK, classType, true);
-            sMethodPath.getSymbolicVarStack().add(sMethodMockVar);
-            if (topMethodPath != sMethodPath)
-                topMethodPath.getSymbolicVarStack().add(sMethodMockVar);
+            sMethodPath.getSymbolicVarStack().add(var);
             return SType.INVOKE_MOCK;
         } else {
             Class classType = SootInterpreter.translateType(rightOp.getType());
+            if (classType == Object.class) classType = SootInterpreter.translateType(leftOp.getType());
             z3t.updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, sMethodPath, classType);
         }
         return SType.ASSIGNMENT;
@@ -281,15 +280,15 @@ public class SymbolicExecutor {
         if (CLIOptions.disableMockExploration)
             return;
 
-        Expr mockReferenceExpr;
+        String refName;
+        if (node.getUnit() instanceof JAssignStmt assignStmt)
+            refName = z3t.getValueName(assignStmt.getLeftOp());
+        else
+            refName = node.getUnit().toString();
 
-        if (node.getUnit() instanceof JAssignStmt assignStmt) {
-            mockReferenceExpr = sMethodPath.getTopMethodPath().getSymbolicVarStack()
-                    .get(z3t.getValueName(assignStmt.getLeftOp())).orElseThrow().getExpr();
-        } else {
-            mockReferenceExpr = sMethodPath.getTopMethodPath().getSymbolicVarStack()
-                    .get(node.getUnit().toString()).orElseThrow().getExpr();
-        }
+        Expr mockReferenceExpr = sMethodPath.getSymbolicVarStack().get(refName)
+                .orElseGet(() -> sMethodPath.getTopMethodPath().getSymbolicVarStack().get(refName)
+                        .orElseThrow()).getExpr();
 
         List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
         for (HandlerNode handlerNode : handlerNodes) {
@@ -324,6 +323,12 @@ public class SymbolicExecutor {
 
             Class classType = SootInterpreter.translateType(assignStmt.getRightOp().getType());
             z3t.updateSymbolicVar(leftOp, expr, varType, jn.getMethodPath(), classType);
+        }
+
+        SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
+        for (SVar var : sMethodPath.getSymbolicVarStack().getAll()) {
+            if (var.getType() == VarType.METHOD_MOCK)
+                topMethodPath.getSymbolicVarStack().add(var);
         }
 
         List<SNode> children = jn.getNode().getChildren();
@@ -394,7 +399,8 @@ public class SymbolicExecutor {
             ctx.getMapInstance().parameterConstructor(param.getExpr());
         else if (SortType.ARRAY.equals(param.getExpr().getSort()))
             ctx.getLinkedListInstance().parameterConstructor(param.getExpr());
-        else if (SortType.OBJECT.equals(param.getExpr().getSort()))
+        else if (SortType.OBJECT.equals(param.getExpr().getSort())
+                && CLIOptions.shouldPropagate(param.getClassType().getName()))
             ctx.getClassInstance().parameterConstructor(param.getExpr(), param.getClassType());
     }
 

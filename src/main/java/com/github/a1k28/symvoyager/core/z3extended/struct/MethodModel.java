@@ -17,17 +17,65 @@ public enum MethodModel {
 //    SOOT_UNARY_OPERATOR_APPLY("<sootup.dummy.InvokeDynamic: java.util.function.UnaryOperator apply()>", true),
 
     // objects
-    OBJECT_EQUALS(Object.class, "<java.lang.Object: boolean equals(java.lang.Object)>", true),
+    OBJECT_EQUALS(Object.class, "boolean equals(java.lang.Object)", true),
+
+    // bytes
+    BYTE_VALUE(Byte.class, "byte byteValue()", true),
+    BYTE_VALUE_OF(Byte.class,"java.lang.Byte valueOf(java.lang.String)", false),
+    BYTE_VALUE_OF_BYTE(Byte.class,"java.lang.Byte valueOf(byte)", false),
+    BYTE_PARSE_BYTE(Byte.class,"byte parseByte(java.lang.String)", false),
+
+    // shorts
+    SHORT_VALUE(Short.class, "short shortValue()", true),
+    SHORT_VALUE_OF(Short.class,"java.lang.Short valueOf(java.lang.String)", false),
+    SHORT_VALUE_OF_SHORT(Short.class,"java.lang.Short valueOf(short)", false),
+    SHORT_PARSE_SHORT(Short.class,"byte parseShort(java.lang.String)", false),
 
     // integers
     INT_VALUE(Integer.class, "int intValue()", true),
-    INT_VALUE_OF(Integer.class,"java.lang.Integer valueOf(int)", false),
+    INT_VALUE_OF(Integer.class,"java.lang.Integer valueOf(java.lang.String)", false),
+    INT_VALUE_OF_INT(Integer.class,"java.lang.Integer valueOf(int)", false),
+    INT_PARSE_INT(Integer.class,"int parseInt(java.lang.String)", false),
+
+    // longs
+    LONG_VALUE(Long.class, "long longValue()", true),
+    LONG_VALUE_OF(Long.class, "java.lang.Long valueOf(java.lang.String)", false),
+    LONG_VALUE_OF_LONG(Long.class, "java.lang.Long valueOf(long)", false),
+    LONG_PARSE_LONG(Long.class, "long parseLong(java.lang.String)", false),
+
+    // floats
+    FLOAT_VALUE(Float.class, "float floatValue()", true),
+    FLOAT_VALUE_OF(Float.class,"java.lang.Float valueOf(java.lang.String)", false),
+    FLOAT_VALUE_OF_FLOAT(Float.class,"java.lang.Float valueOf(float)", false),
+    FLOAT_PARSE_FLOAT(Float.class,"float parseFloat(java.lang.String)", false),
+
+    // doubles
+    DOUBLE_VALUE(Double.class, "double doubleValue()", true),
+    DOUBLE_VALUE_OF(Double.class,"java.lang.Double valueOf(java.lang.String)", false),
+    DOUBLE_VALUE_OF_DOUBLE(Double.class,"java.lang.Double valueOf(double)", false),
+    DOUBLE_PARSE_DOUBLE(Double.class,"double parseDouble(java.lang.String)", false),
 
     // strings
     STRING_EQUALS(String.class,"boolean equals(java.lang.Object)",true),
     STRING_LEN(String.class,"int length()",true),
+    STRING_STARTS_WITH(String.class, "boolean startsWith(java.lang.String)", true),
+    STRING_ENDS_WITH(String.class, "boolean endsWith(java.lang.String)", true),
+    STRING_COMPARE(String.class, "int compareTo(java.lang.String)", true),
+    STRING_CHAR_AT(String.class, "char charAt(int)", true),
+    STRING_INDEX_OF(String.class, "int indexOf(int)", true),
+    STRING_SUBSTRING_1(String.class, "java.lang.String substring(int)", true),
+    STRING_SUBSTRING_2(String.class, "java.lang.String substring(int,int)", true),
+    STRING_CONTAINS(String.class, "boolean contains(java.lang.CharSequence)", true),
     STRING_SOOT_CONCAT_STRING(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(java.lang.String)>", false),
     STRING_SOOT_CONCAT_INT(String.class,"<sootup.dummy.InvokeDynamic: java.lang.String makeConcatWithConstants(int)>", false),
+    STRING_VALUE_OF_BOOL(String.class, "java.lang.String valueOf(boolean)", false),
+    STRING_VALUE_OF_BYTE(String.class, "java.lang.String valueOf(byte)", false),
+    STRING_VALUE_OF_SHORT(String.class, "java.lang.String valueOf(short)", false),
+    STRING_VALUE_OF_INT(String.class, "java.lang.String valueOf(int)", false),
+    STRING_VALUE_OF_LONG(String.class, "java.lang.String valueOf(long)", false),
+    STRING_VALUE_OF_FLOAT(String.class, "java.lang.String valueOf(float)", false),
+    STRING_VALUE_OF_DOUBLE(String.class, "java.lang.String valueOf(double)", false),
+    STRING_VALUE_OF_CHAR(String.class, "java.lang.String valueOf(char)", false),
 
     // --- lists ---
     LIST_INIT(List.class,"void <init>()", true),
@@ -130,6 +178,7 @@ public enum MethodModel {
 
     private static final Logger log = Logger.getInstance(MethodModel.class);
     private static final Map<String, List<MethodModel>> map = new HashMap<>();
+    private static final String intRegex = "^[0-9]+$";
 
     static {
         for (MethodModel e : MethodModel.values()) {
@@ -161,13 +210,52 @@ public enum MethodModel {
 
             case OBJECT_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
 
-            case INT_VALUE -> args.get(0);
-            case INT_VALUE_OF -> args.get(0);
+            case BYTE_VALUE,
+                    BYTE_VALUE_OF_BYTE,
+                    SHORT_VALUE,
+                    SHORT_VALUE_OF_SHORT,
+                    INT_VALUE,
+                    INT_VALUE_OF_INT,
+                    LONG_VALUE,
+                    LONG_VALUE_OF_LONG,
+                    FLOAT_VALUE,
+                    FLOAT_VALUE_OF_FLOAT,
+                    DOUBLE_VALUE,
+                    DOUBLE_VALUE_OF_DOUBLE -> args.get(0);
+
+            case BYTE_VALUE_OF,
+                    BYTE_PARSE_BYTE,
+                    SHORT_VALUE_OF,
+                    SHORT_PARSE_SHORT,
+                    INT_VALUE_OF,
+                    INT_PARSE_INT,
+                    LONG_VALUE_OF,
+                    LONG_PARSE_LONG,
+                    FLOAT_VALUE_OF,
+                    FLOAT_PARSE_FLOAT,
+                    DOUBLE_VALUE_OF,
+                    DOUBLE_PARSE_DOUBLE -> ctx.stringToInt(args.get(0));
 
             case STRING_EQUALS -> ctx.mkEq(args.get(0), args.get(1));
             case STRING_LEN -> ctx.mkLength(args.get(0));
+            case STRING_STARTS_WITH -> ctx.mkPrefixOf(args.get(1), args.get(0));
+            case STRING_ENDS_WITH -> ctx.mkSuffixOf(args.get(1), args.get(0));
+            case STRING_COMPARE -> ctx.mkStringCompare(args.get(0), args.get(1));
+            case STRING_CHAR_AT -> ctx.charToInt(ctx.mkNth(args.get(0), args.get(1)));
+            case STRING_INDEX_OF -> ctx.mkIndexOf(args.get(0), args.get(0), args.get(1));
+            case STRING_SUBSTRING_1 -> ctx.mkExtract(args.get(0), args.get(1), ctx.mkLength(args.get(0)));
+            case STRING_SUBSTRING_2 -> ctx.mkExtract(args.get(0), args.get(1), args.get(2));
+            case STRING_CONTAINS -> ctx.mkContains(args.get(0), args.get(1));
             case STRING_SOOT_CONCAT_STRING -> ctx.mkStringConcatString(args.get(0), args.get(1));
             case STRING_SOOT_CONCAT_INT -> ctx.mkStringConcatInt(args.get(0), args.get(1));
+            case STRING_VALUE_OF_BOOL,
+                    STRING_VALUE_OF_BYTE,
+                    STRING_VALUE_OF_SHORT,
+                    STRING_VALUE_OF_INT,
+                    STRING_VALUE_OF_LONG,
+                    STRING_VALUE_OF_FLOAT -> ctx.intToString(args.get(0));
+            case STRING_VALUE_OF_DOUBLE -> ctx.mkString(args.get(0).getString());
+            case STRING_VALUE_OF_CHAR -> ctx.mkString(args.get(0).getString());
 
 //            case SET_RETAIN_ALL -> ctx.mkSetIntersection(args.get(0), args.get(1));
 //            case SET_ADD -> ctx.mkSetAdd(args.get(0), args.get(1));
@@ -193,6 +281,7 @@ public enum MethodModel {
             case LIST_SUBLIST -> null;
             case LIST_INDEX_OF -> ctx.getLinkedListInstance().indexOf(args.get(0), args.get(1));
             case LIST_LAST_INDEX_OF -> ctx.getLinkedListInstance().lastIndexOf(args.get(0), args.get(1));
+//            case LIST_OF_OBJECT_ARR -> ctx.getLinkedListInstance().constructorFrom(args.get(0));
             case LIST_OF_OBJECT_ARR -> null;
             case LIST_SIZE -> ctx.getLinkedListInstance().size(args.get(0));
             case LIST_IS_EMPTY -> ctx.getLinkedListInstance().isEmpty(args.get(0));
@@ -235,12 +324,27 @@ public enum MethodModel {
         String subSignature = methodSignature.getSubSignature().toString();
         if (!map.containsKey(subSignature)) return Optional.empty();
         List<MethodModel> methodModels = map.get(subSignature);
+        List<MethodModel> suspects = new ArrayList<>();
         for (MethodModel methodModel : methodModels) {
             if (methodModel.clazz.isAssignableFrom(clazz))
-                return Optional.of(methodModel);
+                suspects.add(methodModel);
         }
 
-        return Optional.empty();
+        if (suspects.isEmpty())
+            return Optional.empty();
+        if (suspects.size() == 1)
+            return Optional.of(suspects.get(0));
+
+        // return the most specific implementation
+        outer: for (int i = 0; i < suspects.size(); i++) {
+            for (int j = 0; j < suspects.size(); j++) {
+                if (i == j) continue;
+                if (suspects.get(i).clazz.isAssignableFrom(suspects.get(j).clazz)) continue outer;
+            }
+            return Optional.of(suspects.get(i));
+        }
+
+        return Optional.of(suspects.get(0));
     }
 
     public boolean hasBase() {

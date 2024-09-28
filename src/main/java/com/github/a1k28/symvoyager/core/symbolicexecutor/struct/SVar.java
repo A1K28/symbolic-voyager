@@ -13,7 +13,7 @@ public class SVar {
     private final String name;
     private Expr expr;
     private final VarType type;
-    private final Class<?> classType;
+    private Class<?> classType;
     private final boolean isDeclaration;
 
     public SVar(String name, Expr expr, VarType type, Class<?> classType, boolean isDeclaration) {

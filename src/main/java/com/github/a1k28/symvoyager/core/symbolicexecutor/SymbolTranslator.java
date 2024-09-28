@@ -1,5 +1,6 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
+import com.github.a1k28.supermock.MockType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodMockEvaluated;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVarEvaluated;
@@ -71,8 +72,9 @@ public class SymbolTranslator {
                 assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();
                 List<Object> mockParams = new ArrayList<>();
                 Object mockRetVal = null;
+                Class mockRetType = sVarEvaluated.getSvar().getClassType();
                 if (sVarEvaluated.getExceptionType() == null) {
-                    mockRetVal = parse(sVarEvaluated.getEvaluated(), sVarEvaluated.getSvar().getClassType());
+                    mockRetVal = parse(sVarEvaluated.getEvaluated(), mockRetType);
                 }
                 for (int i = 0; i < mockParamClassTypes.length; i++) {
                     mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
@@ -85,12 +87,12 @@ public class SymbolTranslator {
                 uniqueMockSet.add(uniqueKey);
 
                 MethodMockResult mockResult = new MethodMockResult(
-                        sVarEvaluated.getMethod(), mockRetVal, sVarEvaluated.getExceptionType(), mockParams);
+                        sVarEvaluated.getMethod(), mockRetVal, mockRetType, sVarEvaluated.getExceptionType(), mockParams);
                 mockedMethodValues.add(mockResult);
             }
 
             ParsedResult parsedResult = new ParsedResult(
-                    returnVal, parameters, parsedFields, mockedMethodValues, res.getExceptionType());
+                    returnVal, returnType, parameters, parsedFields, mockedMethodValues, res.getExceptionType());
             evalMap.put(res, parsedResult);
         }
         return evalMap;
@@ -151,6 +153,10 @@ public class SymbolTranslator {
     }
 
     private static <T> T parseObject(ClassInstanceVar<T> instanceVar) {
+        if (instanceVar.isStub()) {
+            return (T) MockType.STUB;
+        }
+
         Object[] constructorArgs = new Object[instanceVar.getConstructorArgs().length];
         Class[] constructorTypes = instanceVar.getConstructor().getParameterTypes();
         for (int i = 0; i < instanceVar.getConstructorArgs().length; i++) {

@@ -46,7 +46,7 @@ public class Logger {
     }
 
     private static final ConcurrentMap<Class<?>, Logger> cache = new ConcurrentHashMap<>();
-    private static Level level = Level.INFO;
+    private static Level level = Level.TRACE;
     private final Class<?> clazz;
 
     public static Logger getInstance(Class<?> clazz) {

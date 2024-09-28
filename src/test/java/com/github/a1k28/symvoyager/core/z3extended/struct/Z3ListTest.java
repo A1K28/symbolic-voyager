@@ -233,9 +233,9 @@ public class Z3ListTest {
         if (list.size() != 10)
             return 12;
 
-//        list = List.of(1,2,3,4,5,6,7,8,9,10,11);
-//        if (list.size() != 11)
-//            return 13;
+        list = List.of(1,2,3,4,5,6,7,8,9,10,11);
+        if (list.size() != 11)
+            return 13;
         return 14;
     }
 

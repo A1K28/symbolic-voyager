@@ -15,4 +15,5 @@ public class ClassInstanceModel {
     private final Expr expr;
     private final Expr base;
     private final SClassInstance classInstance;
+    private final boolean isStub;
 }

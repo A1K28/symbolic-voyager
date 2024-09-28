@@ -1,6 +1,7 @@
 package com.github.a1k28.symvoyager.core.sootup;
 
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import sootup.core.Project;
@@ -35,6 +36,7 @@ import static com.github.a1k28.symvoyager.core.sootup.SootParser.interpretSoot;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootInterpreter {
+    private static final Logger log = Logger.getInstance(SootInterpreter.class);
     private static final Map<String, Class<?>> cachedMap = new HashMap<>();
 
     public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
@@ -108,15 +110,18 @@ public class SootInterpreter {
     }
 
     public static int getJavaVersion(Class<?> clazz) {
-        try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
-                clazz.getName().replace(".", File.separator) + ".class");
-             DataInputStream dis = new DataInputStream(is)) {
+        log.trace("Getting java version for class: " + clazz);
+        try {
+            try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
+                    clazz.getName().replace(".", File.separator) + ".class");
+                 DataInputStream dis = new DataInputStream(is)) {
 
-            dis.readInt(); // Skip magic number
-            int minorVersion = dis.readUnsignedShort();
-            int majorVersion = dis.readUnsignedShort();
+                dis.readInt(); // Skip magic number
+                int minorVersion = dis.readUnsignedShort();
+                int majorVersion = dis.readUnsignedShort();
 
-            return mapVersionToJava(majorVersion, minorVersion);
+                return mapVersionToJava(majorVersion, minorVersion);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             // TODO: remove default
@@ -186,9 +191,9 @@ public class SootInterpreter {
             }
             return Class.forName(type.toString());
         } catch (Exception e) {
-            // modify behavior
-            e.printStackTrace();
-            return null;
+            // TODO: possibly modify behavior
+            log.warn("Could not find class for type: " + type);
+            return Object.class;
 //            throw new IllegalStateException(e);
         }
     }

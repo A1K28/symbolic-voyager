@@ -10,6 +10,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ParsedResult {
     private final Object parsedReturnValue;
+    private final Class returnType;
     private final Object[] parsedParameters;
     private final List<SVarEvaluated> parsedFields;
     private final List<MethodMockResult> methodMockValues;

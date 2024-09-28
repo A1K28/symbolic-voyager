@@ -8,6 +8,8 @@ import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.microsoft.z3.*;
 import lombok.Getter;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 @Getter
@@ -65,6 +67,44 @@ public class Z3ExtendedContext extends Context implements IStack {
         Expr<SeqSort<R>> e2 = expr2.getSort().getClass() == IntSort.class ?
                 this.intToString(expr2) : (Expr<SeqSort<R>>) expr2;
         return this.mkConcat(e1, e2);
+    }
+
+    public IntExpr mkStringCompare(Expr expr1, Expr expr2) {
+        Expr<SeqSort<CharSort>> seqExpr1 = expr1;
+        Expr<SeqSort<CharSort>> seqExpr2 = expr2;
+
+        BoolExpr isEq = this.mkEq(expr1, expr2);
+        BoolExpr isLt;
+
+        try {
+            Method checkCtxMatchMethod = this.getClass().getSuperclass().getDeclaredMethod(
+                    "checkContextMatch", Z3Object.class, Z3Object.class);
+            checkCtxMatchMethod.setAccessible(true);
+
+            Method nCtxMethod = this.getClass().getMethod("nCtx");
+            nCtxMethod.setAccessible(true);
+
+            Method getNativeObjMethod = Z3Object.class.getDeclaredMethod(
+                    "getNativeObject");
+            getNativeObjMethod.setAccessible(true);
+
+            Constructor boolExprConstructor = BoolExpr.class.getDeclaredConstructor(
+                    this.getClass().getSuperclass(), long.class);
+            boolExprConstructor.setAccessible(true);
+
+            checkCtxMatchMethod.invoke(this, expr1, expr2);
+            long res = Native.mkStrLt((Long) nCtxMethod.invoke(this),
+                    (Long) getNativeObjMethod.invoke(expr1),
+                    (Long) getNativeObjMethod.invoke(expr2));
+            isLt = (BoolExpr) boolExprConstructor.newInstance(this, res);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return (IntExpr) this.mkITE(
+                isEq,
+                this.mkInt(0),
+                this.mkITE(isLt, this.mkInt(-1), this.mkInt(1)));
     }
 
     public Expr mkNull() {

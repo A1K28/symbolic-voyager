@@ -17,11 +17,13 @@ public class MethodCallModel {
 
     private String returnType;
     private Object returnValue;
+    private Boolean shouldDeserializeRetVal;
     private String exceptionType;
 
     private int paramCount;
     private List<Object> parameters;
     private List<String> parameterTypes;
+    private List<Boolean> shouldDeserializeArgs;
 
     private int mockCount;
     private List<MethodMockModel> methodMocks;

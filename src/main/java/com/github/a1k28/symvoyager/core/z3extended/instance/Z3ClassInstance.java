@@ -1,5 +1,6 @@
 package com.github.a1k28.symvoyager.core.z3extended.instance;
 
+import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
@@ -64,9 +65,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         Optional<ClassInstanceModel> optional = stack.get(clazzHC);
         if (optional.isEmpty()) {
             Expr expr = ctx.mkConst("Object"+clazzHC, SortType.OBJECT.value(ctx));
-            SClassInstance sClassInstance = createClassInstance(clazz);
-            ClassInstanceModel classInstanceModel = new ClassInstanceModel(
-                    expr, null, sClassInstance);
+            ClassInstanceModel classInstanceModel = createModel(expr, null, clazz);
             stack.add(clazzHC, classInstanceModel);
         }
         return stack.get(clazzHC).orElseThrow();
@@ -81,9 +80,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
             createMapping(wrappedBase);
             ref = evalReference(wrappedBase);
             Expr expr = ctx.mkConst("Object"+ref, SortType.OBJECT.value(ctx));
-            SClassInstance sClassInstance = createClassInstance(clazz);
-            ClassInstanceModel classInstanceModel = new ClassInstanceModel(
-                    expr, base, sClassInstance);
+            ClassInstanceModel classInstanceModel = createModel(expr, base, clazz);
             stack.add(ref, classInstanceModel);
         } else {
             ref = optional.get();
@@ -101,6 +98,9 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         } else {
             model = stack.get(ref.get()).orElseThrow();
         }
+
+        if (model.isStub())
+            return model.getExpr();
 
         SClassInstance instance = model.getClassInstance();
 
@@ -128,6 +128,17 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         SMethodPath sMethodPath = createMethodPath(instance, method, isConstructor);
         instance.getMethodPathSkeletons().put(method, sMethodPath);
         return sMethodPath;
+    }
+
+    private ClassInstanceModel createModel(Expr expr, Expr base, Class clazz)
+            throws ClassNotFoundException {
+        if (!CLIOptions.shouldPropagate(clazz.getName())) {
+            SClassInstance sClassInstance = new SClassInstance(clazz);
+            return new ClassInstanceModel(expr, base, sClassInstance, true);
+        }
+        SClassInstance sClassInstance = createClassInstance(clazz);
+        return new ClassInstanceModel(
+                expr, base, sClassInstance, false);
     }
 
     private SClassInstance createClassInstance(Class<?> clazz)
@@ -173,21 +184,5 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         if (clazz == PrimitiveType.DoubleType.class)
             return ctx.mkInt(0);
         return ctx.mkNull();
-    }
-
-    private static int ihc(Object o) {
-        if (o instanceof Expr) {
-            String val = o.toString().replace("\"","");
-            if (val.startsWith("Object")) {
-                try {
-                    val = val.replace("Object", "");
-                    int lastIdx = val.indexOf('!');
-                    lastIdx = lastIdx == -1 ? val.length() : lastIdx;
-                    val = val.substring(0, lastIdx);
-                    return Integer.parseInt(val);
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        return System.identityHashCode(o);
     }
 }

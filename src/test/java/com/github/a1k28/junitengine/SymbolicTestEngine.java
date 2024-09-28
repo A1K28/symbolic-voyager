@@ -1,5 +1,6 @@
 package com.github.a1k28.junitengine;
 
+import com.github.a1k28.supermock.MockType;
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolicExecutor;
@@ -174,6 +175,10 @@ public class SymbolicTestEngine implements TestEngine {
             Class type = mockResult.getMethod().getDeclaringClass();
             String methodName = mockResult.getMethod().getName();
             Object[] args = mockResult.getParsedParameters().toArray();
+            if (mockResult.getParsedReturnValue() instanceof MockType) {
+                when(type, methodName, args).thenReturnStub(mockResult.getReturnType());
+                return;
+            }
             Object retVal = mockResult.getParsedReturnValue();
             Class exceptionType = mockResult.getExceptionType();
             if (exceptionType != null) when(type, methodName, args).thenThrow(exceptionType);

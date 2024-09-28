@@ -11,6 +11,7 @@ import java.util.List;
 public class MethodMockResult {
     private final Method method;
     private final Object parsedReturnValue;
+    private final Class returnType;
     private final Class exceptionType;
     private final List<Object> parsedParameters;
 }

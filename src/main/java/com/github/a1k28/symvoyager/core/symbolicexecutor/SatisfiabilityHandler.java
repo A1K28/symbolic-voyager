@@ -1,5 +1,6 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
+import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedContext;
@@ -14,6 +15,7 @@ import sootup.core.jimple.common.stmt.JReturnStmt;
 import sootup.core.jimple.common.stmt.JThrowStmt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -60,7 +62,9 @@ public class SatisfiabilityHandler {
     }
 
     private void handleSatisfiability(
-            SMethodPath sMethodPath, SVarEvaluated returnValue, Class exceptionType) {
+            SMethodPath sMethodPath,
+            SVarEvaluated returnValue,
+            Class<? extends Throwable> exceptionType) {
         log.info("Path is satisfiable - " + sMethodPath.getMethod().getName());
 
         List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
@@ -76,7 +80,7 @@ public class SatisfiabilityHandler {
 
             if (var.getType() == VarType.FIELD) {
                 Object evaluated = evaluateSatisfiableExpression(
-                        sMethodPath, var.getExpr(), var.getName());
+                        sMethodPath, var, var.getExpr());
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
                 fieldsEvaluated.add(sVarEvaluated);
             } else if (var.getType() == VarType.METHOD_MOCK) {
@@ -85,16 +89,17 @@ public class SatisfiabilityHandler {
             } else {
                 // parameter
                 Object evaluated = evaluateSatisfiableExpression(
-                        sMethodPath, var.getExpr(), var.getName());
+                        sMethodPath, var, var.getExpr());
                 SVarEvaluated sVarEvaluated = new SVarEvaluated(var, evaluated);
                 parametersEvaluated.add(sVarEvaluated);
             }
         }
 
         if (returnValue != null)
-            log.debug(returnValue.getEvaluated() + " - ret. val.");
+            log.trace(returnValue.getEvaluated() + " - ret. val.");
+        if (exceptionType != null)
+            log.trace(exceptionType + " - exception type");
 
-        // TODO: handle throw clause
         SatisfiableResult satisfiableResult = new SatisfiableResult(
                 solver.getAssertions(),
                 fieldsEvaluated,
@@ -119,7 +124,7 @@ public class SatisfiabilityHandler {
                     VarType.RETURN_VALUE,
                     classType,
                     true);
-            Object evaluated = evaluateSatisfiableExpression(methodPath, expr);
+            Object evaluated = evaluateSatisfiableExpression(methodPath, svar, expr);
             return new SVarEvaluated(svar, evaluated);
         }
         return null;
@@ -128,8 +133,9 @@ public class SatisfiabilityHandler {
     private SMethodMockEvaluated handleMockExpression(SMethodPath methodPath, SVar var) {
         MethodMockExprModel exprModel = ctx.getMethodMockInstance()
                 .get(var.getExpr());
+        log.trace("Handling method mock: " + exprModel.getMethod());
         List<Object> evaluatedParams = exprModel.getArgs().stream()
-                .map(e -> evaluateSatisfiableExpression(methodPath, e))
+                .map(e -> evaluateSatisfiableExpression(methodPath, var, e))
                 .collect(Collectors.toList());
         if (exprModel.throwsException())
             return new SMethodMockEvaluated(var,
@@ -138,7 +144,7 @@ public class SatisfiabilityHandler {
                     SootInterpreter.getClass(exprModel.getExceptionType().toString()),
                     exprModel.getMethod());
         Object returnValue = exprModel.getRetVal() == null ? null :
-                evaluateSatisfiableExpression(methodPath, exprModel.getRetVal());
+                evaluateSatisfiableExpression(methodPath, var, exprModel.getRetVal());
         return new SMethodMockEvaluated(var,
                 returnValue,
                 evaluatedParams,
@@ -146,14 +152,7 @@ public class SatisfiabilityHandler {
                 exprModel.getMethod());
     }
 
-    private Object evaluateSatisfiableExpression(SMethodPath methodPath, Expr expr, String name) {
-        Object evaluated = evaluateSatisfiableExpression(methodPath, expr);
-        log.debug(evaluated + " - " + name);
-        return evaluated;
-    }
-
-
-    private Object evaluateSatisfiableExpression(SMethodPath methodPath, Expr expr) {
+    private Object evaluateSatisfiableExpression(SMethodPath methodPath, SVar sVar, Expr expr) {
         Status status = solver.check();
         if (status != Status.SATISFIABLE)
             throw new IllegalStateException("Unknown state: " + status);
@@ -176,6 +175,7 @@ public class SatisfiabilityHandler {
                 solver.add(assertion);
         }
 
+        log.debug(evaluated + " - " + sVar.getName());
         return evaluated;
     }
 
@@ -198,24 +198,36 @@ public class SatisfiabilityHandler {
         throw new RuntimeException("Set interpretations are not yet supported");
     }
 
-    private Object handleObjectSatisfiability(SMethodPath methodPath, Expr expr) {
+    private ClassInstanceVar handleObjectSatisfiability(SMethodPath methodPath, Expr expr) {
         ClassInstanceModel model = getClassInstanceModel(methodPath, expr);
         SClassInstance classInstance = model.getClassInstance();
-        ClassInstanceVar classInstanceVar = new ClassInstanceVar(classInstance.getClazz());
-        for (SVar sVar : classInstance.getSymbolicFieldStack().getAll()) {
-            if (!sVar.isDeclaration()) continue;
-            Object evaluated = evaluateSatisfiableExpression(methodPath, sVar.getExpr());
-            classInstanceVar.getFields().put(sVar.getName(), evaluated);
+        if (model.isStub()) {
+            // this happens when a class is a parameter or a return value
+            ClassInstanceVar classInstanceVar = new ClassInstanceVar(
+                    classInstance.getClazz(), true);
+            return classInstanceVar;
         }
+
+        ClassInstanceVar classInstanceVar = new ClassInstanceVar(classInstance.getClazz());
+        if (CLIOptions.shouldPropagate(classInstance.getClazz().getName())) {
+            for (SVar var : classInstance.getSymbolicFieldStack().getAll()) {
+                if (!var.isDeclaration()) continue;
+                Object evaluated = evaluateSatisfiableExpression(methodPath, var, var.getExpr());
+                classInstanceVar.getFields().put(var.getName(), evaluated);
+            }
+        }
+
         return classInstanceVar;
     }
 
     private ClassInstanceModel getClassInstanceModel(SMethodPath methodPath, Expr expr) {
-        SVar sVar = methodPath.getSymbolicVarStack().get(expr).orElseThrow();
         Optional<ClassInstanceModel> optional = ctx.getClassInstance().getInstance(expr);
         if (optional.isPresent()) {
             return optional.get();
         } else {
+            SVar sVar = methodPath.getSymbolicVarStack().get(expr)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Could not get svar from expr: " + expr + " with state: " + Arrays.toString(methodPath.getSymbolicVarStack().getAll().toArray(new SVar[0]))));
             try {
                 Class clazz = sVar.getClassType();
                 return ctx.getClassInstance().constructor(expr, clazz);

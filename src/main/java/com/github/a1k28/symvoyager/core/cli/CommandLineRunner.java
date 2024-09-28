@@ -62,9 +62,9 @@ public class CommandLineRunner {
             if (variableTypes.isEmpty()) return;
 
             try (final Scanner reader = new Scanner(System.in)) {
-                System.out.println("You have not provided any classes" +
+                System.out.print("You have not provided any classes" +
                         " that should be targeted by supermock (enabled by default)." +
-                        " Would you like me to suggest possible classes? (y/N)");
+                        " Would you like me to suggest possible classes? (y/N) ");
                 String res = reader.next();
                 if (!res.equalsIgnoreCase("Y")) {
                     // if not, then mock all
@@ -77,12 +77,12 @@ public class CommandLineRunner {
                 int i = 0;
                 for (String type : variableTypes) {
                     i++;
-                    System.out.println("(" + i + "/" + variableTypes.size() + ")"
-                            + " Mock: " + type + "? (y/N)");
+                    System.out.print("(" + i + "/" + variableTypes.size() + ")"
+                            + " Mock " + type + "? (y/n/I (ignore)) ");
                     res = reader.next();
                     if (res.equalsIgnoreCase("Y")) {
                         CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
-                    } else {
+                    } else if (res.equalsIgnoreCase("N")) {
                         CLIOptions.set(CommandFlag.WHITELISTED_CLASSES, type);
                     }
                 }
@@ -104,6 +104,12 @@ public class CommandLineRunner {
                 || type.equals("char") || type.equals("char[]")
                 || type.equals("boolean") || type.equals("boolean[]"))
             return false;
+        try {
+            Class clazz = Class.forName(type.replace("/", "."));
+            if (Throwable.class.isAssignableFrom(clazz)) return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return true;
     }
 

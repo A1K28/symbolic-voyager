@@ -6,6 +6,7 @@ import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.microsoft.z3.Expr;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SStack extends Z3Stack<String, SVar> implements IStack {
     public Optional<SVar> get(String key) {
@@ -19,7 +20,9 @@ public class SStack extends Z3Stack<String, SVar> implements IStack {
     }
 
     public Optional<SVar> get(Expr expr) {
-        return getAll().stream().filter(var -> expr.equals(var.getExpr())).findFirst();
+        List<SVar> res = getAll().stream().filter(var -> expr.equals(var.getExpr())).collect(Collectors.toList());
+        if (res.isEmpty()) return Optional.empty();
+        return Optional.of(res.get(res.size()-1));
     }
 
     public SVar add(String name, Class<?> classType, Expr expr, VarType type) {

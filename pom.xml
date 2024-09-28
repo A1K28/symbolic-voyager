@@ -60,10 +60,17 @@
       <artifactId>junit-jupiter-engine</artifactId>
       <version>5.10.2</version>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>com.github.A1K28</groupId>-->
+<!--      <artifactId>supermock</artifactId>-->
+<!--      <version>1.0.5</version>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>com.github.A1K28</groupId>
       <artifactId>supermock</artifactId>
-      <version>1.0.1</version>
+      <version>1.0.2</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/libs/supermock/supermock-1.0-SNAPSHOT-jar-with-dependencies.jar</systemPath>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.github.javaparser/javaparser-core -->
     <dependency>

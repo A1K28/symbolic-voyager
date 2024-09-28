@@ -88,6 +88,11 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
         return constructor(var1, var2, null, null, false).getReference();
     }
 
+    public Expr constructorFrom(Expr var1) {
+        Expr reference = ctx.mkFreshConst("reference", SortType.ARRAY.value(ctx));
+        return constructor(reference, var1, null, null, false).getReference();
+    }
+
     public Expr constructorOf(List<Expr> vars) {
         Expr[] args = null;
         if (vars.size() > 0)

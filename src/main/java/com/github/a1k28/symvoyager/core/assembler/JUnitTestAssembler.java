@@ -1,5 +1,6 @@
 package com.github.a1k28.symvoyager.core.assembler;
 
+import com.github.a1k28.supermock.MockType;
 import com.github.a1k28.symvoyager.core.assembler.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodMockResult;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.ParsedResult;
@@ -38,6 +39,7 @@ public class JUnitTestAssembler {
         for (TestGeneratorModel testGeneratorModel : testGeneratorModels) {
             Method method = testGeneratorModel.getMethod();
             ParsedResult res = testGeneratorModel.getParsedResult();
+            Class retType = res.getReturnType();
             if (res.getParsedParameters().length != method.getParameterCount()) {
                 log.warn("Invalid number of arguments passed for java test assembly");
                 return;
@@ -47,14 +49,17 @@ public class JUnitTestAssembler {
                     .map(Class::getSimpleName).toList();
 
             List<Object> parameters = new ArrayList<>();
+            List<Boolean> shouldDeserializeArgs = new ArrayList<>();
             for (int i = 0; i < res.getParsedParameters().length; i++) {
                 parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
+                shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
             }
 
             // return val
             Class<? extends Throwable> exceptionType = testGeneratorModel.getParsedResult().getExceptionType();
+            boolean shouldDeserializeRetVal = shouldSerialize(retType);
             Object retVal = exceptionType == null ?
-                    parse(res.getParsedReturnValue(), method.getReturnType()) : null;
+                    parse(res.getParsedReturnValue(), retType) : null;
             String exceptionTypeStr = exceptionType == null ? null : exceptionType.getSimpleName();
 
             // handle imports
@@ -89,12 +94,14 @@ public class JUnitTestAssembler {
             MethodCallModel methodCallModel = new MethodCallModel(
                     testName,
                     method.getName(),
-                    method.getReturnType().getSimpleName(),
+                    retType.getSimpleName(),
                     retVal,
+                    shouldDeserializeRetVal,
                     exceptionTypeStr,
                     res.getParsedParameters().length,
                     parameters,
                     parameterTypes,
+                    shouldDeserializeArgs,
                     mockModels.size(),
                     mockModels);
             methodCallModels.add(methodCallModel);
@@ -127,6 +134,14 @@ public class JUnitTestAssembler {
 
     // TODO: beautify certain types of object creation
     private static Object parse(Object object, Class<?> clazz) {
+        if (object instanceof MockType)
+            return null;
+        if (clazz == String.class)
+            return "\""+object+"\"";
+        if (clazz == boolean.class || clazz == Boolean.class)
+            return String.valueOf(object);
+        if (!shouldSerialize(clazz))
+            return object;
 //        if (Map.class.isAssignableFrom(clazz)) {
 //            List<MapModel.Entry> entries = new ArrayList<>();
 //            for (Map.Entry<?,?> entry : ((Map<?,?>)object).entrySet()) {
@@ -148,19 +163,33 @@ public class JUnitTestAssembler {
             Method method = mockResult.getMethod();
             Object[] args = mockResult.getParsedParameters().toArray();
             Object retVal = mockResult.getParsedReturnValue();
+            Class retType = mockResult.getReturnType();
             Class exceptionType = mockResult.getExceptionType();
 
-            String retValSerialized = Parser.serialize(retVal);
+            Object retValSerialized = parse(retVal, retType);
+            boolean shouldDeserializeRetVal = shouldSerialize(retType);
+
             String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
-            String retType = method.getReturnType().getSimpleName();
-            if ("void".equals(retType)) retType = null;
+            String retTypeStr = retType.getSimpleName();
+            if ("void".equals(retTypeStr)) retTypeStr = null;
 
             List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
                     .map(Class::getSimpleName).toList();
             List<Object> parameters = new ArrayList<>();
+            List<Boolean> shouldDeserializeArgs = new ArrayList<>();
             for (int i = 0; i < args.length; i++) {
                 parameters.add(parse(args[i], method.getParameterTypes()[i]));
+                shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
             }
+
+            List<String> mockType = new ArrayList<>();
+            for (Object param : args) {
+                String t = param instanceof MockType ? "any()" : null;
+                mockType.add(t);
+            }
+
+
+            boolean isStub = retVal instanceof MockType i && i == MockType.STUB;
 
             MethodMockModel model = new MethodMockModel(
                     type.getSimpleName(),
@@ -168,11 +197,27 @@ public class JUnitTestAssembler {
                     parameters.size(),
                     parameters,
                     parameterTypes,
+                    mockType,
+                    shouldDeserializeArgs,
                     retValSerialized,
-                    retType,
+                    isStub,
+                    retTypeStr,
+                    shouldDeserializeRetVal,
                     exceptionName);
             result.add(model);
         }
         return result;
+    }
+
+    private static boolean shouldSerialize(Class clazz) {
+        return !(clazz == String.class ||
+                clazz == Boolean.class || clazz == boolean.class ||
+                clazz == Byte.class || clazz == byte.class ||
+                clazz == Short.class || clazz == short.class ||
+                clazz == Integer.class || clazz == int.class ||
+                clazz == Long.class || clazz == long.class ||
+                clazz == Float.class || clazz == float.class ||
+                clazz == Double.class || clazz == double.class ||
+                clazz == Character.class || clazz == char.class);
     }
 }
