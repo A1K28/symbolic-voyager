@@ -17,6 +17,7 @@ public class MethodCallModel {
 
     private String returnType;
     private Object returnValue;
+    private String exceptionType;
 
     private int paramCount;
     private List<Object> parameters;

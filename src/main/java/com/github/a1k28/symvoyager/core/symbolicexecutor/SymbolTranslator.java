@@ -3,6 +3,7 @@ package com.github.a1k28.symvoyager.core.symbolicexecutor;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodMockEvaluated;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVarEvaluated;
+import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Field;
@@ -13,6 +14,8 @@ import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateF
 
 @NoArgsConstructor
 public class SymbolTranslator {
+    private static final Logger log = Logger.getInstance(SymbolTranslator.class);
+
     public static Map<SatisfiableResult, ParsedResult> parse(SatisfiableResults satisfiableResults) {
         Class<?>[] paramTypes = null;
         String[] paramNames = null;
@@ -39,8 +42,12 @@ public class SymbolTranslator {
 
             // return val
             Object returnVal = null;
-            if (returnType != Void.class && res.getExceptionType() == null)
+            log.trace("Return type: " + returnType);
+            if (returnType != Void.class
+                    && !"void".equals(returnType.toString())
+                    && res.getExceptionType() == null) {
                 returnVal = parse(res.getReturnValue().getEvaluated(), returnType);
+            }
 
             // fields
             List<SVarEvaluated> parsedFields = new ArrayList<>();
@@ -90,8 +97,22 @@ public class SymbolTranslator {
     }
 
     private static <T> T parse(Object value, Class type) {
+        if (type == Boolean.class || type == boolean.class)
+            return (T) Boolean.valueOf(value.toString());
+        if (type == Byte.class || type == byte.class)
+            return (T) Byte.valueOf(value.toString());
+        if (type == Short.class || type == short.class)
+            return (T) Short.valueOf(value.toString());
+        if (type == Character.class || type == char.class)
+            return (T) Character.valueOf(value.toString().charAt(0));
         if (type == Integer.class || type == int.class)
             return (T) Integer.valueOf(value.toString());
+        if (type == Long.class || type == long.class)
+            return (T) Long.valueOf(value.toString());
+        if (type == Float.class || type == float.class)
+            return (T) Float.valueOf(value.toString());
+        if (type == Double.class || type == double.class)
+            return (T) Double.valueOf(value.toString());
 
         if (type == String.class) {
             String v = value.toString();
@@ -123,6 +144,9 @@ public class SymbolTranslator {
         if (value instanceof ClassInstanceVar v)
             return (T) parseObject(v);
 
+        if (value == null)
+            return null;
+
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
     }
 
@@ -135,6 +159,7 @@ public class SymbolTranslator {
 
         T object;
         try {
+            log.trace("Instantiating: " + instanceVar.getConstructor() + " with args: " + Arrays.toString(instanceVar.getConstructorArgs()));
             object = instanceVar.getConstructor().newInstance(instanceVar.getConstructorArgs());
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);

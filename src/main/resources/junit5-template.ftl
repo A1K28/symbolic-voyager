@@ -35,7 +35,11 @@ public class ${cm.className}Test {
         Object[] params${mock?index} = new Object[${mock.paramCount}];
         // define parameters
         <#list mock.parameters as param>
+        <#if param??>
         params${mock?index}[${param?index}] = deserialize(${param}, ${mock.parameterTypes[param?index]}.class);
+        <#else>
+        params${mock?index}[${param?index}] = null;
+        </#if>
         </#list>
         <#if mock.exceptionType??>
         when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenThrow(${mock.exceptionType}.class);
@@ -80,6 +84,12 @@ public class ${cm.className}Test {
         // assuming default constructor
         ${cm.className} instance = new ${cm.className}();
 
+        <#if mm.exceptionType??>
+        assertThrows(${mm.exceptionType}.class, () -> {
+            instance.${mm.methodName}(
+                <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
+        });
+        <#else>
         // call method
         <#if mm.returnType != "void">
         ${mm.returnType} actual = </#if>instance.${mm.methodName}(
@@ -89,6 +99,7 @@ public class ${cm.className}Test {
         // assert
         ${mm.returnType} expected = deserialize(${mm.returnValue}, ${mm.returnType}.class);
         Assertions.assertEquals(expected, actual);
+        </#if>
         </#if>
     }
 

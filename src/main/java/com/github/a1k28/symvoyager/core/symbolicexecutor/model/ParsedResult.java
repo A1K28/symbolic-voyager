@@ -13,5 +13,5 @@ public class ParsedResult {
     private final Object[] parsedParameters;
     private final List<SVarEvaluated> parsedFields;
     private final List<MethodMockResult> methodMockValues;
-    private final Class exceptionType;
+    private final Class<? extends Throwable> exceptionType;
 }

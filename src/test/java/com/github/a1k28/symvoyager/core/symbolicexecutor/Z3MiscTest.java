@@ -411,6 +411,33 @@ public class Z3MiscTest {
     }
 
     @SymbolicTest({0,1,2,3,4,5})
+    @DisplayName("test_nested_double_try_catch_2")
+    public int test_nested_double_try_catch_2(int param) {
+        try {
+            if (param == 10)
+                return 0;
+            if (param == 100)
+                throw new IllegalArgumentException();
+        } catch (IllegalArgumentException e) {
+            return 1;
+        }
+
+        try {
+            if (param == 20 || param == 25 || param == 27 || param == 28)
+                throw new IllegalArgumentException("Illegal arguments provided");
+            if (param == 30)
+                throw new IllegalStateException("Illegal state exception");
+            return 2;
+        } catch (IllegalArgumentException e) {
+            if (param == 27)
+                throw new IllegalArgumentException();
+            return 3;
+        } catch (IllegalStateException e) {
+            return 4;
+        }
+    }
+
+    @SymbolicTest({0,1,2,3,4,5})
     @DisplayName("test_nested_double_try_catch_1")
     public int test_nested_double_try_catch_1(int param) {
         try {

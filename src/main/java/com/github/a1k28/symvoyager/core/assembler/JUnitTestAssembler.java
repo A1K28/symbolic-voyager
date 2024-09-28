@@ -23,10 +23,11 @@ public class JUnitTestAssembler {
                                     List<TestGeneratorModel> testGeneratorModels)
             throws IOException, TemplateException {
         String className = clazz.getSimpleName();
+        String packageName = clazz.getPackageName();
         String testClassName = className + "Test";
         String targetPath = clazz.getProtectionDomain().getCodeSource().getLocation().getPath().replace("/", File.separator);
         String testPath = targetPath.replace(File.separator+"target"+File.separator+"classes", File.separator+"src"+File.separator+"test"+File.separator+"java"+File.separator);
-        String fileName = testPath + clazz.getPackageName().replace(".", File.separator) + File.separator + testClassName + ".java";
+        String fileName = testPath + packageName.replace(".", File.separator) + File.separator + testClassName + ".java";
         Set<String> imports = new HashSet<>();
         List<MethodCallModel> methodCallModels = new ArrayList<>();
         Map<String, Integer> nameCount = new HashMap<>();
@@ -50,7 +51,17 @@ public class JUnitTestAssembler {
                 parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
             }
 
+            // return val
+            Class<? extends Throwable> exceptionType = testGeneratorModel.getParsedResult().getExceptionType();
+            Object retVal = exceptionType == null ?
+                    parse(res.getParsedReturnValue(), method.getReturnType()) : null;
+            String exceptionTypeStr = exceptionType == null ? null : exceptionType.getSimpleName();
+
             // handle imports
+            if (exceptionType != null) {
+                imports.add(exceptionType.getPackageName());
+            }
+
             for (Class parameterType : method.getParameterTypes()) {
                 if (!parameterType.isPrimitive())
                     imports.add(parameterType.getPackageName());
@@ -79,7 +90,8 @@ public class JUnitTestAssembler {
                     testName,
                     method.getName(),
                     method.getReturnType().getSimpleName(),
-                    parse(res.getParsedReturnValue(), method.getReturnType()),
+                    retVal,
+                    exceptionTypeStr,
                     res.getParsedParameters().length,
                     parameters,
                     parameterTypes,
@@ -89,8 +101,8 @@ public class JUnitTestAssembler {
         }
 
         ClassModel classModel = new ClassModel(
-                clazz.getPackageName(),
-                clazz.getSimpleName(),
+                packageName,
+                className,
                 new ArrayList<>(imports),
                 methodCallModels,
                 mocksExist);
