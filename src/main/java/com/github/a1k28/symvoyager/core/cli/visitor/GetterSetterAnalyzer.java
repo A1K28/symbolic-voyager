@@ -1,23 +1,23 @@
 package com.github.a1k28.symvoyager.core.cli.visitor;
 
-import lombok.RequiredArgsConstructor;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 
-@RequiredArgsConstructor
 public class GetterSetterAnalyzer {
     private int lines;
-    private final Method method;
 
     public static boolean isGetterOrSetter(Method method) {
         try {
             if ((method.getName().startsWith("get") && "void".equals(method.getReturnType().toString()))
                     || (method.getName().startsWith("set") && "void".equals(method.getReturnType().toString()))) {
-                GetterSetterAnalyzer analyzer = new GetterSetterAnalyzer(method);
+                GetterSetterAnalyzer analyzer = new GetterSetterAnalyzer();
                 analyzer.analyze(method);
                 return analyzer.lines < 5;
             }
