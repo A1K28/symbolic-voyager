@@ -169,13 +169,19 @@ public class SatisfiabilityHandler {
             evaluated = handleObjectSatisfiability(methodPath, expr);
         } else if (SortType.NULL.equals(expr.getSort())) {
             evaluated = null;
-        } else if (expr instanceof RatNum) {
-            evaluated = ((RatNum) model.eval(expr, true)).toDecimalString(12);
         } else if (expr.getSort().getClass() == FPSort.class) {
             // TODO: handle this
             evaluated = "0";
         } else {
             Expr evalExpr = model.eval(expr, true);
+            evaluated = evalExpr;
+
+            if (evalExpr instanceof RatNum) {
+                evaluated = ((RatNum) model.eval(expr, true)).toDecimalString(12);
+            } else if (SortType.NULL.equals(evalExpr.getSort())) {
+                evaluated = null;
+            }
+
 //            if (sVar.getType() == VarType.FIELD) {
 //                evalExpr = handleFieldSatisfiability(expr, evalExpr);
 //            }
@@ -184,8 +190,6 @@ public class SatisfiabilityHandler {
             BoolExpr assertion = ctx.mkEq(expr, evalExpr);
             if (!ctx.containsAssertion(assertion))
                 solver.add(assertion);
-
-            evaluated = SortType.NULL.equals(evalExpr.getSort()) ? null : evalExpr;
         }
 
         log.debug(evaluated + " - " + sVar.getName());
