@@ -4,6 +4,8 @@ import com.github.a1k28.symvoyager.core.z3extended.model.StatusDTO;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @NoArgsConstructor
 @AllArgsConstructor
 public class NOPService {
@@ -33,6 +35,10 @@ public class NOPService {
 
     public void calculate2(int a) {
         System.out.println("ASD");
+    }
+
+    public static BigDecimal convFromMU(long value) {
+        return null;
     }
 
     public Integer calculate(Integer a, Integer b) {

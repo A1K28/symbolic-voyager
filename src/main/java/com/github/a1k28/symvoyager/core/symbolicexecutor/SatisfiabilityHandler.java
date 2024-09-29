@@ -156,10 +156,10 @@ public class SatisfiabilityHandler {
         if (status != Status.SATISFIABLE)
             throw new IllegalStateException("Unknown state: " + status);
 
-        Model model = solver.getModel();
-
-        Expr evalExpr = model.eval(expr, true);
         Object evaluated;
+        Model model = solver.getModel();
+        Expr evalExpr = model.eval(expr, true);
+
         if (SortType.MAP.equals(evalExpr.getSort())) {
             evaluated = handleMapSatisfiability(expr);
         } else if (SortType.ARRAY.equals(evalExpr.getSort())) {
@@ -172,27 +172,18 @@ public class SatisfiabilityHandler {
             evaluated = null;
         } else if (SortType.CLASS.equals(evalExpr.getSort())) {
             evaluated = sVar.getClassType();
+        } else if (evalExpr instanceof RatNum e) {
+            evaluated = e.toDecimalString(12);
         } else if (evalExpr.getSort().getClass() == FPSort.class) {
             // TODO: handle this
             evaluated = "0";
         } else {
-//            Expr evalExpr = model.eval(expr, true);
-            evaluated = evalExpr;
-
-            if (evalExpr instanceof RatNum e) {
-                evaluated = e.toDecimalString(12);
-            } else if (SortType.NULL.equals(evalExpr.getSort())) {
-                evaluated = null;
-            }
-
-//            if (sVar.getType() == VarType.FIELD) {
-//                evalExpr = handleFieldSatisfiability(expr, evalExpr);
-//            }
-
             // this is required to keep an accurate solver state
             BoolExpr assertion = ctx.mkEq(expr, evalExpr);
             if (!ctx.containsAssertion(assertion))
                 solver.add(assertion);
+
+            evaluated = evalExpr;
         }
 
         log.debug(evaluated + " - " + sVar.getName());

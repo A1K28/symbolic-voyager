@@ -49,10 +49,12 @@ public class JUnitTestAssembler {
                     .map(Class::getSimpleName).toList();
 
             List<Object> parameters = new ArrayList<>();
+            List<String> parameterExtensions = new ArrayList<>();
             List<Boolean> shouldDeserializeArgs = new ArrayList<>();
             for (int i = 0; i < res.getParsedParameters().length; i++) {
                 parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
                 shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
+                parameterExtensions.add(getExtension(method.getParameterTypes()[i]));
             }
 
             // return val
@@ -60,6 +62,7 @@ public class JUnitTestAssembler {
             boolean shouldDeserializeRetVal = shouldSerialize(retType);
             Object retVal = exceptionType == null ?
                     parse(res.getParsedReturnValue(), retType) : null;
+            String retExtension = getExtension(retType);
             String exceptionTypeStr = exceptionType == null ? null : exceptionType.getSimpleName();
 
             // handle imports
@@ -96,10 +99,12 @@ public class JUnitTestAssembler {
                     method.getName(),
                     retType.getSimpleName(),
                     retVal,
+                    retExtension,
                     shouldDeserializeRetVal,
                     exceptionTypeStr,
                     res.getParsedParameters().length,
                     parameters,
+                    parameterExtensions,
                     parameterTypes,
                     shouldDeserializeArgs,
                     mockModels.size(),
@@ -171,15 +176,18 @@ public class JUnitTestAssembler {
 
             String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
             String retTypeStr = retType.getSimpleName();
+            String retExtension = getExtension(retType);
             if ("void".equals(retTypeStr)) retTypeStr = null;
 
             List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
                     .map(Class::getSimpleName).toList();
             List<Object> parameters = new ArrayList<>();
             List<Boolean> shouldDeserializeArgs = new ArrayList<>();
+            List<String> methodMockExtensions = new ArrayList<>();
             for (int i = 0; i < args.length; i++) {
                 parameters.add(parse(args[i], method.getParameterTypes()[i]));
                 shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
+                methodMockExtensions.add(getExtension(method.getParameterTypes()[i]));
             }
 
             List<String> mockType = new ArrayList<>();
@@ -199,9 +207,11 @@ public class JUnitTestAssembler {
                     parameterTypes,
                     mockType,
                     shouldDeserializeArgs,
+                    methodMockExtensions,
                     retValSerialized,
                     isStub,
                     retTypeStr,
+                    retExtension,
                     shouldDeserializeRetVal,
                     exceptionName);
             result.add(model);
@@ -219,5 +229,12 @@ public class JUnitTestAssembler {
                 clazz == Float.class || clazz == float.class ||
                 clazz == Double.class || clazz == double.class ||
                 clazz == Character.class || clazz == char.class);
+    }
+
+    private static String getExtension(Class clazz) {
+        if (clazz == Long.class || clazz == long.class) return "l";
+        if (clazz == Float.class || clazz == float.class) return "f";
+        if (clazz == Double.class || clazz == double.class) return "d";
+        return "";
     }
 }

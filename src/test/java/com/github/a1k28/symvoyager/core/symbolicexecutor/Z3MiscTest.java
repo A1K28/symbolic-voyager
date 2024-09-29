@@ -1,14 +1,14 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
 import com.github.a1k28.junitengine.BasicTest;
-import com.github.a1k28.symvoyager.core.z3extended.model.CustomerInfoDTO;
+import com.github.a1k28.junitengine.SymbolicTest;
 import com.github.a1k28.symvoyager.core.z3extended.model.StatusDTO;
 import com.github.a1k28.symvoyager.outsidescope.API;
 import com.github.a1k28.symvoyager.outsidescope.DependentService;
 import com.github.a1k28.symvoyager.outsidescope.NOPService;
-import com.github.a1k28.junitengine.SymbolicTest;
 import org.junit.jupiter.api.DisplayName;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -555,6 +555,10 @@ public class Z3MiscTest {
     @SymbolicTest({0,1,2})
     @DisplayName("test_interface_mock_1")
     public int test_interface_mock_1(long k) {
+        BigDecimal val = NOPService.convFromMU(k);
+        if (val.equals(k))
+            return -1;
+
         boolean b = k%2 == 0;
         if (b)
             return 0;

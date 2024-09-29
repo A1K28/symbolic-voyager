@@ -38,7 +38,7 @@ public class ${cm.className}Test {
         <#if mock.shouldDeserializeArgs[param?index]>
         params${mock?index}[${param?index}] = deserialize(${param}, ${mock.parameterTypes[param?index]}.class);
         <#else>
-        params${mock?index}[${param?index}] = ${param};
+        params${mock?index}[${param?index}] = ${param}${mock.methodMockExtensions[param?index]};
         </#if>
         <#else>
         <#if mock.mockType[param?index]??>
@@ -60,7 +60,7 @@ public class ${cm.className}Test {
         <#if mock.shouldDeserializeRetVal>
         ${mock.retType} retVal${mock?index} = deserialize(${mock.retVal}, ${mock.retType}.class);
         <#else>
-        ${mock.retType} retVal${mock?index} = ${mock.retVal};
+        ${mock.retType} retVal${mock?index} = ${mock.retVal}${mock.retExtension};
         </#if>
         when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenReturn(retVal${mock?index});
         <#else>
@@ -79,7 +79,7 @@ public class ${cm.className}Test {
         <#if mock.shouldDeserializeRetVal>
         ${mock.retType} retVal${mock?index} = deserialize(${mock.retVal}, ${mock.retType}.class);
         <#else>
-        ${mock.retType} retVal${mock?index} = ${mock.retVal};
+        ${mock.retType} retVal${mock?index} = ${mock.retVal}${mock.retExtension};
         </#if>
         when(${mock.type}.class, "${mock.methodName}").thenReturn(retVal${mock?index});
         <#else>
@@ -107,15 +107,7 @@ public class ${cm.className}Test {
         <#if mm.shouldDeserializeArgs[param?index]>
         params[${param?index}] = deserialize(${param}, ${mm.parameterTypes[param?index]}.class);
         <#else>
-        <#if mm.parameterTypes[param?index] == 'long'>
-        params[${param?index}] = ${param}l;
-        <#else>
-        <#if mm.parameterTypes[param?index] == 'float'>
-        params[${param?index}] = ${param}f;
-        <#else>
-        params[${param?index}] = ${param};
-        </#if>
-        </#if>
+        params[${param?index}] = ${param}${mm.parameterExtensions[param?index]};
         </#if>
         </#list>
 
@@ -140,7 +132,7 @@ public class ${cm.className}Test {
         <#if mm.shouldDeserializeRetVal>
         ${mm.returnType} expected = deserialize(${mm.returnValue}, ${mm.returnType}.class);
         <#else>
-        ${mm.returnType} expected = ${mm.returnValue};
+        ${mm.returnType} expected = ${mm.returnValue}${mm.retExtension};
         </#if>
         Assertions.assertEquals(expected, actual);
         </#if>

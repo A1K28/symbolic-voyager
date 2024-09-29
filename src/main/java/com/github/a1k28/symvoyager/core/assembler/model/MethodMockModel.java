@@ -20,10 +20,12 @@ public class MethodMockModel {
     private List<String> parameterTypes;
     private List<String> mockType;
     private List<Boolean> shouldDeserializeArgs;
+    private List<String> methodMockExtensions;
 
     private Object retVal;
     private Boolean isStub;
     private String retType;
+    private String retExtension;
     private Boolean shouldDeserializeRetVal;
     private String exceptionType;
 }

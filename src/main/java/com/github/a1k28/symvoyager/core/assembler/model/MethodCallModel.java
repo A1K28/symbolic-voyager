@@ -17,11 +17,13 @@ public class MethodCallModel {
 
     private String returnType;
     private Object returnValue;
+    private String retExtension;
     private Boolean shouldDeserializeRetVal;
     private String exceptionType;
 
     private int paramCount;
     private List<Object> parameters;
+    private List<String> parameterExtensions;
     private List<String> parameterTypes;
     private List<Boolean> shouldDeserializeArgs;
 
