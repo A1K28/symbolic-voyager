@@ -44,9 +44,6 @@ public class CommandLineRunner {
                 ParsedResult res = evalMap.get(satisfiableResult);
                 testGeneratorModels.add(new TestGeneratorModel(method, res));
             }
-
-            // TODO: remove
-            break;
         }
 
         JUnitTestAssembler.assembleTest(clazz, testGeneratorModels);
