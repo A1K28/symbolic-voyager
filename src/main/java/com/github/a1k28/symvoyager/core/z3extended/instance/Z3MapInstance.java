@@ -109,6 +109,8 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
         Expr defaultValue = ctx.mkNull();
         if (model.isSizeUnknown()) {
             defaultValue = ctx.mkFreshConst("freshReturnVal", sortUnion.getGenericSort());
+            defaultValue = ctx.mkITE(isEmpty, defaultValue, mapSort.getValue(res));
+            put(var1, key, defaultValue, false, false);
         }
         return sortUnion.unwrapValue(mapSort.getValue(res), defaultValue);
     }
@@ -122,11 +124,11 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
     }
 
     public Expr put(Expr var1, Expr key, Expr value) {
-        return put(var1, key, value, false);
+        return put(var1, key, value, false, true);
     }
 
     public Expr putIfAbsent(Expr var1, Expr key, Expr value) {
-        return put(var1, key, value, true);
+        return put(var1, key, value, true, true);
     }
 
     public Expr size(Expr var1) {
@@ -363,7 +365,7 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
         return model.getSize();
     }
 
-    private Expr put(Expr var1, Expr key, Expr value, boolean shouldBeAbsent) {
+    private Expr put(Expr var1, Expr key, Expr value, boolean shouldBeAbsent, boolean shouldWrap) {
         MapModel model = copyModel(getModel(var1));
         ArrayExpr map = model.getArray();
 
@@ -373,7 +375,8 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
         BoolExpr exists = existsByKeyCondition(retrieved, keyWrapped);
         Expr previous = ctx.mkITE(exists, retrieved, mapSort.getSentinel());
 
-        value = sortUnion.wrapValue(value);
+        if (shouldWrap)
+            value = sortUnion.wrapValue(value);
         if (shouldBeAbsent)
             value = ctx.mkITE(exists, mapSort.getValue(previous), value);
 
