@@ -28,11 +28,11 @@ public class ${cm.className}Test {
     @Test
     public void test_${mm.testName}() throws Throwable {
         <#if mm.mockCount != 0 >
-        // define mocks
         <#list mm.methodMocks as mock>
-        <#if mock.paramCount != 0 >
+        <#if mock.paramCount != 0>
+        <#if mock.isStub == false>
+        // define mock params
         Object[] params${mock?index} = new Object[${mock.paramCount}];
-        // define parameters
         <#list mock.parameters as param>
         <#if param??>
         <#if mock.shouldDeserializeArgs[param?index]>
@@ -48,11 +48,13 @@ public class ${cm.className}Test {
         </#if>
         </#if>
         </#list>
+        </#if>
         <#if mock.exceptionType??>
         when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenThrow(${mock.exceptionType}.class);
         <#else>
         <#if mock.isStub>
-        when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenReturnStub();
+        when(${mock.type}.class, "${mock.methodName}"<#list 0..<mock.paramCount as i>, any()</#list>)
+                .thenReturnStub(${mock.retType}.class);
         <#else>
         <#if mock.retVal??>
         <#if mock.shouldDeserializeRetVal>
@@ -71,7 +73,7 @@ public class ${cm.className}Test {
         when(${mock.type}.class, "${mock.methodName}").thenThrow(${mock.exceptionType}.class);
         <#else>
         <#if mock.isStub>
-        when(${mock.type}.class, "${mock.methodName}").thenReturnStub();
+        when(${mock.type}.class, "${mock.methodName}").thenReturnStub(${mock.retType}.class);
         <#else>
         <#if mock.retVal??>
         <#if mock.shouldDeserializeRetVal>
@@ -105,19 +107,26 @@ public class ${cm.className}Test {
         <#if mm.shouldDeserializeArgs[param?index]>
         params[${param?index}] = deserialize(${param}, ${mm.parameterTypes[param?index]}.class);
         <#else>
+        <#if mm.parameterTypes[param?index] == 'long'>
+        params[${param?index}] = ${param}l;
+        <#else>
+        <#if mm.parameterTypes[param?index] == 'float'>
+        params[${param?index}] = ${param}f;
+        <#else>
         params[${param?index}] = ${param};
         </#if>
-            <#--        </#if>-->
+        </#if>
+        </#if>
         </#list>
 
         </#if>
+        // call method
         <#if mm.exceptionType??>
         assertThrows(${mm.exceptionType}.class, () -> {
             instance.${mm.methodName}(
                 <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
         });
         <#else>
-        // call method
         <#if mm.returnType != "void">
         ${mm.returnType} actual = instance.${mm.methodName}(
                 <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);

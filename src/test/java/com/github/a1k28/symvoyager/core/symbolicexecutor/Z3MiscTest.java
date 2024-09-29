@@ -1,5 +1,8 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
+import com.github.a1k28.junitengine.BasicTest;
+import com.github.a1k28.symvoyager.core.z3extended.model.CustomerInfoDTO;
+import com.github.a1k28.symvoyager.core.z3extended.model.StatusDTO;
 import com.github.a1k28.symvoyager.outsidescope.API;
 import com.github.a1k28.symvoyager.outsidescope.DependentService;
 import com.github.a1k28.symvoyager.outsidescope.NOPService;
@@ -9,6 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.github.a1k28.supermock.MockAPI.when;
 
 public class Z3MiscTest {
     @SymbolicTest({0,1})
@@ -547,20 +552,42 @@ public class Z3MiscTest {
         return 7;
     }
 
-    @SymbolicTest({0})
+    @SymbolicTest({0,1})
     @DisplayName("test_interface_mock_1")
-    public int test_interface_mock_1(String a, String b) {
+    public int test_interface_mock_1(long k) {
         API api = NOPService.getInstance();
-        return 0;
+        String res = api.authenticate((int)k);
+        if (res.equals("ASD"))
+            return 0;
+        return 1;
+    }
+    
+    @BasicTest
+    @DisplayName("ASDADS")
+    public void adwadawdawd() {
+//        when(API.class, "authenticate", 4).thenReturn("ASD");
+        StatusDTO statusDTO = new StatusDTO();
+        statusDTO.setMessage("ASD");
+//        when(NOPService.class, "getStatus", "").thenReturn(statusDTO);
+        when(API.class, "getCustomerInfoStatus", "").thenReturn(statusDTO);
+        when(NOPService.class, "getInstance").thenReturnStub(API.class);
+//        when(API.class, "getCustomerInfoStatus", "").thenThrow(IndexOutOfBoundsException.class);
+
+        API api = NOPService.getInstance();
+//        String res = api.authenticate(4);
+//        NOPService nopService = new NOPService();
+        StatusDTO res = api.getCustomerInfoStatus("");
+
+        assert res.getMessage().equals("ASD");
     }
 
     private NOPService getService() {
-        return NOPService.getInstance(null);
+        return NOPService.getInstance(new  DependentService());
     }
 
     private void test_method_mock_with_nested_try_catch_1_helper(int a) {
         NOPService nopService = new NOPService();
-        nopService.calculate(a);
+        nopService.calculate2(a);
     }
 
     private int test_method_mock_with_nested_try_catch_2_helper(int a, int b) {

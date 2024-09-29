@@ -70,8 +70,7 @@ public class SatisfiabilityHandler {
         List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
         List<SVarEvaluated> parametersEvaluated = new ArrayList<>();
         List<SMethodMockEvaluated> mockedMethodsEvaluated = new ArrayList<>();
-        List<SVar> symbolicVars = sMethodPath.getSymbolicVarStack().getAll();
-        symbolicVars.addAll(sMethodPath.getClassInstance().getSymbolicFieldStack().getAll());
+        List<SVar> symbolicVars = sMethodPath.getAllSymbolicVars();
         for (SVar var : symbolicVars) {
             if (!var.isDeclaration()) continue;
             if (var.getType() != VarType.PARAMETER
@@ -156,6 +155,7 @@ public class SatisfiabilityHandler {
         Status status = solver.check();
         if (status != Status.SATISFIABLE)
             throw new IllegalStateException("Unknown state: " + status);
+
         Model model = solver.getModel();
 
         Object evaluated;
@@ -167,16 +167,36 @@ public class SatisfiabilityHandler {
             evaluated = handleSetSatisfiability(expr);
         } else if (SortType.OBJECT.equals(expr.getSort())) {
             evaluated = handleObjectSatisfiability(methodPath, expr);
+        } else if (SortType.NULL.equals(expr.getSort())) {
+            evaluated = null;
+        } else if (expr.getSort().getClass() == FPSort.class) {
+            // TODO: handle this
+            evaluated = "0";
         } else {
-            evaluated = model.eval(expr, true);
+            Expr evalExpr = model.eval(expr, true);
+//            if (sVar.getType() == VarType.FIELD) {
+//                evalExpr = handleFieldSatisfiability(expr, evalExpr);
+//            }
+
             // this is required to keep an accurate solver state
-            BoolExpr assertion = ctx.mkEq(expr, (Expr) evaluated);
+            BoolExpr assertion = ctx.mkEq(expr, evalExpr);
             if (!ctx.containsAssertion(assertion))
                 solver.add(assertion);
+
+            evaluated = SortType.NULL.equals(evalExpr.getSort()) ? null : evalExpr;
         }
 
         log.debug(evaluated + " - " + sVar.getName());
         return evaluated;
+    }
+
+    private Expr handleFieldSatisfiability(Expr expr, Expr evalExpr) {
+        Expr newExpr = ctx.mkFreshConst("freshConst", evalExpr.getSort());
+        BoolExpr condition1 = ctx.mkNot(ctx.mkEq(evalExpr, newExpr));
+        BoolExpr condition2 = ctx.mkEq(expr, newExpr);
+        if (solver.isSatisfiable(ctx.mkAnd(condition1, condition2)))
+            evalExpr = z3t.getDefaultValue(evalExpr.getSort());
+        return evalExpr;
     }
 
     private Object handleMapSatisfiability(Expr expr) {

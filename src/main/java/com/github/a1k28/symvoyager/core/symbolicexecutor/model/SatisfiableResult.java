@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 public class SatisfiableResult {
@@ -32,9 +33,12 @@ public class SatisfiableResult {
     }
 
     public Object getParameter(String name) {
-        return symbolicParameterValues.stream()
+        List<SVarEvaluated> results = symbolicParameterValues.stream()
                 .filter(e -> name.equals(e.getSvar().getName()))
-                .map(SVarEvaluated::getEvaluated)
-                .findFirst().orElse(null);
+                .limit(1)
+                .toList();
+        if (results.isEmpty())
+            return null;
+        return results.get(0).getEvaluated();
     }
 }

@@ -5,6 +5,7 @@ import com.github.a1k28.symvoyager.core.symbolicexecutor.model.HandlerNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.Getter;
 import sootup.core.jimple.basic.Trap;
@@ -20,7 +21,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 @Getter
-public class SMethodPath {
+public class SMethodPath implements IStack {
     private static final Logger log = Logger.getInstance(SMethodPath.class);
 
     // fixed parameters
@@ -36,6 +37,7 @@ public class SMethodPath {
     private SatisfiableResults satisfiableResults;
     private JumpNode jumpNode;
     private SStack symbolicVarStack;
+    private SStack methodMockStack;
 
     public SMethodPath(SClassInstance classInstance, Body body, Method method) {
         this.classInstance = classInstance;
@@ -48,18 +50,19 @@ public class SMethodPath {
 
     public SMethodPath(SMethodPath skeleton,
                        SParamList paramList,
-                       JumpNode jumpNode,
-                       SStack symbolicVarStack) {
+                       JumpNode jumpNode) {
         this.classInstance = skeleton.classInstance;
         this.body = skeleton.body;
         this.method = skeleton.method;
         this.root = skeleton.root;
         this.sNodeMap = skeleton.sNodeMap;
         this.handlerMap = skeleton.handlerMap;
+        this.methodMockStack = skeleton.methodMockStack;
         this.paramList = paramList;
         this.satisfiableResults = new SatisfiableResults(new ArrayList<>(), method);
         this.jumpNode = jumpNode;
-        this.symbolicVarStack = symbolicVarStack;
+        this.symbolicVarStack = new SStack();
+        this.methodMockStack = new SStack();
     }
 
     public SNode getNode(Stmt unit) {
@@ -103,11 +106,20 @@ public class SMethodPath {
         return sNode;
     }
 
-    public SMethodPath getTopMethodPath() {
-        if (jumpNode != null) {
-            return jumpNode.getMethodPath().getTopMethodPath();
-        }
-        return this;
+    public SStack getMethodMockStack() {
+        return getTopMethodPath().methodMockStack;
+    }
+
+    public List<SVar> getAllSymbolicVars() {
+        List<SVar> vars = symbolicVarStack.getAll();
+        vars.addAll(classInstance.getSymbolicFieldStack().getAll());
+        vars.addAll(getTopMethodPath().methodMockStack.getAll());
+        return vars;
+    }
+
+    public void addMethodMock(SVar var) {
+        this.symbolicVarStack.add(var);
+        this.getTopMethodPath().methodMockStack.add(var);
     }
 
     public Optional<HandlerNode> findHandlerNode(SNode node, Class<?> type) {
@@ -179,6 +191,12 @@ public class SMethodPath {
         }
     }
 
+    private SMethodPath getTopMethodPath() {
+        if (jumpNode != null)
+            return jumpNode.getMethodPath().getTopMethodPath();
+        return this;
+    }
+
     public void print() {
         this.root.print(2);
         log.empty();
@@ -218,5 +236,21 @@ public class SMethodPath {
         }
         log.warn("Could not identify: " + unit);
         return SType.OTHER;
+    }
+
+    @Override
+    public void push() {
+        symbolicVarStack.push();
+        classInstance.getSymbolicFieldStack().push();
+        if (methodMockStack != null)
+            methodMockStack.push();
+    }
+
+    @Override
+    public void pop() {
+        symbolicVarStack.pop();
+        classInstance.getSymbolicFieldStack().pop();
+        if (methodMockStack != null)
+            methodMockStack.pop();
     }
 }

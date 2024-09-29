@@ -7,51 +7,60 @@ import com.github.a1k28.symvoyager.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.microsoft.z3.*;
 import lombok.Getter;
+import sootup.core.types.PrimitiveType;
+import sootup.core.types.Type;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 
 @Getter
 public class Z3ExtendedContext extends Context implements IStack {
-    private final Expr sentinel;
-
     private final Z3ExtendedSolver solver;
+
+    private final List<IStack> stacks;
     private final Z3ClassInstance classInstance;
     private final Z3MethodMockInstance methodMockInstance;
     private final Z3MapInstance mapInstance;
     private final Z3LinkedListInstance linkedListInstance;
+
+    private final Expr sentinel;
 
     public Z3ExtendedContext() {
         super();
         Z3CachingFactory sortState = new Z3CachingFactory(this);
         Z3SortUnion sortUnion = new Z3SortUnion(this);
 
-        this.sentinel = this.mkConst("sentinel", SortType.SENTINEL.value(this));
-
-        Solver slvr = this.mkSolver();
-        this.solver = new Z3ExtendedSolver(this, slvr, sortUnion);
+        this.solver = new Z3ExtendedSolver(this, this.mkSolver(), sortUnion);
 
         this.classInstance = new Z3ClassInstance(this, solver, sortUnion);
         this.methodMockInstance = new Z3MethodMockInstance(this, solver, sortUnion);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
+        this.stacks = List.of(classInstance, methodMockInstance, mapInstance, linkedListInstance);
+
+        this.sentinel = this.mkConst("sentinel", SortType.SENTINEL.value(this));
     }
 
     @Override
     public void push() {
-        this.classInstance.push();
-        this.methodMockInstance.push();
-        this.mapInstance.push();
-        this.linkedListInstance.push();
+        stacks.forEach(IStack::push);
     }
 
     @Override
     public void pop() {
-        this.classInstance.pop();
-        this.methodMockInstance.pop();
-        this.mapInstance.pop();
-        this.linkedListInstance.pop();
+        stacks.forEach(IStack::pop);
+    }
+
+    public BoolExpr mkEq(Expr<?> var1, Expr<?> var2) {
+        boolean e1IsNull = SortType.NULL.equals(var1.getSort());
+        boolean e2IsNull = SortType.NULL.equals(var2.getSort());
+        if (e1IsNull && e2IsNull) return this.mkBool(true);
+        if (e1IsNull ^ e2IsNull) return this.mkBool(false);
+//        if (e1IsNull) return super.mkEq(var2, mkFreshConst("freshConst", var2.getSort()));
+//        if (e2IsNull) return super.mkEq(var1, mkFreshConst("freshConst", var1.getSort()));
+        return super.mkEq(var1, var2);
     }
 
     // strings

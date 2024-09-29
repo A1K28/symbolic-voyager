@@ -18,8 +18,12 @@ public class MethodMockModel {
     private int paramCount;
     private List<Object> parameters;
     private List<String> parameterTypes;
+    private List<String> mockType;
+    private List<Boolean> shouldDeserializeArgs;
 
-    private String retVal;
+    private Object retVal;
+    private Boolean isStub;
     private String retType;
+    private Boolean shouldDeserializeRetVal;
     private String exceptionType;
 }

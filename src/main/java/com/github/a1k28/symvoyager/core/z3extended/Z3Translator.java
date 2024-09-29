@@ -10,10 +10,8 @@ import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.core.z3extended.model.SortType;
 import com.github.a1k28.symvoyager.core.z3extended.struct.MethodModel;
 import com.github.a1k28.symvoyager.helper.Logger;
+import com.microsoft.z3.*;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntNum;
-import com.microsoft.z3.IntSort;
-import com.microsoft.z3.Sort;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.constant.*;
@@ -139,28 +137,17 @@ public class Z3Translator {
                 e1 = ctx.mkBool(val == 1);
             }
 
-            boolean e1IsNull = SortType.NULL.equals(e1.getSort());
-            boolean e2IsNull = SortType.NULL.equals(e2.getSort());
-
             if (condition instanceof JEqExpr) {
-                if (e1IsNull && e2IsNull) return ctx.mkBool(true);
-                if (e1IsNull ^ e2IsNull) return ctx.mkBool(false);
                 return ctx.mkEq(e1, e2);
             } else if (condition instanceof JNeExpr) {
-                if (e1IsNull && e2IsNull) return ctx.mkBool(false);
-                if (e1IsNull ^ e2IsNull) return ctx.mkBool(true);
                 return ctx.mkNot(ctx.mkEq(e1, e2));
             } else if (condition instanceof JGtExpr) {
-                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkGt(e1, e2);
             } else if (condition instanceof JGeExpr) {
-                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkGe(e1, e2);
             } else if (condition instanceof JLtExpr) {
-                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkLt(e1, e2);
             } else if (condition instanceof JLeExpr) {
-                if (e1IsNull || e2IsNull) return ctx.mkBool(false);
                 return ctx.mkLe(e1, e2);
             }
         }
@@ -406,6 +393,17 @@ public class Z3Translator {
         if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
             return ctx.mkLe(e1, e2);
         throw new RuntimeException("Condition could not be translated: " + binop);
+    }
+
+    public Expr getDefaultValue(Sort sort) {
+        Class clazz = sort.getClass();
+        if (clazz == BoolSort.class)
+            return ctx.mkBool(false);
+        if (clazz == IntSort.class)
+            return ctx.mkInt(0);
+        if (clazz == FPSort.class)
+            return ctx.mkFP(0, ctx.mkFPSort64());
+        return ctx.mkNull();
     }
 
     private Expr handleMethodCall(AbstractInvokeExpr invoke,

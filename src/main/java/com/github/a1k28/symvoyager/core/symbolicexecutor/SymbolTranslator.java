@@ -77,7 +77,9 @@ public class SymbolTranslator {
                     mockRetVal = parse(sVarEvaluated.getEvaluated(), mockRetType);
                 }
                 for (int i = 0; i < mockParamClassTypes.length; i++) {
-                    mockParams.add(parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]));
+                    Object v = parse(sVarEvaluated.getParametersEvaluated().get(i), mockParamClassTypes[i]);
+                    if (v == null) mockParams.add(MockType.ANY);
+                    else mockParams.add(v);
                 }
 
                 String uniqueKey = sVarEvaluated.getMethod().toString()+";"+
@@ -99,6 +101,9 @@ public class SymbolTranslator {
     }
 
     private static <T> T parse(Object value, Class type) {
+        if (value == null)
+            return null;
+
         if (type == Boolean.class || type == boolean.class)
             return (T) Boolean.valueOf(value.toString());
         if (type == Byte.class || type == byte.class)
@@ -145,9 +150,6 @@ public class SymbolTranslator {
 
         if (value instanceof ClassInstanceVar v)
             return (T) parseObject(v);
-
-        if (value == null)
-            return null;
 
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
     }

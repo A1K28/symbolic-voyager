@@ -61,7 +61,8 @@ public class SymbolicExecutor {
             throws ClassNotFoundException {
         SMethodPath methodPathSkeleton = ctx.getClassInstance()
                 .getMethodPath(classInstance, method);
-        SMethodPath sMethodPath = new SMethodPath(methodPathSkeleton, paramList, jumpNode, new SStack());
+        SMethodPath sMethodPath = new SMethodPath(
+                methodPathSkeleton, paramList, jumpNode);
         printMethod(classInstance, method);
         push(sMethodPath);
         analyzePaths(sMethodPath, sMethodPath.getRoot());
@@ -153,8 +154,8 @@ public class SymbolicExecutor {
                 return SType.OTHER;
             }
 
-//            // handle mocks
-//            if (wrapped.getSType() == SType.INVOKE_MOCK) {
+//            if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR
+//                    && method.getPropagationType() != MethodPropagationType.PROPAGATE) {
 //                String name = node.getUnit().toString();
 //                List<Expr> params = translateExpressions(method, sMethodPath);
 //                Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
@@ -166,6 +167,19 @@ public class SymbolicExecutor {
 //                return SType.INVOKE_MOCK;
 //            }
 
+//            // handle mocks
+            if (wrapped.getSType() == SType.INVOKE_MOCK) {
+                String name = node.getUnit().toString();
+                List<Expr> params = translateExpressions(method, sMethodPath);
+                Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
+                Expr reference = ctx.getMethodMockInstance().constructor(
+                        javaMethod, params, null, null).getReferenceExpr();
+                SVar var = new SVar(name, reference,
+                        VarType.METHOD_MOCK, null, true);
+                sMethodPath.addMethodMock(var);
+                return SType.INVOKE_MOCK;
+            }
+
             // set all values to default
             if (wrapped.getSType() == SType.INVOKE_SPECIAL_CONSTRUCTOR) {
                 ClassType classType = method.getInvokeExpr().getMethodSignature().getDeclClassType();
@@ -174,10 +188,6 @@ public class SymbolicExecutor {
                 Expr expr = ctx.getClassInstance().constructor(
                         leftOpExpr, SootInterpreter.getClass(classType)).getExpr();
                 ctx.getClassInstance().initialize(expr, type);
-            }
-
-            if (method.getPropagationType() != MethodPropagationType.PROPAGATE) {
-                return SType.OTHER;
             }
 
             JumpNode jumpNode = new JumpNode(sMethodPath, node);
@@ -203,7 +213,7 @@ public class SymbolicExecutor {
                 JumpNode jumpNode = new JumpNode(sMethodPath, node);
                 propagate(methodExpr, sMethodPath, jumpNode);
                 return SType.INVOKE;
-            } else {
+            } else if (methodExpr.getPropagationType() == MethodPropagationType.MODELLED) {
                 Class<?> type = SootInterpreter.translateType(rightOp.getType());
                 Expr expr = z3t.callProverMethod(rightOpHolder.asMethod(), rightOpVarType, sMethodPath);
                 // TODO: handle complex nested objects within parameters
@@ -228,7 +238,7 @@ public class SymbolicExecutor {
                     method, params, null, retValExpr).getReferenceExpr();
             SVar var = new SVar(z3t.getValueName(leftOp), reference,
                     VarType.METHOD_MOCK, classType, true);
-            sMethodPath.getSymbolicVarStack().add(var);
+            sMethodPath.addMethodMock(var);
             return SType.INVOKE_MOCK;
         } else {
             Class classType = SootInterpreter.translateType(rightOp.getType());
@@ -287,7 +297,7 @@ public class SymbolicExecutor {
             refName = node.getUnit().toString();
 
         Expr mockReferenceExpr = sMethodPath.getSymbolicVarStack().get(refName)
-                .orElseGet(() -> sMethodPath.getTopMethodPath().getSymbolicVarStack().get(refName)
+                .orElseGet(() -> sMethodPath.getMethodMockStack().get(refName)
                         .orElseThrow()).getExpr();
 
         List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
@@ -323,12 +333,6 @@ public class SymbolicExecutor {
 
             Class classType = SootInterpreter.translateType(assignStmt.getRightOp().getType());
             z3t.updateSymbolicVar(leftOp, expr, varType, jn.getMethodPath(), classType);
-        }
-
-        SMethodPath topMethodPath = sMethodPath.getTopMethodPath();
-        for (SVar var : sMethodPath.getSymbolicVarStack().getAll()) {
-            if (var.getType() == VarType.METHOD_MOCK)
-                topMethodPath.getSymbolicVarStack().add(var);
         }
 
         List<SNode> children = jn.getNode().getChildren();
@@ -429,15 +433,13 @@ public class SymbolicExecutor {
 
     private void push(SMethodPath sMethodPath) {
         solver.push();
-        sMethodPath.getSymbolicVarStack().push();
-        sMethodPath.getClassInstance().getSymbolicFieldStack().push();
+        sMethodPath.push();
         z3t.getStack().push();
     }
 
     private void pop(SMethodPath sMethodPath) {
         solver.pop();
-        sMethodPath.getSymbolicVarStack().pop();
-        sMethodPath.getClassInstance().getSymbolicFieldStack().pop();
+        sMethodPath.pop();
         z3t.getStack().pop();
     }
 
