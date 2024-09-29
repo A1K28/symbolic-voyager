@@ -20,36 +20,44 @@ public class CommandLineRunner {
     public static void main(String[] args) throws Exception {
         parseCliArgs(args);
         Class clazz = Class.forName(CLIOptions.targetClass);
-
-        promptUserForPropagation();
-
-        SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
         List<TestGeneratorModel> testGeneratorModels = new ArrayList<>();
-        for (Method method : clazz.getDeclaredMethods()) {
-            // skip if void
-            if (Void.class.equals(method.getReturnType())) continue;
+        SymbolicExecutor symbolicExecutor = new SymbolicExecutor();
 
-            // skip if non-public
-            if (!Modifier.isPublic(method.getModifiers())) continue;
+        try(final Scanner reader = new Scanner(System.in)) {
+            promptUserForPropagation(reader);
 
-            // skip getters and setters
-            if (method.getName().startsWith("get") || method.getName().startsWith("set")) continue;
+            for (Method method : clazz.getDeclaredMethods()) {
+                // skip if void
+                if (Void.class.equals(method.getReturnType())) continue;
 
-            symbolicExecutor.refresh();
-            SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
-            Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
+                // skip if non-public
+                if (!Modifier.isPublic(method.getModifiers())) continue;
 
-            // TODO: reduce test cases whose paths are covered by other test cases
-            for (SatisfiableResult satisfiableResult : sr.getResults()) {
-                ParsedResult res = evalMap.get(satisfiableResult);
-                testGeneratorModels.add(new TestGeneratorModel(method, res));
+                // skip getters and setters
+                if (method.getName().startsWith("get") || method.getName().startsWith("set")) continue;
+
+                if (CLIOptions.requireMethodSuggestion) {
+                    System.out.print("Generate test cases for method: " + method + "? (y/N)");
+                    String res = reader.next();
+                    if (!res.equalsIgnoreCase("Y")) continue;
+                }
+
+                symbolicExecutor.refresh();
+                SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
+                Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
+
+                // TODO: reduce test cases whose paths are covered by other test cases
+                for (SatisfiableResult satisfiableResult : sr.getResults()) {
+                    ParsedResult res = evalMap.get(satisfiableResult);
+                    testGeneratorModels.add(new TestGeneratorModel(method, res));
+                }
             }
         }
 
         JUnitTestAssembler.assembleTest(clazz, testGeneratorModels);
     }
 
-    private static void promptUserForPropagation() throws ClassNotFoundException {
+    private static void promptUserForPropagation(final Scanner reader) throws ClassNotFoundException {
         if (CLIOptions.mockableClasses.isEmpty() || CLIOptions.mockablePackages.isEmpty()) {
             Set<String> variableTypes = LocalTypeExtractor
                     .extract(Class.forName(CLIOptions.targetClass)).stream()
@@ -58,30 +66,34 @@ public class CommandLineRunner {
                     .collect(Collectors.toSet());
             if (variableTypes.isEmpty()) return;
 
-            try (final Scanner reader = new Scanner(System.in)) {
-                System.out.print("You have not provided any classes" +
-                        " that should be targeted by supermock (enabled by default)." +
-                        " Would you like me to suggest possible classes? (y/N) ");
-                String res = reader.next();
-                if (!res.equalsIgnoreCase("Y")) {
-                    // if not, then mock all
-                    for (String type : variableTypes) {
-                        CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
-                    }
-                    return;
-                };
-
-                int i = 0;
+            System.out.print("You have not provided any classes" +
+                    " that should be targeted by supermock (enabled by default)." +
+                    " Would you like me to suggest possible classes (total: "
+                    + variableTypes.size() + "? (y/n/I (ignore)) ");
+            String res = reader.next();
+            if (res.equalsIgnoreCase("N")) {
+                // mock all
                 for (String type : variableTypes) {
-                    i++;
-                    System.out.print("(" + i + "/" + variableTypes.size() + ")"
-                            + " Mock " + type + "? (y/n/I (ignore)) ");
-                    res = reader.next();
-                    if (res.equalsIgnoreCase("Y")) {
-                        CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
-                    } else if (res.equalsIgnoreCase("N")) {
-                        CLIOptions.set(CommandFlag.WHITELISTED_CLASSES, type);
-                    }
+                    CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                }
+                return;
+            };
+
+            if (!res.equalsIgnoreCase("Y")) {
+                // ignore all
+                return;
+            };
+
+            int i = 0;
+            for (String type : variableTypes) {
+                i++;
+                System.out.print("(" + i + "/" + variableTypes.size() + ")"
+                        + " Mock " + type + "? (y/n/I (ignore)) ");
+                res = reader.next();
+                if (res.equalsIgnoreCase("Y")) {
+                    CLIOptions.set(CommandFlag.MOCKABLE_CLASSES, type);
+                } else if (res.equalsIgnoreCase("N")) {
+                    CLIOptions.set(CommandFlag.WHITELISTED_CLASSES, type);
                 }
             }
         }

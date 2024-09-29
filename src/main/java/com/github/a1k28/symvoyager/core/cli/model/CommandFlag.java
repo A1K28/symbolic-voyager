@@ -11,7 +11,8 @@ public enum CommandFlag {
     MOCKABLE_PACKAGES("mp", "mockable-packages", true, "Packages that should be mocked (comma separated list)."),
     RECURSION_LIMIT("rc", "recursion-limit", true, "Recursion/Loop limit. Default value is 20."),
     LOG_LEVEL("ll", "log-level", true, "Possible values: INFO, DEBUG, TRACE"),
-    DISABLE_MOCK_EXPLORATION("dme", "disable-mock-exploration", true, "Possible values: true, false (default)");
+    DISABLE_MOCK_EXPLORATION("dme", "disable-mock-exploration", true, "Possible values: true, false (default)"),
+    REQUIRE_METHOD_SUGGESTION("rms", "require-method-suggestion", true, "Possible values: true, false (default)");
 
     private final String option;
     private final String longOption;
