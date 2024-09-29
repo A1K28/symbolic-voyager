@@ -169,6 +169,8 @@ public class SatisfiabilityHandler {
             evaluated = handleObjectSatisfiability(methodPath, expr);
         } else if (SortType.NULL.equals(expr.getSort())) {
             evaluated = null;
+        } else if (expr instanceof RatNum) {
+            evaluated = ((RatNum) model.eval(expr, true)).toDecimalString(12);
         } else if (expr.getSort().getClass() == FPSort.class) {
             // TODO: handle this
             evaluated = "0";
