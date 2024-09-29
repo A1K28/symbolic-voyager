@@ -158,26 +158,29 @@ public class SatisfiabilityHandler {
 
         Model model = solver.getModel();
 
+        Expr evalExpr = model.eval(expr, true);
         Object evaluated;
-        if (SortType.MAP.equals(expr.getSort())) {
+        if (SortType.MAP.equals(evalExpr.getSort())) {
             evaluated = handleMapSatisfiability(expr);
-        } else if (SortType.ARRAY.equals(expr.getSort())) {
+        } else if (SortType.ARRAY.equals(evalExpr.getSort())) {
             evaluated = handleListSatisfiability(expr);
-        } else if (SortType.SET.equals(expr.getSort())) {
+        } else if (SortType.SET.equals(evalExpr.getSort())) {
             evaluated = handleSetSatisfiability(expr);
-        } else if (SortType.OBJECT.equals(expr.getSort())) {
+        } else if (SortType.OBJECT.equals(evalExpr.getSort())) {
             evaluated = handleObjectSatisfiability(methodPath, expr);
-        } else if (SortType.NULL.equals(expr.getSort())) {
+        } else if (SortType.NULL.equals(evalExpr.getSort())) {
             evaluated = null;
-        } else if (expr.getSort().getClass() == FPSort.class) {
+        } else if (SortType.CLASS.equals(evalExpr.getSort())) {
+            evaluated = sVar.getClassType().getName()+".class";
+        } else if (evalExpr.getSort().getClass() == FPSort.class) {
             // TODO: handle this
             evaluated = "0";
         } else {
-            Expr evalExpr = model.eval(expr, true);
+//            Expr evalExpr = model.eval(expr, true);
             evaluated = evalExpr;
 
-            if (evalExpr instanceof RatNum) {
-                evaluated = ((RatNum) model.eval(expr, true)).toDecimalString(12);
+            if (evalExpr instanceof RatNum e) {
+                evaluated = e.toDecimalString(12);
             } else if (SortType.NULL.equals(evalExpr.getSort())) {
                 evaluated = null;
             }

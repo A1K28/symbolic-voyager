@@ -210,7 +210,7 @@ public class JUnitTestAssembler {
     }
 
     private static boolean shouldSerialize(Class clazz) {
-        return !(clazz == String.class ||
+        return !(clazz == String.class || clazz == Class.class ||
                 clazz == Boolean.class || clazz == boolean.class ||
                 clazz == Byte.class || clazz == byte.class ||
                 clazz == Short.class || clazz == short.class ||

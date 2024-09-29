@@ -166,6 +166,10 @@ public class SymbolTranslator {
             return (T) new BigDecimal((String) value);
         }
 
+        if (type == Class.class) {
+            return (T) value;
+        }
+
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
     }
 
