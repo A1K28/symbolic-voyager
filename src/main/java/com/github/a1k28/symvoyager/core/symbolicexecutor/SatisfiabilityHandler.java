@@ -171,7 +171,7 @@ public class SatisfiabilityHandler {
         } else if (SortType.NULL.equals(evalExpr.getSort())) {
             evaluated = null;
         } else if (SortType.CLASS.equals(evalExpr.getSort())) {
-            evaluated = sVar.getClassType().getName()+".class";
+            evaluated = sVar.getClassType();
         } else if (evalExpr.getSort().getClass() == FPSort.class) {
             // TODO: handle this
             evaluated = "0";

@@ -167,7 +167,7 @@ public class SymbolTranslator {
         }
 
         if (type == Class.class) {
-            return (T) value;
+            return (T) (((Class) value).getName()+".class");
         }
 
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
