@@ -392,6 +392,12 @@ public class Z3Translator {
             return ctx.mkLt(e1, e2);
         if (binop instanceof JCmplExpr || binop instanceof JLeExpr)
             return ctx.mkLe(e1, e2);
+        if (binop instanceof JCmpExpr) {
+            return ctx.mkITE(
+                    ctx.mkLt(e1, e2),
+                    ctx.mkInt(-1),
+                    ctx.mkITE(ctx.mkEq(e1, e2), ctx.mkInt(0), ctx.mkInt(1)));
+        }
         throw new RuntimeException("Condition could not be translated: " + binop);
     }
 

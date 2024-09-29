@@ -69,7 +69,7 @@ public class CommandLineRunner {
             System.out.print("You have not provided any classes" +
                     " that should be targeted by supermock (enabled by default)." +
                     " Would you like me to suggest possible classes (total: "
-                    + variableTypes.size() + "? (y/n/I (ignore)) ");
+                    + variableTypes.size() + ") ? (y/n/I (ignore)) ");
             String res = reader.next();
             if (res.equalsIgnoreCase("N")) {
                 // mock all

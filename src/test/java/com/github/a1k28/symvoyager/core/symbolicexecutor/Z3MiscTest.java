@@ -552,14 +552,17 @@ public class Z3MiscTest {
         return 7;
     }
 
-    @SymbolicTest({0,1})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_interface_mock_1")
     public int test_interface_mock_1(long k) {
+        boolean b = k%2 == 0;
+        if (b)
+            return 0;
         API api = NOPService.getInstance();
         String res = api.authenticate((int)k);
         if (res.equals("ASD"))
-            return 0;
-        return 1;
+            return 1;
+        return 2;
     }
     
     @BasicTest
