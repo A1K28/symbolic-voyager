@@ -27,14 +27,11 @@ public class CommandLineRunner {
             promptUserForPropagation(reader);
 
             for (Method method : clazz.getDeclaredMethods()) {
-                // skip if void
-                if (Void.class.equals(method.getReturnType())) continue;
-
                 // skip if non-public
                 if (!Modifier.isPublic(method.getModifiers())) continue;
 
                 // skip getters and setters
-                if (method.getName().startsWith("get") || method.getName().startsWith("set")) continue;
+                if (GetterSetterAnalyzer.isGetterOrSetter(method)) continue;
 
                 if (CLIOptions.requireMethodSuggestion) {
                     System.out.print("Generate test cases for method: " + method + "? (y/N)");

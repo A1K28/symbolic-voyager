@@ -9,8 +9,11 @@ import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
+import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.getSootClass;
 import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
 
 @NoArgsConstructor
@@ -132,7 +135,7 @@ public class SymbolTranslator {
             return (T) v.substring(1, v.length()-1);
         }
 
-        if (type == Map.class) {
+        if (Map.class.isAssignableFrom(type)) {
             if (value == null) return (T) new HashMap<>();
             Map<?,?> map = (Map<?,?>) value;
             Map newMap = new HashMap<>();
@@ -142,7 +145,7 @@ public class SymbolTranslator {
             return (T) newMap;
         }
 
-        if (type == List.class) {
+        if (List.class.isAssignableFrom(type)) {
             if (value == null) return (T) new ArrayList<>();
             List<?> list = (List<?>) value;
             List newList = new ArrayList();
@@ -154,6 +157,14 @@ public class SymbolTranslator {
 
         if (value instanceof ClassInstanceVar v)
             return (T) parseObject(v);
+
+        if (BigInteger.class.isAssignableFrom(type)) {
+            return (T) new BigInteger((String) value);
+        }
+
+        if (BigDecimal.class.isAssignableFrom(type)) {
+            return (T) new BigDecimal((String) value);
+        }
 
         throw new RuntimeException("Could not parse parameter: " + value + " with type: " + type);
     }
