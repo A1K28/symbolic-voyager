@@ -2,12 +2,14 @@ package com.github.a1k28.symvoyager.core.symbolicexecutor.struct;
 
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
 import com.microsoft.z3.Expr;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 @Setter
 @Getter
+@EqualsAndHashCode
 @ToString
 public class SVar {
     private final String name;

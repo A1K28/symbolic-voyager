@@ -25,6 +25,7 @@ public class SymbolTranslator {
         String[] paramNames = null;
         Class<?> returnType = satisfiableResults.getTargetMethod().getReturnType();
         Map<SatisfiableResult, ParsedResult> evalMap = new HashMap<>();
+        Set<ParsedResult> uniqueResultSet = new HashSet<>();
         for (SatisfiableResult res : satisfiableResults.getResults()) {
             if (paramTypes == null) {
                 paramTypes = satisfiableResults.getTargetMethod().getParameterTypes();
@@ -102,6 +103,11 @@ public class SymbolTranslator {
 
             ParsedResult parsedResult = new ParsedResult(
                     returnVal, returnType, parameters, parsedFields, mockedMethodValues, res.getExceptionType());
+
+            // in case the test reduction logic didn't work as intended
+            if (uniqueResultSet.contains(parsedResult)) continue;
+            uniqueResultSet.add(parsedResult);
+
             evalMap.put(res, parsedResult);
         }
         return evalMap;

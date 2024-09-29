@@ -46,8 +46,7 @@ public class CommandLineRunner {
                 Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
 
                 // TODO: reduce test cases whose paths are covered by other test cases
-                for (SatisfiableResult satisfiableResult : sr.getResults()) {
-                    ParsedResult res = evalMap.get(satisfiableResult);
+                for (ParsedResult res : evalMap.values()) {
                     testGeneratorModels.add(new TestGeneratorModel(method, res));
                 }
             }

@@ -28,10 +28,10 @@ public class ${cm.className}Test {
     @Test
     public void test_${mm.testName}() throws Throwable {
         <#if mm.mockCount != 0 >
+        // define mocks
         <#list mm.methodMocks as mock>
         <#if mock.parameters.count != 0>
         <#if mock.isStub == false>
-        // define mock params
         Object[] params${mock?index} = new Object[${mock.parameters.count}];
         <#list mock.parameters.parameters as param>
         <#if param.value??>
