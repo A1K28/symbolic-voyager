@@ -1,11 +1,13 @@
 package com.github.a1k28.symvoyager.core.assembler;
 
 import com.github.a1k28.supermock.MockType;
+import com.github.a1k28.supermock.Parser;
 import com.github.a1k28.symvoyager.core.assembler.model.*;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodMockResult;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.ParsedResult;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVar;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVarEvaluated;
 import com.github.a1k28.symvoyager.helper.Logger;
-import com.github.a1k28.supermock.Parser;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -16,6 +18,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.*;
+
+import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
 
 public class JUnitTestAssembler {
     private static final Logger log = Logger.getInstance(JUnitTestAssembler.class);
@@ -45,25 +49,48 @@ public class JUnitTestAssembler {
                 return;
             }
 
-            List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
-                    .map(Class::getSimpleName).toList();
-
-            List<Object> parameters = new ArrayList<>();
-            List<String> parameterExtensions = new ArrayList<>();
-            List<Boolean> shouldDeserializeArgs = new ArrayList<>();
+            List<Parameter> parameters = new ArrayList<>();
             for (int i = 0; i < res.getParsedParameters().length; i++) {
-                parameters.add(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
-                shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
-                parameterExtensions.add(getExtension(method.getParameterTypes()[i]));
+                Parameter parameter = new Parameter();
+                parameter.setValue(parse(res.getParsedParameters()[i], method.getParameterTypes()[i]));
+                parameter.setShouldDeserialize(shouldSerialize(method.getParameterTypes()[i]));
+                parameter.setExtension(getExtension(method.getParameterTypes()[i]));
+                parameter.setType(method.getParameterTypes()[i].getSimpleName());
+                parameters.add(parameter);
             }
+            Parameters parametersModel = new Parameters(
+                    parameters.size(), parameters);
+
+            List<Field> fields = new ArrayList<>();
+            for (SVarEvaluated fieldVar : res.getParsedFields()) {
+                Field field = new Field();
+                java.lang.reflect.Field jField = getField(fieldVar.getSvar(), clazz);
+                field.setName(jField.getName());
+                field.setNameCapitalized(capitalize(jField.getName()));
+                field.setValue(parse(fieldVar.getEvaluated(), jField.getType()));
+                field.setShouldDeserialize(shouldSerialize(jField.getType()));
+                field.setExtension(getExtension(jField.getType()));
+                field.setType(jField.getType().getSimpleName());
+                field.setIsStatic(java.lang.reflect.Modifier.isStatic(jField.getModifiers()));
+                field.setMethodExists(setterExists(jField, field.getNameCapitalized()));
+                fields.add(field);
+
+                if (!jField.getType().isPrimitive())
+                    imports.add(jField.getType().getPackageName());
+            }
+            Fields fieldsModel = new Fields(fields.size(), fields);
 
             // return val
             Class<? extends Throwable> exceptionType = testGeneratorModel.getParsedResult().getExceptionType();
-            boolean shouldDeserializeRetVal = shouldSerialize(retType);
-            Object retVal = exceptionType == null ?
+            Object retValue = exceptionType == null ?
                     parse(res.getParsedReturnValue(), retType) : null;
-            String retExtension = getExtension(retType);
             String exceptionTypeStr = exceptionType == null ? null : exceptionType.getSimpleName();
+
+            Parameter retVal = new Parameter();
+            retVal.setValue(retValue);
+            retVal.setType(retType.getSimpleName());
+            retVal.setShouldDeserialize(shouldSerialize(retType));
+            retVal.setExtension(getExtension(retType));
 
             // handle imports
             if (exceptionType != null) {
@@ -97,16 +124,10 @@ public class JUnitTestAssembler {
             MethodCallModel methodCallModel = new MethodCallModel(
                     testName,
                     method.getName(),
-                    retType.getSimpleName(),
-                    retVal,
-                    retExtension,
-                    shouldDeserializeRetVal,
                     exceptionTypeStr,
-                    res.getParsedParameters().length,
-                    parameters,
-                    parameterExtensions,
-                    parameterTypes,
-                    shouldDeserializeArgs,
+                    fieldsModel,
+                    retVal,
+                    parametersModel,
                     mockModels.size(),
                     mockModels);
             methodCallModels.add(methodCallModel);
@@ -127,7 +148,7 @@ public class JUnitTestAssembler {
         cfg.setClassForTemplateLoading(JUnitTestAssembler.class, File.separator);
         Template template = cfg.getTemplate("junit5-template.ftl");
 
-//        // Write to file
+        // Write to file
         File f = new File(fileName);
         f.getParentFile().mkdirs();
         try (Writer writer = new FileWriter(fileName)) {
@@ -167,52 +188,40 @@ public class JUnitTestAssembler {
             Class type = mockResult.getMethod().getDeclaringClass();
             Method method = mockResult.getMethod();
             Object[] args = mockResult.getParsedParameters().toArray();
-            Object retVal = mockResult.getParsedReturnValue();
             Class retType = mockResult.getReturnType();
             Class exceptionType = mockResult.getExceptionType();
-
-            Object retValSerialized = parse(retVal, retType);
-            boolean shouldDeserializeRetVal = shouldSerialize(retType);
-
-            String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
             String retTypeStr = retType.getSimpleName();
-            String retExtension = getExtension(retType);
             if ("void".equals(retTypeStr)) retTypeStr = null;
 
-            List<String> parameterTypes = Arrays.stream(method.getParameterTypes())
-                    .map(Class::getSimpleName).toList();
-            List<Object> parameters = new ArrayList<>();
-            List<Boolean> shouldDeserializeArgs = new ArrayList<>();
-            List<String> methodMockExtensions = new ArrayList<>();
+            String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
+
+            Parameter retVal = new Parameter();
+            retVal.setValue(parse(mockResult.getParsedReturnValue(), retType));
+            retVal.setType(retTypeStr);
+            retVal.setShouldDeserialize(shouldSerialize(retType));
+            retVal.setExtension(getExtension(retType));
+
+            List<MockParameter> mockParameters = new ArrayList<>();
             for (int i = 0; i < args.length; i++) {
-                parameters.add(parse(args[i], method.getParameterTypes()[i]));
-                shouldDeserializeArgs.add(shouldSerialize(method.getParameterTypes()[i]));
-                methodMockExtensions.add(getExtension(method.getParameterTypes()[i]));
+                MockParameter mockParameter = new MockParameter();
+                mockParameter.setValue(parse(args[i], method.getParameterTypes()[i]));
+                mockParameter.setShouldDeserialize(shouldSerialize(method.getParameterTypes()[i]));
+                mockParameter.setExtension(getExtension(method.getParameterTypes()[i]));
+                mockParameter.setType(method.getParameterTypes()[i].getSimpleName());
+                mockParameter.setMockType(args[i] instanceof MockType ? "any()" : null);
+                mockParameters.add(mockParameter);
             }
+            MockParameters mockParametersModel = new MockParameters(
+                    mockParameters.size(), mockParameters);
 
-            List<String> mockType = new ArrayList<>();
-            for (Object param : args) {
-                String t = param instanceof MockType ? "any()" : null;
-                mockType.add(t);
-            }
-
-
-            boolean isStub = retVal instanceof MockType i && i == MockType.STUB;
+            boolean isStub = mockResult.getParsedReturnValue() instanceof MockType i && i == MockType.STUB;
 
             MethodMockModel model = new MethodMockModel(
                     type.getSimpleName(),
                     method.getName(),
-                    parameters.size(),
-                    parameters,
-                    parameterTypes,
-                    mockType,
-                    shouldDeserializeArgs,
-                    methodMockExtensions,
-                    retValSerialized,
+                    mockParametersModel,
+                    retVal,
                     isStub,
-                    retTypeStr,
-                    retExtension,
-                    shouldDeserializeRetVal,
                     exceptionName);
             result.add(model);
         }
@@ -236,5 +245,28 @@ public class JUnitTestAssembler {
         if (clazz == Float.class || clazz == float.class) return "f";
         if (clazz == Double.class || clazz == double.class) return "d";
         return "";
+    }
+
+    private static String capitalize(String name) {
+        return name.substring(0, 1).toUpperCase() + name.substring(1);
+    }
+
+    private static boolean setterExists(java.lang.reflect.Field field, String name) {
+        String finalName = "set"+name;
+        return Arrays.stream(field.getDeclaringClass().getDeclaredMethods())
+                .anyMatch(method -> method.getName().equals(finalName));
+    }
+
+
+    private static java.lang.reflect.Field getField(SVar var, Class clazz) {
+        for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+            if (equalsField(var, field)) return field;
+        }
+        throw new RuntimeException("Could not match fields: " + var
+                + " with: " + Arrays.toString(clazz.getDeclaredFields()));
+    }
+
+    private static boolean equalsField(SVar sVar, java.lang.reflect.Field field) {
+        return translateField(field).equals(sVar.getName());
     }
 }

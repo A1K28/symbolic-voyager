@@ -5,19 +5,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MethodMockModel {
+public class Field {
+    private String name;
+    private String nameCapitalized;
+    private Object value;
+    private String extension;
     private String type;
-    private String methodName;
-
-    private MockParameters parameters;
-    private Parameter retVal;
-
-    private Boolean isStub;
-    private String exceptionType;
+    private Boolean shouldDeserialize;
+    private Boolean isStatic;
+    private Boolean methodExists;
 }

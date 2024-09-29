@@ -29,20 +29,20 @@ public class ${cm.className}Test {
     public void test_${mm.testName}() throws Throwable {
         <#if mm.mockCount != 0 >
         <#list mm.methodMocks as mock>
-        <#if mock.paramCount != 0>
+        <#if mock.parameters.count != 0>
         <#if mock.isStub == false>
         // define mock params
-        Object[] params${mock?index} = new Object[${mock.paramCount}];
-        <#list mock.parameters as param>
-        <#if param??>
-        <#if mock.shouldDeserializeArgs[param?index]>
-        params${mock?index}[${param?index}] = deserialize(${param}, ${mock.parameterTypes[param?index]}.class);
+        Object[] params${mock?index} = new Object[${mock.parameters.count}];
+        <#list mock.parameters.parameters as param>
+        <#if param.value??>
+        <#if param.shouldDeserialize>
+        params${mock?index}[${param?index}] = deserialize(${param.value}, ${param.type}.class);
         <#else>
-        params${mock?index}[${param?index}] = ${param}${mock.methodMockExtensions[param?index]};
+        params${mock?index}[${param?index}] = ${param.value}${param.extension};
         </#if>
         <#else>
-        <#if mock.mockType[param?index]??>
-        params${mock?index}[${param?index}] = ${mock.mockType[param?index]};
+        <#if param.mockType??>
+        params${mock?index}[${param?index}] = ${param.mockType};
         <#else>
         params${mock?index}[${param?index}] = null;
         </#if>
@@ -53,14 +53,14 @@ public class ${cm.className}Test {
         when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenThrow(${mock.exceptionType}.class);
         <#else>
         <#if mock.isStub>
-        when(${mock.type}.class, "${mock.methodName}"<#list 0..<mock.paramCount as i>, any()</#list>)
-                .thenReturnStub(${mock.retType}.class);
+        when(${mock.type}.class, "${mock.methodName}"<#list 0..<mock.parameters.count as i>, any()</#list>)
+                .thenReturnStub(${mock.retVal.type}.class);
         <#else>
-        <#if mock.retVal??>
-        <#if mock.shouldDeserializeRetVal>
-        ${mock.retType} retVal${mock?index} = deserialize(${mock.retVal}, ${mock.retType}.class);
+        <#if mock.retVal.value??>
+        <#if mock.retVal.shouldDeserialize>
+        ${mock.retVal.type} retVal${mock?index} = deserialize(${mock.retVal.value}, ${mock.retVal.type}.class);
         <#else>
-        ${mock.retType} retVal${mock?index} = ${mock.retVal}${mock.retExtension};
+        ${mock.retVal.type} retVal${mock?index} = ${mock.retVal.value}${mock.retVal.extension};
         </#if>
         when(${mock.type}.class, "${mock.methodName}", params${mock?index}).thenReturn(retVal${mock?index});
         <#else>
@@ -75,11 +75,11 @@ public class ${cm.className}Test {
         <#if mock.isStub>
         when(${mock.type}.class, "${mock.methodName}").thenReturnStub(${mock.retType}.class);
         <#else>
-        <#if mock.retVal??>
-        <#if mock.shouldDeserializeRetVal>
-        ${mock.retType} retVal${mock?index} = deserialize(${mock.retVal}, ${mock.retType}.class);
+        <#if mock.retVal.value??>
+        <#if mock.retVal.shouldDeserialize>
+        ${mock.retVal.type} retVal${mock?index} = deserialize(${mock.retVal.value}, ${mock.retVal.type}.class);
         <#else>
-        ${mock.retType} retVal${mock?index} = ${mock.retVal}${mock.retExtension};
+        ${mock.retVal.type} retVal${mock?index} = ${mock.retVal.value}${mock.retVal.extension};
         </#if>
         when(${mock.type}.class, "${mock.methodName}").thenReturn(retVal${mock?index});
         <#else>
@@ -94,20 +94,47 @@ public class ${cm.className}Test {
         // assuming default constructor
         ${cm.className} instance = new ${cm.className}();
 
-        <#if mm.paramCount != 0 >
+        <#if mm.fields.count != 0>
+        // set fields
+        <#list mm.fields.fields as field>
+        <#if field.methodExists>
+        <#if field.shouldDeserialize>
+        <#if field.isStatic>
+        ${cm.className}.set${field.nameCapitalized}(deserialize(${field.value}, ${field.type}.class));
+        <#else>
+        instance.set${field.nameCapitalized}(deserialize(${field.value}, ${field.type}.class));
+        </#if>
+        <#else>
+        <#if field.isStatic>
+        ${cm.className}.set${field.nameCapitalized}(${field.value}${field.extension});
+        <#else>
+        instance.set${field.nameCapitalized}(${field.value}${field.extension});
+        </#if>
+        </#if>
+        <#else>
+        <#if field.shouldDeserialize>
+        setField(instance, "${field.name}", deserialize(${field.value}, ${field.type}.class));
+        <#else>
+        setField(instance, "${field.name}", ${field.value}${field.extension});
+        </#if>
+        </#if>
+        </#list>
+        </#if>
+
+        <#if mm.parameters.count != 0 >
         // define parameters
-        Object[] params = new Object[${mm.paramCount}];
-        <#list mm.parameters as param>
+        Object[] params = new Object[${mm.parameters.count}];
+        <#list mm.parameters.parameters as param>
             <#--        <#if mm.parameterTypes[param?index] == 'Map' || mm.parameterTypes[param?index] == 'HashMap'>-->
             <#--        Map map${param?index} = new HashMap();-->
             <#--        <#list param.entries as entry>-->
             <#--        map${param?index}.put(deserialize(${entry.key}), deserialize(${entry.value}));-->
             <#--        </#list>-->
             <#--        <#else>-->
-        <#if mm.shouldDeserializeArgs[param?index]>
-        params[${param?index}] = deserialize(${param}, ${mm.parameterTypes[param?index]}.class);
+        <#if param.shouldDeserialize>
+        params[${param?index}] = deserialize(${param.value}, ${param.type}.class);
         <#else>
-        params[${param?index}] = ${param}${mm.parameterExtensions[param?index]};
+        params[${param?index}] = ${param.value}${param.extension};
         </#if>
         </#list>
 
@@ -116,23 +143,23 @@ public class ${cm.className}Test {
         <#if mm.exceptionType??>
         assertThrows(${mm.exceptionType}.class, () -> {
             instance.${mm.methodName}(
-                <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
+                <#list 0..<mm.parameters.count as i>(${mm.parameters[i].type}) params[${i}]<#if i<mm.parameters.count-1>, </#if></#list>);
         });
         <#else>
-        <#if mm.returnType != "void">
-        ${mm.returnType} actual = instance.${mm.methodName}(
-                <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
+        <#if mm.retVal.type != "void">
+        ${mm.retVal.type} actual = instance.${mm.methodName}(
+                <#list 0..<mm.parameters.count as i>(${mm.parameters.parameters[i].type}) params[${i}]<#if i<mm.parameters.count-1>, </#if></#list>);
         <#else>
         instance.${mm.methodName}(
-                <#list 0..<mm.paramCount as i>(${mm.parameterTypes[i]}) params[${i}]<#if i<mm.paramCount-1>, </#if></#list>);
+                <#list 0..<mm.parameters.count as i>(${mm.parameters.parameters[i].type}) params[${i}]<#if i<mm.parameters.count-1>, </#if></#list>);
         </#if>
 
-        <#if mm.returnType != "void">
+        <#if mm.retVal.type != "void">
         // assert
-        <#if mm.shouldDeserializeRetVal>
-        ${mm.returnType} expected = deserialize(${mm.returnValue}, ${mm.returnType}.class);
+        <#if mm.retVal.shouldDeserialize>
+        ${mm.retVal.type} expected = deserialize(${mm.retVal.value}, ${mm.retVal.type}.class);
         <#else>
-        ${mm.returnType} expected = ${mm.returnValue}${mm.retExtension};
+        ${mm.retVal.type} expected = ${mm.retVal.value}${mm.retVal.extension};
         </#if>
         Assertions.assertEquals(expected, actual);
         </#if>

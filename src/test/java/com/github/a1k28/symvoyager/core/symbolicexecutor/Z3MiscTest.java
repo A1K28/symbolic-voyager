@@ -556,8 +556,6 @@ public class Z3MiscTest {
     @DisplayName("test_interface_mock_1")
     public int test_interface_mock_1(long k) {
         BigDecimal val = NOPService.convFromMU(k);
-        if (val.equals(k))
-            return -1;
 
         boolean b = k%2 == 0;
         if (b)

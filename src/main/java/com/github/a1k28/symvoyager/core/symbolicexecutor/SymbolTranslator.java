@@ -75,7 +75,7 @@ public class SymbolTranslator {
                 assert mockParamClassTypes.length == sVarEvaluated.getParametersEvaluated().size();
                 List<Object> mockParams = new ArrayList<>();
                 Object mockRetVal = null;
-                Class mockRetType = sVarEvaluated.getSvar().getClassType();
+                Class mockRetType = sVarEvaluated.getMethod().getReturnType();
                 if (sVarEvaluated.getExceptionType() == null) {
                     mockRetVal = parse(sVarEvaluated.getEvaluated(), mockRetType);
                 }
@@ -110,6 +110,9 @@ public class SymbolTranslator {
     private static <T> T parse(Object value, Class type) {
         if (value == null)
             return null;
+
+        if (value instanceof ClassInstanceVar v)
+            return (T) parseObject(v);
 
         if (type == Boolean.class || type == boolean.class)
             return (T) Boolean.valueOf(value.toString());
@@ -154,9 +157,6 @@ public class SymbolTranslator {
             }
             return (T) list;
         }
-
-        if (value instanceof ClassInstanceVar v)
-            return (T) parseObject(v);
 
         if (BigInteger.class.isAssignableFrom(type)) {
             return (T) new BigInteger((String) value);

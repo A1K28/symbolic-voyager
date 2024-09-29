@@ -5,19 +5,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MethodMockModel {
+public class Parameter {
+    private Object value;
+    private String extension;
     private String type;
-    private String methodName;
-
-    private MockParameters parameters;
-    private Parameter retVal;
-
-    private Boolean isStub;
-    private String exceptionType;
+    private Boolean shouldDeserialize;
 }

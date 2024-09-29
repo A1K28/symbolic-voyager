@@ -14,18 +14,11 @@ import java.util.List;
 public class MethodCallModel {
     private String testName;
     private String methodName;
-
-    private String returnType;
-    private Object returnValue;
-    private String retExtension;
-    private Boolean shouldDeserializeRetVal;
     private String exceptionType;
 
-    private int paramCount;
-    private List<Object> parameters;
-    private List<String> parameterExtensions;
-    private List<String> parameterTypes;
-    private List<Boolean> shouldDeserializeArgs;
+    private Fields fields;
+    private Parameter retVal;
+    private Parameters parameters;
 
     private int mockCount;
     private List<MethodMockModel> methodMocks;

@@ -11,13 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MethodMockModel {
-    private String type;
-    private String methodName;
-
-    private MockParameters parameters;
-    private Parameter retVal;
-
-    private Boolean isStub;
-    private String exceptionType;
+public class MockParameters {
+    private int count;
+    private List<MockParameter> parameters;
 }

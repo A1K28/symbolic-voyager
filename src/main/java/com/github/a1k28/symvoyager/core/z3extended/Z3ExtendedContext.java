@@ -1,14 +1,15 @@
 package com.github.a1k28.symvoyager.core.z3extended;
 
-import com.github.a1k28.symvoyager.core.z3extended.instance.*;
+import com.github.a1k28.symvoyager.core.z3extended.instance.Z3ClassInstance;
+import com.github.a1k28.symvoyager.core.z3extended.instance.Z3LinkedListInstance;
+import com.github.a1k28.symvoyager.core.z3extended.instance.Z3MapInstance;
+import com.github.a1k28.symvoyager.core.z3extended.instance.Z3MethodMockInstance;
+import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.core.z3extended.model.SortType;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3CachingFactory;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3SortUnion;
-import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.microsoft.z3.*;
 import lombok.Getter;
-import sootup.core.types.PrimitiveType;
-import sootup.core.types.Type;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -18,6 +19,7 @@ import java.util.List;
 @Getter
 public class Z3ExtendedContext extends Context implements IStack {
     private final Z3ExtendedSolver solver;
+    private final Z3SortUnion sortUnion;
 
     private final List<IStack> stacks;
     private final Z3ClassInstance classInstance;
@@ -25,12 +27,10 @@ public class Z3ExtendedContext extends Context implements IStack {
     private final Z3MapInstance mapInstance;
     private final Z3LinkedListInstance linkedListInstance;
 
-    private final Expr sentinel;
-
     public Z3ExtendedContext() {
         super();
         Z3CachingFactory sortState = new Z3CachingFactory(this);
-        Z3SortUnion sortUnion = new Z3SortUnion(this);
+        this.sortUnion = new Z3SortUnion(this);
 
         this.solver = new Z3ExtendedSolver(this, this.mkSolver(), sortUnion);
 
@@ -39,8 +39,6 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
         this.stacks = List.of(classInstance, methodMockInstance, mapInstance, linkedListInstance);
-
-        this.sentinel = this.mkConst("sentinel", SortType.SENTINEL.value(this));
     }
 
     @Override
@@ -58,8 +56,14 @@ public class Z3ExtendedContext extends Context implements IStack {
         boolean e2IsNull = SortType.NULL.equals(var2.getSort());
         if (e1IsNull && e2IsNull) return this.mkBool(true);
         if (e1IsNull ^ e2IsNull) return this.mkBool(false);
-//        if (e1IsNull) return super.mkEq(var2, mkFreshConst("freshConst", var2.getSort()));
-//        if (e2IsNull) return super.mkEq(var1, mkFreshConst("freshConst", var1.getSort()));
+
+        boolean isVar1Generic = sortUnion.getGenericSort().equals(var1.getSort());
+        boolean isVar2Generic = sortUnion.getGenericSort().equals(var2.getSort());
+        if (isVar1Generic && !isVar2Generic)
+            var2 = sortUnion.wrapValue(var2);
+        if (!isVar1Generic && isVar2Generic)
+            var1 = sortUnion.wrapValue(var1);
+
         return super.mkEq(var1, var2);
     }
 

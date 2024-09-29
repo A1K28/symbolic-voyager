@@ -106,7 +106,10 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
         Expr retrieved = getByKey(model, key);
         BoolExpr isEmpty = mapSort.isEmpty(retrieved);
         Expr res = ctx.mkITE(isEmpty, mapSort.getSentinel(), retrieved);
-        Expr defaultValue = model.isSizeUnknown() ? ctx.getSentinel() : ctx.mkNull();
+        Expr defaultValue = ctx.mkNull();
+        if (model.isSizeUnknown()) {
+            defaultValue = ctx.mkFreshConst("freshReturnVal", sortUnion.getGenericSort());
+        }
         return sortUnion.unwrapValue(mapSort.getValue(res), defaultValue);
     }
 
