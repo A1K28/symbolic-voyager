@@ -1,4 +1,4 @@
-package com.github.a1k28.symvoyager.core.cli;
+package com.github.a1k28.symvoyager.core.cli.visitor;
 
 import org.objectweb.asm.*;
 

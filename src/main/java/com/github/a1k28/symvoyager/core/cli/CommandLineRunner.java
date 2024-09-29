@@ -4,6 +4,8 @@ import com.github.a1k28.symvoyager.core.assembler.JUnitTestAssembler;
 import com.github.a1k28.symvoyager.core.assembler.model.TestGeneratorModel;
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.cli.model.CommandFlag;
+import com.github.a1k28.symvoyager.core.cli.visitor.GetterSetterAnalyzer;
+import com.github.a1k28.symvoyager.core.cli.visitor.LocalTypeExtractor;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolTranslator;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.SymbolicExecutor;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.ParsedResult;
