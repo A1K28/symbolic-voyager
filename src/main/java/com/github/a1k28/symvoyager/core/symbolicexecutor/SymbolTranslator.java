@@ -82,8 +82,12 @@ public class SymbolTranslator {
                     else mockParams.add(v);
                 }
 
-                String uniqueKey = sVarEvaluated.getMethod().toString()+";"+
-                        Arrays.toString(mockParams.toArray());
+                // only mock stubs once
+                boolean isStub = mockRetVal instanceof MockType i && i == MockType.STUB;
+                String uniqueKey;
+                if (!isStub) uniqueKey = sVarEvaluated.getMethod().toString()
+                        + ";"+ Arrays.toString(mockParams.toArray());
+                else uniqueKey = mockRetType.getName();
                 if (uniqueMockSet.contains(uniqueKey))
                     continue;
                 uniqueMockSet.add(uniqueKey);
