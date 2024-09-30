@@ -63,11 +63,15 @@ public class JUnitTestAssembler {
 
             List<Field> fields = new ArrayList<>();
             for (SVarEvaluated fieldVar : res.getParsedFields()) {
-                Field field = new Field();
                 java.lang.reflect.Field jField = getField(fieldVar.getSvar(), clazz);
+                Object val = parse(fieldVar.getEvaluated(), jField.getType());
+                Object defaultVal = getDefaultFieldValue(jField.getType());
+                if (val == null || val.equals(defaultVal)) continue;
+
+                Field field = new Field();
                 field.setName(jField.getName());
                 field.setNameCapitalized(capitalize(jField.getName()));
-                field.setValue(parse(fieldVar.getEvaluated(), jField.getType()));
+                field.setValue(val);
                 field.setShouldDeserialize(shouldSerialize(jField.getType()));
                 field.setExtension(getExtension(jField.getType()));
                 field.setType(jField.getType().getSimpleName());
@@ -226,6 +230,26 @@ public class JUnitTestAssembler {
             result.add(model);
         }
         return result;
+    }
+
+    private static Object getDefaultFieldValue(Class type) {
+        if (type == boolean.class || type == Boolean.class)
+            return false;
+        if (type == byte.class || type == Byte.class)
+            return 0;
+        if (type == short.class || type == Short.class)
+            return 0;
+        if (type == char.class || type == Character.class)
+            return '\u0000';
+        if (type == int.class || type == Integer.class)
+            return 0;
+        if (type == long.class || type == Long.class)
+            return 0;
+        if (type == float.class || type == Float.class)
+            return 0;
+        if (type == double.class || type == Double.class)
+            return 0;
+        return null;
     }
 
     private static boolean shouldSerialize(Class clazz) {

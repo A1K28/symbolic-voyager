@@ -127,8 +127,7 @@ public class SymbolicTestEngine implements TestEngine {
         CLIOptions.targetClass = testClass.getName();
         SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(testMethod);
         Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
-        for (SatisfiableResult satisfiableResult : sr.getResults()) {
-            ParsedResult res = evalMap.get(satisfiableResult);
+        for (ParsedResult res : evalMap.values()) {
             Object[] parameters = res.getParsedParameters();
             String paramsString = Arrays.toString(parameters);
             Object instance = testClass.getDeclaredConstructor().newInstance();

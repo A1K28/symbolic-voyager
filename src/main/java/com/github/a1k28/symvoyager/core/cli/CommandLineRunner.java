@@ -37,7 +37,7 @@ public class CommandLineRunner {
                         && GetterSetterAnalyzer.isGetterOrSetter(method)) continue;
 
                 if (CLIOptions.requireMethodSuggestion) {
-                    System.out.print("Generate test cases for method: " + method + "? (y/N)");
+                    System.out.print("Generate test cases for method: " + method + "? (y/N) ");
                     String res = reader.next();
                     if (!res.equalsIgnoreCase("Y")) continue;
                 }
