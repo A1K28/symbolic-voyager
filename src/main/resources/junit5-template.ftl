@@ -143,7 +143,7 @@ public class ${cm.className}Test {
         <#if mm.exceptionType??>
         assertThrows(${mm.exceptionType}.class, () -> {
             instance.${mm.methodName}(
-                <#list 0..<mm.parameters.count as i>(${mm.parameters[i].type}) params[${i}]<#if i<mm.parameters.count-1>, </#if></#list>);
+                <#list 0..<mm.parameters.count as i>(${mm.parameters.parameters[i].type}) params[${i}]<#if i<mm.parameters.count-1>, </#if></#list>);
         });
         <#else>
         <#if mm.retVal.type != "void">
