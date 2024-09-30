@@ -73,7 +73,6 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
 
     private MapModel constructor(Expr reference, boolean isSizeUnknown) {
         createMapping(reference);
-
         Sort keySort = sortUnion.getGenericSort();
 
         ArrayExpr array;
