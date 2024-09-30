@@ -7,6 +7,7 @@ import java.util.Optional;
 public class GetterSetterAnalyzer {
     public static boolean isGetterOrSetter(Method method) {
         String name = method.getName();
+
         if (name.startsWith("get") && "void".equals(method.getReturnType().toString())) {
             return extractField(method).isPresent();
         }
@@ -20,11 +21,16 @@ public class GetterSetterAnalyzer {
 
     private static Optional<Field> extractField(Method method) {
         String fieldName = deCapitalize(method.getName().substring(3));
-        for (Field field : method.getDeclaringClass().getDeclaredFields()) {
+        return extractField(method.getDeclaringClass(), fieldName);
+    }
+
+    private static Optional<Field> extractField(Class clazz, String fieldName) {
+        if (clazz == null) return Optional.empty();
+        for (Field field : clazz.getDeclaredFields()) {
             if (field.getName().equals(fieldName))
                 return Optional.of(field);
         }
-        return Optional.empty();
+        return extractField(clazz.getSuperclass(), fieldName);
     }
 
     private static String deCapitalize(String name) {

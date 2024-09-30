@@ -1,10 +1,7 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor.struct;
 
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.model.HandlerNode;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
 import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.Getter;
@@ -111,15 +108,20 @@ public class SMethodPath implements IStack {
     }
 
     public List<SVar> getAllSymbolicVars() {
-        List<SVar> vars = symbolicVarStack.getAll();
-        vars.addAll(classInstance.getSymbolicFieldStack().getAll());
-        vars.addAll(getTopMethodPath().methodMockStack.getAll());
+        SMethodPath sMethodPath = getTopMethodPath();
+        List<SVar> vars = sMethodPath.symbolicVarStack.getAll();
+        vars.addAll(sMethodPath.classInstance.getSymbolicFieldStack().getAll());
+        vars.addAll(sMethodPath.methodMockStack.getAll());
         return vars;
     }
 
     public void addMethodMock(SVar var) {
         this.symbolicVarStack.add(var);
         this.getTopMethodPath().methodMockStack.add(var);
+    }
+
+    public void addSatisfiableResult(SatisfiableResult result) {
+        getTopMethodPath().getSatisfiableResults().getResults().add(result);
     }
 
     public Optional<HandlerNode> findHandlerNode(SNode node, Class<?> type) {
@@ -242,15 +244,13 @@ public class SMethodPath implements IStack {
     public void push() {
         symbolicVarStack.push();
         classInstance.getSymbolicFieldStack().push();
-        if (methodMockStack != null)
-            methodMockStack.push();
+        getTopMethodPath().getMethodMockStack().push();
     }
 
     @Override
     public void pop() {
         symbolicVarStack.pop();
         classInstance.getSymbolicFieldStack().pop();
-        if (methodMockStack != null)
-            methodMockStack.pop();
+        getTopMethodPath().getMethodMockStack().pop();
     }
 }

@@ -129,7 +129,7 @@ public class SatisfiabilityHandler {
                 List.copyOf(path)
         );
 
-        sMethodPath.getSatisfiableResults().getResults().add(satisfiableResult);
+        sMethodPath.addSatisfiableResult(satisfiableResult);
         log.empty();
     }
 

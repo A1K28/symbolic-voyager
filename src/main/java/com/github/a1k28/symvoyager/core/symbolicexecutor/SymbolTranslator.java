@@ -31,9 +31,6 @@ public class SymbolTranslator {
                 paramNames = new String[paramTypes.length];
                 int j = 0;
                 for (SVarEvaluated key : res.getSymbolicParameterValues()) {
-                    // TODO: handle mocked params
-//                    if (key.getSvar().getType() == VarType.METHOD_MOCK)
-//                        throw new RuntimeException("MOCKED METHOD INBOUND");
                     paramNames[j] = key.getSvar().getName();
                     j++;
                 }

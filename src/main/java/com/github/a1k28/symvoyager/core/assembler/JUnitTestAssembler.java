@@ -66,7 +66,8 @@ public class JUnitTestAssembler {
                 java.lang.reflect.Field jField = getField(fieldVar.getSvar(), clazz);
                 Object val = parse(fieldVar.getEvaluated(), jField.getType());
                 Object defaultVal = getDefaultFieldValue(jField.getType());
-                if (val == null || val.equals(defaultVal)) continue;
+                if (val == null || val.equals(defaultVal))
+                    continue;
 
                 Field field = new Field();
                 field.setName(jField.getName());
@@ -165,7 +166,7 @@ public class JUnitTestAssembler {
     // TODO: beautify certain types of object creation
     private static Object parse(Object object, Class<?> clazz) {
         if (object instanceof MockType)
-            return null;
+            return "any()";
         if (clazz == String.class)
             return "\""+object+"\"";
         if (clazz == boolean.class || clazz == Boolean.class)
