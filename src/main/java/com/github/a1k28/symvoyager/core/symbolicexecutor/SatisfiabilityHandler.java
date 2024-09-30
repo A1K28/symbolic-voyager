@@ -14,10 +14,7 @@ import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
 import sootup.core.jimple.common.stmt.JThrowStmt;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SatisfiabilityHandler {
@@ -37,7 +34,10 @@ public class SatisfiabilityHandler {
         this.solver = ctx.getSolver();
     }
 
-    Z3Status checkSatisfiability(SMethodPath sMethodPath, SNode node, SType type) {
+    Z3Status checkSatisfiability(SMethodPath sMethodPath,
+                                 SNode node,
+                                 SType type,
+                                 LinkedList<SNode> path) {
         if (solver.check() != Status.SATISFIABLE) {
             log.info("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
@@ -49,23 +49,43 @@ public class SatisfiabilityHandler {
             Class exceptionType = sMethodPath.getSymbolicVarStack()
                     .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
                     .getClassType();
-            handleSatisfiability(sMethodPath, null, exceptionType);
+            handleSatisfiability(sMethodPath, null, exceptionType, path);
             return Z3Status.SATISFIABLE_END;
         }
         if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
             SVarEvaluated returnValue = getReturnValue(sMethodPath, node);
-            handleSatisfiability(sMethodPath, returnValue, null);
+            handleSatisfiability(sMethodPath, returnValue, null, path);
             return Z3Status.SATISFIABLE_END;
         }
         return Z3Status.SATISFIABLE;
     }
 
+    private static void printPath(LinkedList<SNode> path) {
+        int level = 1;
+        Iterator<SNode> it = path.iterator();
+        while (it.hasNext()) {
+            SNode node = it.next();
+            for (int i = 1; i < level; i++) System.out.print("\t");
+            if (node.getType() == SType.BRANCH_FALSE
+                    || node.getType() == SType.BRANCH_TRUE
+                    || node.getType() == SType.SWITCH
+                    || node.getType() == SType.CATCH
+                    || node.getType() == SType.GOTO)
+                level++;
+            System.out.println(node);
+        }
+    }
+
     private void handleSatisfiability(
             SMethodPath sMethodPath,
             SVarEvaluated returnValue,
-            Class<? extends Throwable> exceptionType) {
+            Class<? extends Throwable> exceptionType,
+            LinkedList<SNode> path) {
         log.info("Path is satisfiable - " + sMethodPath.getMethod().getName());
+
+        // TODO: filter out already explored paths
+//        printPath(path);
 
         List<SVarEvaluated> fieldsEvaluated = new ArrayList<>();
         List<SVarEvaluated> parametersEvaluated = new ArrayList<>();
@@ -105,7 +125,8 @@ public class SatisfiabilityHandler {
                 parametersEvaluated,
                 mockedMethodsEvaluated,
                 returnValue,
-                exceptionType
+                exceptionType,
+                List.copyOf(path)
         );
 
         sMethodPath.getSatisfiableResults().getResults().add(satisfiableResult);

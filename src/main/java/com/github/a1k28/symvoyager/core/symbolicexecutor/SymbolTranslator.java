@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.getSootClass;
 import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
 
 @NoArgsConstructor
@@ -47,7 +46,6 @@ public class SymbolTranslator {
 
             // return val
             Object returnVal = null;
-            log.trace("Return type: " + returnType);
             if (returnType != Void.class
                     && !"void".equals(returnType.toString())
                     && res.getExceptionType() == null) {

@@ -18,6 +18,7 @@ import sootup.core.types.ClassType;
 import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ public class SymbolicExecutor {
     private final Z3Translator z3t;
     private Z3ExtendedSolver solver;
     private Z3ExtendedContext ctx;
+    private LinkedList<SNode> path;
     private final SatisfiabilityHandler satHandler;
 
     static {
@@ -41,6 +43,7 @@ public class SymbolicExecutor {
         this.ctx = z3t.getContext();
         this.solver = ctx.getSolver();
         this.satHandler = new SatisfiabilityHandler(z3t);
+        this.path = new LinkedList<>();
     }
 
     public void refresh() {
@@ -48,6 +51,7 @@ public class SymbolicExecutor {
         this.ctx = z3t.getContext();
         this.solver = ctx.getSolver();
         this.satHandler.refresh();
+        this.path = new LinkedList<>();
     }
 
     public SatisfiableResults analyzeSymbolicPaths(Method method)
@@ -77,6 +81,8 @@ public class SymbolicExecutor {
 
     private void analyzePaths(SMethodPath sMethodPath, SNode node) throws ClassNotFoundException {
         SType type = null;
+
+        path.add(node);
 
         if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE){
             push(sMethodPath);
@@ -110,7 +116,7 @@ public class SymbolicExecutor {
             mockThrowsAndPropagate(sMethodPath, node);
         }
 
-        Z3Status status = satHandler.checkSatisfiability(sMethodPath, node, type);
+        Z3Status status = satHandler.checkSatisfiability(sMethodPath, node, type, path);
         if (Z3Status.SATISFIABLE == status)
             for (SNode child : node.getChildren())
                 analyzePaths(sMethodPath, child);
@@ -118,6 +124,8 @@ public class SymbolicExecutor {
         if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE) {
             pop(sMethodPath);
         }
+
+        path.removeLast();
     }
 
     private SType handleParameter(SMethodPath sMethodPath, SNode node) {
@@ -336,10 +344,6 @@ public class SymbolicExecutor {
         }
 
         List<SNode> children = jn.getNode().getChildren();
-//        if (children.isEmpty()) {
-//            children = jn.getMethodPath().getFollowingNodes(jn.getNode());
-//        }
-
         for (SNode child : children)
             analyzePaths(jn.getMethodPath(), child);
 
