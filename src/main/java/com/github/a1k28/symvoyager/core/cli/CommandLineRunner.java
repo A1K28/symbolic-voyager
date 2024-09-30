@@ -33,7 +33,8 @@ public class CommandLineRunner {
                 if (!Modifier.isPublic(method.getModifiers())) continue;
 
                 // skip getters and setters
-                if (GetterSetterAnalyzer.isGetterOrSetter(method)) continue;
+                if (CLIOptions.skipGettersAndSetters
+                        && GetterSetterAnalyzer.isGetterOrSetter(method)) continue;
 
                 if (CLIOptions.requireMethodSuggestion) {
                     System.out.print("Generate test cases for method: " + method + "? (y/N)");

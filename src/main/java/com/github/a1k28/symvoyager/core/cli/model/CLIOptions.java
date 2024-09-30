@@ -15,6 +15,7 @@ public class CLIOptions {
     public static Integer gotoLimit = 20;
     public static boolean disableMockExploration = false;
     public static boolean requireMethodSuggestion = false;
+    public static boolean skipGettersAndSetters = true;
 
     public static boolean shouldMockOrPropagate(String pckg) {
         return shouldPropagate(pckg) || shouldMock(pckg);
@@ -68,6 +69,7 @@ public class CLIOptions {
             case LOG_LEVEL -> Logger.setLoggingLevel(Logger.Level.fromValue(value));
             case DISABLE_MOCK_EXPLORATION -> disableMockExploration = Boolean.parseBoolean(value);
             case REQUIRE_METHOD_SUGGESTION -> requireMethodSuggestion = Boolean.parseBoolean(value);
+            case SKIP_GETTERS_AND_SETTERS -> skipGettersAndSetters = Boolean.parseBoolean(value);
         }
     }
 

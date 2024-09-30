@@ -1,60 +1,33 @@
 package com.github.a1k28.symvoyager.core.cli.visitor;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 public class GetterSetterAnalyzer {
-    private int lines;
-
     public static boolean isGetterOrSetter(Method method) {
-        try {
-            if ((method.getName().startsWith("get") && "void".equals(method.getReturnType().toString()))
-                    || (method.getName().startsWith("set") && "void".equals(method.getReturnType().toString()))) {
-                GetterSetterAnalyzer analyzer = new GetterSetterAnalyzer();
-                analyzer.analyze(method);
-                return analyzer.lines < 5;
-            }
-            return false;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        String name = method.getName();
+        if (name.startsWith("get") && "void".equals(method.getReturnType().toString())) {
+            return extractField(method).isPresent();
         }
+
+        if (name.startsWith("set") && "void".equals(method.getReturnType().toString())) {
+            return extractField(method).isPresent();
+        }
+
+        return false;
     }
 
-    public void analyze(Method method) throws IOException {
-        String className = method.getDeclaringClass().getName();
-        String resourceName = className.replace(".", File.separator) + ".class";
-        try (InputStream inputStream = ClassLoader.getSystemClassLoader()
-                .getResourceAsStream(resourceName)) {
-            if (inputStream == null) {
-                throw new IOException("Class file not found: " + resourceName);
-            }
-            ClassReader reader = new ClassReader(inputStream);
-            reader.accept(new ClassVisitor(Opcodes.ASM9) {
-                @Override
-                public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-                    if (name.equals(method.getName())) {
-                        return new MethodVisitor(Opcodes.ASM9) {
-                            public void visitInsn(int opcode) {
-                                lines++;
-                                super.visitInsn(opcode);
-                            }
-
-                            @Override
-                            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                                lines+=10;
-                            }
-                        };
-                    }
-                    return null;
-                }
-            }, ClassReader.SKIP_DEBUG);
+    private static Optional<Field> extractField(Method method) {
+        String fieldName = deCapitalize(method.getName().substring(3));
+        for (Field field : method.getDeclaringClass().getDeclaredFields()) {
+            if (field.getName().equals(fieldName))
+                return Optional.of(field);
         }
+        return Optional.empty();
+    }
+
+    private static String deCapitalize(String name) {
+        return name.substring(0, 1).toLowerCase() + name.substring(1);
     }
 }

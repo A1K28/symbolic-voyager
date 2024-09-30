@@ -73,7 +73,7 @@ public class ${cm.className}Test {
         when(${mock.type}.class, "${mock.methodName}").thenThrow(${mock.exceptionType}.class);
         <#else>
         <#if mock.isStub>
-        when(${mock.type}.class, "${mock.methodName}").thenReturnStub(${mock.retType}.class);
+        when(${mock.type}.class, "${mock.methodName}").thenReturnStub(${mock.retVal.type}.class);
         <#else>
         <#if mock.retVal.value??>
         <#if mock.retVal.shouldDeserialize>

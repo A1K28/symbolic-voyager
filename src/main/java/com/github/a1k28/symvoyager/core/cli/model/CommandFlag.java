@@ -12,7 +12,8 @@ public enum CommandFlag {
     RECURSION_LIMIT("rc", "recursion-limit", true, "Recursion/Loop limit. Default value is 20."),
     LOG_LEVEL("ll", "log-level", true, "Possible values: INFO, DEBUG, TRACE"),
     DISABLE_MOCK_EXPLORATION("dme", "disable-mock-exploration", true, "Possible values: true, false (default)"),
-    REQUIRE_METHOD_SUGGESTION("rms", "require-method-suggestion", true, "Possible values: true, false (default)");
+    REQUIRE_METHOD_SUGGESTION("rms", "require-method-suggestion", true, "Possible values: true, false (default)"),
+    SKIP_GETTERS_AND_SETTERS("sgs", "skip-getters-setters", true, "Possible values: true (default), false");
 
     private final String option;
     private final String longOption;
