@@ -43,8 +43,8 @@ public class CommandLineRunner {
                 }
 
                 symbolicExecutor.refresh();
-                SatisfiableResults sr = symbolicExecutor.analyzeSymbolicPaths(method);
-                Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(sr);
+                SatisfiableResults satRes = symbolicExecutor.analyzeSymbolicPaths(method);
+                Map<SatisfiableResult, ParsedResult> evalMap = SymbolTranslator.parse(satRes);
 
                 // TODO: reduce test cases whose paths are covered by other test cases
                 for (ParsedResult res : evalMap.values()) {
