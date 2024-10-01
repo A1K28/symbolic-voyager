@@ -7,7 +7,7 @@ import java.util.Optional;
 public class GetterSetterAnalyzer {
     public static boolean isGetterOrSetter(Method method) {
         String name = method.getName();
-        if (name.startsWith("get") && "void".equals(method.getReturnType().toString())) {
+        if (name.startsWith("get") && !"void".equals(method.getReturnType().toString())) {
             return extractField(method).isPresent();
         }
         if (name.startsWith("set") && "void".equals(method.getReturnType().toString())) {
