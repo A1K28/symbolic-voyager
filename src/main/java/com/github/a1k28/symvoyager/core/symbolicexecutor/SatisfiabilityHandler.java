@@ -60,23 +60,7 @@ public class SatisfiabilityHandler {
         }
         return Z3Status.SATISFIABLE;
     }
-
-    private static void printPath(LinkedList<SNode> path) {
-        int level = 1;
-        Iterator<SNode> it = path.iterator();
-        while (it.hasNext()) {
-            SNode node = it.next();
-            for (int i = 1; i < level; i++) System.out.print("\t");
-            if (node.getType() == SType.BRANCH_FALSE
-                    || node.getType() == SType.BRANCH_TRUE
-                    || node.getType() == SType.SWITCH
-                    || node.getType() == SType.CATCH
-                    || node.getType() == SType.GOTO)
-                level++;
-            System.out.println(node);
-        }
-    }
-
+    
     private void handleSatisfiability(
             SMethodPath sMethodPath,
             SVarEvaluated returnValue,
@@ -181,6 +165,10 @@ public class SatisfiabilityHandler {
         Model model = solver.getModel();
         Expr evalExpr = model.eval(expr, true);
 
+        if (ctx.getSortUnion().getGenericSort().equals(evalExpr.getSort())) {
+            evalExpr = solver.getModel().eval(ctx.getSortUnion().unwrapValue(evalExpr, evalExpr), true);
+        }
+
         if (SortType.MAP.equals(evalExpr.getSort())) {
             evaluated = handleMapSatisfiability(expr);
         } else if (SortType.ARRAY.equals(evalExpr.getSort())) {
@@ -207,7 +195,7 @@ public class SatisfiabilityHandler {
             evaluated = evalExpr;
         }
 
-        log.debug(evaluated + " - " + sVar.getName());
+        log.debug(evaluated + " - " + sVar.getName() + " " + expr.getSort());
         return evaluated;
     }
 

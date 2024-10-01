@@ -3,7 +3,6 @@ package com.github.a1k28.symvoyager.core.z3extended.instance;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedSolver;
 import com.microsoft.z3.*;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -17,24 +16,25 @@ import java.util.UUID;
  * This might be the fastest way to achieve this.
  * (Although not sure about long term results. more tests are needed).
  */
-@RequiredArgsConstructor
 public abstract class Z3AbstractHybridInstance {
     protected final Z3ExtendedContext ctx;
     protected final Z3ExtendedSolver solver;
-    private final FuncDecl<SeqSort> arrayReferenceMap;
+    private final FuncDecl<SeqSort<?>> arrayReferenceMap;
 
     protected Z3AbstractHybridInstance(
             Z3ExtendedContext ctx, Z3ExtendedSolver solver, String name, Sort sort) {
         this.ctx = ctx;
         this.solver = solver;
-        this.arrayReferenceMap = ctx.mkFuncDecl(
-                name+"ArrayReferenceMap", sort, ctx.mkStringSort());
+        this.arrayReferenceMap = ctx.mkFreshFuncDecl(
+                name+"ArrayReferenceMap", new Sort[]{sort}, ctx.mkStringSort());
     }
 
-    protected void createMapping(Expr reference) {
-        Expr strRefExpr = ctx.mkString(UUID.randomUUID().toString());
+    protected String createMapping(Expr reference) {
+        String ref = UUID.randomUUID().toString();
+        Expr strRefExpr = ctx.mkString(ref);
         BoolExpr condition = ctx.mkEq(arrayReferenceMap.apply(reference), strRefExpr);
         solver.add(condition);
+        return ref;
     }
 
     protected String evalReference(Expr reference) {

@@ -89,7 +89,7 @@ public class Z3MapInstance extends Z3AbstractHybridInstance implements IStack {
             array = mkEmptyArray(keySort, mapSort.getSentinel());
         }
 
-        return new MapModel(reference, array, mapSort.getSort(), size, isSizeUnknown);
+        return new MapModel(reference, array, size, isSizeUnknown);
     }
 
     public Optional<MapModel> getInitialMap(Expr var1) {

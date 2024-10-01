@@ -32,13 +32,18 @@ public class Z3ExtendedContext extends Context implements IStack {
         Z3CachingFactory sortState = new Z3CachingFactory(this);
         this.sortUnion = new Z3SortUnion(this);
 
-        this.solver = new Z3ExtendedSolver(this, this.mkSolver(), sortUnion);
+        this.solver = new Z3ExtendedSolver(this, this.mkSolver());
 
         this.classInstance = new Z3ClassInstance(this, solver, sortUnion);
         this.methodMockInstance = new Z3MethodMockInstance(this, solver, sortUnion);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
-        this.stacks = List.of(classInstance, methodMockInstance, mapInstance, linkedListInstance);
+
+        this.stacks = List.of(
+                classInstance,
+                methodMockInstance,
+                mapInstance,
+                linkedListInstance);
     }
 
     @Override

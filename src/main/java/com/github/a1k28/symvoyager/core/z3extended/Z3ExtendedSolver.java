@@ -20,7 +20,6 @@ public class Z3ExtendedSolver {
 
     private final Z3ExtendedContext ctx;
     private final Solver solver;
-    private final Z3SortUnion sortUnion;
 
     public void push() {
         solver.push();
@@ -129,7 +128,7 @@ public class Z3ExtendedSolver {
 
             key = model.eval(key, true);
             Expr valueWrapped = mapSort.getValue(retrieved);
-            Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
+            Expr unwrappedValue = ctx.getSortUnion().unwrapValue(valueWrapped)
                     .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);
             target.put(deserialize(key), deserialize(value));
@@ -197,7 +196,7 @@ public class Z3ExtendedSolver {
             String uuid = UUID.randomUUID().toString();
             uuid = uuid.substring(uuid.lastIndexOf("-")+1);
             Expr key = ctx.mkString(uuid); // TODO: string??
-            Expr keyWrapped = sortUnion.wrapValue(key);
+            Expr keyWrapped = ctx.getSortUnion().wrapValue(key);
 
             Expr retrieved;
             if (discoveredValues.isEmpty()) {
@@ -208,7 +207,7 @@ public class Z3ExtendedSolver {
             }
 
             Expr valueWrapped = mapSort.getValue(retrieved);
-            Expr unwrappedValue = sortUnion.unwrapValue(valueWrapped)
+            Expr unwrappedValue = ctx.getSortUnion().unwrapValue(valueWrapped)
                     .orElseGet(ctx::mkNull);
             Expr value = model.eval(unwrappedValue, true);
             target.put(deserialize(key), deserialize(value));

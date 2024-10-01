@@ -13,7 +13,6 @@ import lombok.Setter;
 public class MapModel {
     private Expr reference;
     private ArrayExpr array;
-    private TupleSort sort;
     private ArithExpr size;
     private boolean isSizeUnknown;
 
@@ -22,7 +21,6 @@ public class MapModel {
         this.array = model.array;
         this.size = model.size;
         this.isSizeUnknown = model.isSizeUnknown;
-        this.sort = model.sort;
     }
 
     @Getter

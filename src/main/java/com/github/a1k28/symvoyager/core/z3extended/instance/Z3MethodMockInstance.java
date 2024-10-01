@@ -45,7 +45,7 @@ public class Z3MethodMockInstance extends Z3AbstractHybridInstance implements IS
         Optional<String> reference = evalReferenceStrict(wrappedRef);
         if (reference.isPresent()) return stack.get(reference.get()).orElseThrow();
 
-        createMapping(wrappedRef);
+        String evalRef = createMapping(wrappedRef);
 
         MethodMockExprModel model = new MethodMockExprModel(
                 ref,
@@ -53,7 +53,7 @@ public class Z3MethodMockInstance extends Z3AbstractHybridInstance implements IS
                 args,
                 throwType,
                 retVal);
-        stack.add(evalReference(wrappedRef), model);
+        stack.add(evalRef, model);
         return model;
     }
 

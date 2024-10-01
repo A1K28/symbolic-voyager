@@ -77,8 +77,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         Optional<String> optional = evalReferenceStrict(wrappedBase);
         String ref;
         if (optional.isEmpty()) {
-            createMapping(wrappedBase);
-            ref = evalReference(wrappedBase);
+            ref = createMapping(wrappedBase);
             Expr expr = ctx.mkConst("Object"+ref, SortType.OBJECT.value(ctx));
             ClassInstanceModel classInstanceModel = createModel(expr, base, clazz);
             stack.add(ref, classInstanceModel);

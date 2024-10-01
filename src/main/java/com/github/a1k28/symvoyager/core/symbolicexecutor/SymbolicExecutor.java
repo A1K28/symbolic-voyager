@@ -238,16 +238,15 @@ public class SymbolicExecutor {
         } else if (rightOpHolder.getSType() == SType.INVOKE_MOCK) {
             // if method cannot be invoked, then mock it.
             SMethodExpr methodExpr = rightOpHolder.asMethod();
-            Class classType = SootInterpreter.translateType(rightOp.getType());
+            Class rightClassType = SootInterpreter.translateType(rightOp.getType());
             List<Expr> params = translateExpressions(methodExpr, sMethodPath);
             Method method = (Method) SootInterpreter.getMethod(methodExpr.getInvokeExpr());
             Expr retValExpr = z3t.translateValue(rightOp, rightOpVarType, sMethodPath);
             Expr reference = ctx.getMethodMockInstance().constructor(
                     method, params, null, retValExpr).getReferenceExpr();
-            SVar var = new SVar(z3t.getValueName(leftOp), reference,
-                    VarType.METHOD_MOCK, classType, true);
-            sMethodPath.getSymbolicVarStack().add(var);
-            sMethodPath.addMethodMock(var);
+            SVar mockVar = new SVar(z3t.getValueName(leftOp), reference,
+                    VarType.METHOD_MOCK, rightClassType, true);
+            sMethodPath.addMethodMock(mockVar);
             return SType.INVOKE_MOCK;
         } else {
             Class classType = SootInterpreter.translateType(rightOp.getType());

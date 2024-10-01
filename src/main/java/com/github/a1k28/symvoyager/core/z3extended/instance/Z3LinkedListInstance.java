@@ -108,7 +108,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
 
     private LinkedListModel constructor(
             Expr reference, Expr collection, Expr[] args, IntExpr capacity, boolean isSizeUnknown) {
-        createMapping(reference);
+        String ref = createMapping(reference);
 
         IntExpr size;
         IntExpr refCounter = ctx.mkInt(2);
@@ -145,7 +145,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
 
         LinkedListModel linkedListModel = new LinkedListModel(
                 reference, referenceMap, headRef, tailRef, size, refCounter);
-        stack.add(evalReference(reference), linkedListModel);
+        stack.add(ref, linkedListModel);
 
         if (collection != null) {
             addAll(reference, collection);
