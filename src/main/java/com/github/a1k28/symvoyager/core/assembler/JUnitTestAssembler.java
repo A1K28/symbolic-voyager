@@ -166,7 +166,7 @@ public class JUnitTestAssembler {
     // TODO: beautify certain types of object creation
     private static Object parse(Object object, Class<?> clazz) {
         if (object instanceof MockType)
-            return "any()";
+            return null;
         if (clazz == String.class)
             return "\""+object+"\"";
         if (clazz == boolean.class || clazz == Boolean.class)

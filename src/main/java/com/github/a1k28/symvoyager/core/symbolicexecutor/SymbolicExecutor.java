@@ -246,6 +246,7 @@ public class SymbolicExecutor {
                     method, params, null, retValExpr).getReferenceExpr();
             SVar var = new SVar(z3t.getValueName(leftOp), reference,
                     VarType.METHOD_MOCK, classType, true);
+            sMethodPath.getSymbolicVarStack().add(var);
             sMethodPath.addMethodMock(var);
             return SType.INVOKE_MOCK;
         } else {
