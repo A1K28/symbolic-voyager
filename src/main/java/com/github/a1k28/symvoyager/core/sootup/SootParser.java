@@ -13,6 +13,7 @@ import sootup.core.IdentifierFactory;
 import sootup.core.graph.BasicBlock;
 import sootup.core.jimple.Jimple;
 import sootup.core.jimple.basic.Immediate;
+import sootup.core.jimple.basic.LValue;
 import sootup.core.jimple.basic.Local;
 import sootup.core.jimple.common.constant.IntConstant;
 import sootup.core.jimple.common.expr.*;
@@ -47,23 +48,6 @@ class SootParser {
         }
     }
 
-//    private Map sortMap() {
-//        List<StmtWithPosition> trapsWithPositions = body.getTraps().stream().map(trap -> {
-//            SNode node = sNodeMap.get(trap.getHandlerStmt()).get(0);
-//            if (node.getType() == SType.CATCH) {
-//                node = node.getChildren().get(0);
-//            }
-//            Position position = node.getUnit().getPositionInfo().getStmtPosition();
-//            return new TrapWithPosition(trap, position);
-//        }).toList();
-//        this.traps = trapsWithPositions.stream()
-//                .sorted(Comparator.comparingInt(e -> e.getPosition().getFirstLine()))
-//                .map(TrapWithPosition::getTrap)
-//                .collect(Collectors.toList());
-//        public void sortTraps() {
-//        }
-//    }
-
     private static void interpretSootBody(BasicBlock<?> block,
                                           SMethodPath sMethodPath,
                                           SNode parent,
@@ -81,7 +65,7 @@ class SootParser {
             if (parent.containsParent(current)) continue;
             allCovered = false;
 
-            if (current instanceof JAssignStmt<?,?> assignStmt) {
+            if (current instanceof JAssignStmt assignStmt) {
                 SNode result = handleArrays(assignStmt, sMethodPath, parent);
                 if (result != null) {
                     parent = result;
@@ -94,12 +78,12 @@ class SootParser {
             parent = node;
         }
 
+        // helps avoid infinite recursion
+        if (allCovered) return;
+
         if (exceptionBlocks != null) {
             addCatchBlocksAndTheirDescendants(block, exceptionBlocks);
         }
-
-        // helps avoid infinite recursion
-        if (allCovered) return;
 
         if (parent.getType() == SType.SWITCH) {
             handleSwitch(parent, sMethodPath, block, exceptionBlocks);
@@ -173,7 +157,7 @@ class SootParser {
             Immediate value = (Immediate) assignStmt.getRightOp();
             MethodSignature addMethodSignature = arrayMap.getAddByIndexMethod();
             JInterfaceInvokeExpr interfaceInvoke = Jimple
-                    .newInterfaceInvokeExpr(base, addMethodSignature, index, value);
+                    .newInterfaceInvokeExpr(base, addMethodSignature, List.of(index, value));
             JInvokeStmt invokeStmt = Jimple.newInvokeStmt(
                     interfaceInvoke, assignStmt.getPositionInfo());
             SNode invokeNode = sMethodPath.getNode(invokeStmt);
@@ -183,7 +167,7 @@ class SootParser {
         } else if (assignStmt.getRightOp() instanceof JArrayRef arrayRef) {
             Local base = arrayRef.getBase();
             Immediate index = arrayRef.getIndex();
-            Immediate leftOp = (Immediate) assignStmt.getLeftOp();
+            LValue leftOp = assignStmt.getLeftOp();
             MethodSignature addMethodSignature = arrayMap.getGetByIndexMethod();
             JInterfaceInvokeExpr interfaceInvoke = Jimple
                     .newInterfaceInvokeExpr(base, addMethodSignature, index);
@@ -251,73 +235,9 @@ class SootParser {
             interpretSootBody(successors.get(1), sMethodPath, elseNode, exceptionBlocks);
         }
     }
-
-//    private static void dfs(
-//            StmtGraph<?> cfg,
-//            Stmt current,
-//            SMethodPath sMethodPath,
-//            SNode parent) {
-//        if (sMethodPath.getSNodeMap().containsKey(current)) {
-//            parent.addChild(sMethodPath.getSNodeMap().get(current).get(0));
-//            return;
-//        }
-//        SNode node = sMethodPath.createNode(current);
-//        parent.addChild(node);
-//        if (!cfg.getTails().contains(current)) {
-//            List<Stmt> succs = cfg.getAllSuccessors(current);
-//            if (node.getType() == SType.SWITCH) {
-//                parent.removeLastChild();
-//                JSwitchStmt switchStmt = (JSwitchStmt) current;
-//                List<IntConstant> values = switchStmt.getValues();
-//                for (int i = 0; i < values.size(); i++) {
-//                    JEqExpr eqExpr = Jimple.newEqExpr(switchStmt.getKey(), values.get(i));
-//                    JIfStmt ifStmt = Jimple.newIfStmt(eqExpr, current.getPositionInfo());
-//                    SNode ifNode = sMethodPath.createNode(ifStmt);
-//                    SNode elseNode = sMethodPath.createNode(ifStmt);
-//                    parent.addChild(ifNode);
-//                    parent.addChild(elseNode);
-//                    ifNode.setType(SType.BRANCH_TRUE);
-//                    elseNode.setType(SType.BRANCH_FALSE);
-//                    dfs(cfg, succs.get(i), sMethodPath, ifNode);
-//                    parent = elseNode;
-//                }
-//                // has default
-//                if (values.size() + 1 == succs.size())
-//                    dfs(cfg, succs.get(values.size()), sMethodPath, parent);
-//            } else {
-//                if (node.getType() == SType.BRANCH) {
-//                    // assuming first two values are if & else branches
-//                    SNode node2 = sMethodPath.createNode(current);
-//                    parent.addChild(node2);
-//
-//                    node.setType(SType.BRANCH_FALSE);
-//                    node2.setType(SType.BRANCH_TRUE);
-//
-//                    dfs(cfg, succs.get(0), sMethodPath, node);
-//                    dfs(cfg, succs.get(1), sMethodPath, node2);
-//
-//                    // handle catch blocks
-//                    for (int i = 2;i<succs.size();i++) {
-//                        Stmt succ = succs.get(i);
-//                        if (current == succ) continue;
-//                        if (!node.containsParent(succ)) dfs(cfg, succ, sMethodPath, node);
-//                        if (!node2.containsParent(succ)) dfs(cfg, succ, sMethodPath, node2);
-//                    }
-//                } else {
-//                    for (int i = 0; i < succs.size(); i++) {
-//                        Stmt succ = succs.get(i);
-//                        if (current != succ && !node.containsParent(succ)) {
-//                            dfs(cfg, succ, sMethodPath, node);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-    static void initArrayMap(View<?> view) {
+    
+    static void initArrayMap(IdentifierFactory identifierFactory) {
         if (arrayMap == null) {
-            IdentifierFactory identifierFactory = view.getIdentifierFactory();
             ClassType listClass = identifierFactory
                     .getClassType(List.class.getCanonicalName());
             ClassType arrayClass = identifierFactory

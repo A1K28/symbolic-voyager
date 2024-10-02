@@ -4,7 +4,6 @@ import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import sootup.core.Project;
 import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
@@ -15,14 +14,13 @@ import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.signatures.MethodSignature;
 import sootup.core.types.*;
-import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
-import sootup.java.core.JavaProject;
+import sootup.java.core.JavaIdentifierFactory;
 import sootup.java.core.JavaSootClass;
-import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 import sootup.java.core.language.JavaLanguage;
 import sootup.java.core.types.JavaClassType;
+import sootup.java.core.views.JavaView;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -39,43 +37,47 @@ public class SootInterpreter {
     private static final Logger log = Logger.getInstance(SootInterpreter.class);
     private static final Map<String, Class<?>> cachedMap = new HashMap<>();
 
-    public static SootClass<JavaSootClassSource> getSootClass(String className) throws ClassNotFoundException {
-        int javaVersion = getJavaVersion(Class.forName(className));
-        JavaLanguage language = new JavaLanguage(javaVersion);
+    public static JavaSootClass getSootClass(String className) throws ClassNotFoundException {
+//        int javaVersion = getJavaVersion(Class.forName(className));
+//        JavaLanguage language = new JavaLanguage(javaVersion);
+//        JavaLanguage language = null;
 
-        Optional<SootClass<JavaSootClassSource>> optional = getJavaSootClassSource(
-                className, language);
+        Optional<JavaSootClass> optional = getJavaSootClassSource(className);
         for (int i = 0; i < 3 && optional.isEmpty(); i++) {
             // the class may have not been loaded properly. wait for a bit.
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) {}
 
-            optional = getJavaSootClassSource(className, language);
+            optional = getJavaSootClassSource(className);
         }
 
         return optional.get();
     }
 
-    private static Optional<SootClass<JavaSootClassSource>> getJavaSootClassSource(
-            String className, JavaLanguage language) {
-        AnalysisInputLocation<JavaSootClass> inputLocation =
+    private static Optional<JavaSootClass> getJavaSootClassSource(
+            String className) {
+        AnalysisInputLocation inputLocation =
                 new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
 
-        Project project = JavaProject.builder(language)
-                .addInputLocation(inputLocation).build();
+        JavaView view = new JavaView(Collections.singletonList(inputLocation));
+
+        JavaIdentifierFactory identifierFactory = JavaIdentifierFactory.getInstance();
+
+//        Project project = JavaProject.builder(language)
+//                .addInputLocation(inputLocation).build();
 
         ClassType classType =
-                project.getIdentifierFactory().getClassType(className);
+                identifierFactory.getClassType(className);
 
-        View<?> view = project.createView();
-        initArrayMap(view);
+//        View view = project.createView();
+        initArrayMap(identifierFactory);
 
-        return (Optional<SootClass<JavaSootClassSource>>) view.getClass(classType);
+        return view.getClass(classType);
     }
 
     public static SootMethod getSootMethod(
-            SootClass<JavaSootClassSource> sootClass, Executable method, boolean isConstructor) {
+            SootClass sootClass, Executable method, boolean isConstructor) {
         // Get the method
         outer: for (SootMethod sootMethod : sootClass.getMethods()) {
             if (!isConstructor && !method.getName().equals(sootMethod.getName())) continue;
@@ -155,7 +157,7 @@ public class SootInterpreter {
         interpretSoot(block, sMethodPath);
     }
 
-    public static List<JavaSootField> getFields(SootClass<?> sootClass) throws ClassNotFoundException {
+    public static List<JavaSootField> getFields(SootClass sootClass) throws ClassNotFoundException {
         List<JavaSootField> fields = new ArrayList<>();
         addFields(sootClass, fields);
         return fields;
@@ -202,7 +204,7 @@ public class SootInterpreter {
         return methodSignature.toString().matches(".*<.*: void <init>\\(.*\\)>.*");
     }
 
-    private static void addFields(SootClass<?> sootClass, List<JavaSootField> fields) throws ClassNotFoundException {
+    private static void addFields(SootClass sootClass, List<JavaSootField> fields) throws ClassNotFoundException {
         sootClass.getFields().forEach(e -> {if (e instanceof JavaSootField j) fields.add(j);});
 //        if (sootClass.hasSuperclass()) {
 //            // TODO: stop within the same package?

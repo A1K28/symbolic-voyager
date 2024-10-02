@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Setter
 public class SClassInstance {
     private final Class<?> clazz;
-    private final SootClass<JavaSootClassSource> sootClass;
+    private final SootClass sootClass;
     private final Set<String> fieldNames;
     private final List<JavaSootField> fields;
     private final SStack symbolicFieldStack;
@@ -37,7 +37,7 @@ public class SClassInstance {
     }
 
     public SClassInstance(Class<?> clazz,
-                          SootClass<JavaSootClassSource> sootClass,
+                          SootClass sootClass,
                           List<JavaSootField> fields) {
         this.clazz = clazz;
         this.sootClass = sootClass;
@@ -48,14 +48,15 @@ public class SClassInstance {
         this.gotoCount = new HashMap<>();
     }
 
-    public boolean incrementGotoCount(SNode sNode) {
-        if (!this.gotoCount.containsKey(sNode))
-            this.gotoCount.put(sNode, 0);
-        this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
-        boolean shouldBreak = this.gotoCount.get(sNode) > CLIOptions.gotoLimit;
-//        if (shouldBreak) this.gotoCount.put(sNode, 0);
-        return !shouldBreak;
-    }
+//    public boolean incrementGotoCount(SNode sNode) {
+//        if (!this.gotoCount.containsKey(sNode))
+//            this.gotoCount.put(sNode, 0);
+//        this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
+//        boolean shouldBreak = this.gotoCount.get(sNode) % CLIOptions.gotoLimit == 0;
+////        boolean shouldBreak = this.gotoCount.get(sNode) > CLIOptions.gotoLimit;
+////        if (shouldBreak) this.gotoCount.put(sNode, 0);
+//        return !shouldBreak;
+//    }
 
 //    public void clear() {
 //        this.gotoCount.clear();

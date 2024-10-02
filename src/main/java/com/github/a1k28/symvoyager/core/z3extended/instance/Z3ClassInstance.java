@@ -18,6 +18,7 @@ import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.PrimitiveType;
 import sootup.core.types.Type;
+import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 
@@ -142,7 +143,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
 
     private SClassInstance createClassInstance(Class<?> clazz)
             throws ClassNotFoundException {
-        SootClass<JavaSootClassSource> sootClass = getSootClass(clazz.getName());
+        JavaSootClass sootClass = getSootClass(clazz.getName());
         List<JavaSootField> fields = SootInterpreter.getFields(sootClass);
         SClassInstance instance = new SClassInstance(clazz, sootClass, fields);
         return instance;

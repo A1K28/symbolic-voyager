@@ -15,6 +15,7 @@ public class ClassModel {
     private String packageName;
     private String className;
     private List<String> imports;
+    private List<String> staticImports;
     private List<MethodCallModel> methodCallModels;
     private boolean mocksExist;
 }

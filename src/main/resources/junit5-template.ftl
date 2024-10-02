@@ -1,15 +1,12 @@
 package ${cm.packageName};
 
 <#list cm.imports as import>
-import ${import}.*;
+import ${import};
 </#list>
 
-import org.junit.jupiter.api.*;
-import com.github.a1k28.supermock.Assertions;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static com.github.a1k28.supermock.MockAPI.*;
-import static com.github.a1k28.supermock.Parser.deserialize;
+<#list cm.staticImports as import>
+import static ${import};
+</#list>
 
 public class ${cm.className}Test {
     <#if cm.mocksExist == true>

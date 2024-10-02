@@ -166,7 +166,9 @@ public class SatisfiabilityHandler {
         Expr evalExpr = model.eval(expr, true);
 
         if (ctx.getSortUnion().getGenericSort().equals(evalExpr.getSort())) {
-            evalExpr = solver.getModel().eval(ctx.getSortUnion().unwrapValue(evalExpr, evalExpr), true);
+            Expr unwrapped = ctx.getSortUnion().unwrapValue(evalExpr, evalExpr);
+            solver.check(); // mandatory check
+            evalExpr = solver.getModel().eval(unwrapped, true);
         }
 
         if (SortType.MAP.equals(evalExpr.getSort())) {
@@ -192,10 +194,10 @@ public class SatisfiabilityHandler {
             if (!ctx.containsAssertion(assertion))
                 solver.add(assertion);
 
-            evaluated = evalExpr;
+            evaluated = evalExpr.toString();
         }
 
-        log.debug(evaluated + " - " + sVar.getName() + " " + expr.getSort());
+        log.debug(evaluated + " - " + sVar.getName());
         return evaluated;
     }
 

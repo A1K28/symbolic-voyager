@@ -2,7 +2,6 @@ package com.github.a1k28.symvoyager.core.cli.model;
 
 import com.github.a1k28.symvoyager.helper.Logger;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,7 +11,7 @@ public class CLIOptions {
     public static Set<String> whitelistedPackages = new HashSet<>();
     public static Set<String> mockableClasses = new HashSet<>();
     public static Set<String> mockablePackages = new HashSet<>();
-    public static Integer gotoLimit = 20;
+    public static Integer depthLimit = 100;
     public static boolean disableMockExploration = false;
     public static boolean requireMethodSuggestion = false;
     public static boolean skipGettersAndSetters = true;
@@ -65,7 +64,7 @@ public class CLIOptions {
                 for (String v : split(value))
                     mockablePackages.add(parseWin(v.strip()));
             }
-            case RECURSION_LIMIT -> gotoLimit = Integer.parseInt(value);
+            case DEPTH_LIMIT -> depthLimit = Integer.parseInt(value);
             case LOG_LEVEL -> Logger.setLoggingLevel(Logger.Level.fromValue(value));
             case DISABLE_MOCK_EXPLORATION -> disableMockExploration = Boolean.parseBoolean(value);
             case REQUIRE_METHOD_SUGGESTION -> requireMethodSuggestion = Boolean.parseBoolean(value);

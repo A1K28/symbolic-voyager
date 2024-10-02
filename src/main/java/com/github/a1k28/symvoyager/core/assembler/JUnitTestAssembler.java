@@ -34,6 +34,7 @@ public class JUnitTestAssembler {
         String testPath = targetPath.replace(File.separator+"target"+File.separator+"classes", File.separator+"src"+File.separator+"test"+File.separator+"java"+File.separator);
         String fileName = testPath + packageName.replace(".", File.separator) + File.separator + testClassName + ".java";
         Set<String> imports = new HashSet<>();
+        Set<String> staticImports = new HashSet<>();
         List<MethodCallModel> methodCallModels = new ArrayList<>();
         Map<String, Integer> nameCount = new HashMap<>();
         boolean mocksExist = false;
@@ -81,7 +82,7 @@ public class JUnitTestAssembler {
                 fields.add(field);
 
                 if (!jField.getType().isPrimitive())
-                    imports.add(jField.getType().getPackageName());
+                    imports.add(jField.getType().getPackageName()+".*");
             }
             Fields fieldsModel = new Fields(fields.size(), fields);
 
@@ -99,21 +100,21 @@ public class JUnitTestAssembler {
 
             // handle imports
             if (exceptionType != null) {
-                imports.add(exceptionType.getPackageName());
+                imports.add(exceptionType.getPackageName()+".*");
             }
 
             for (Class parameterType : method.getParameterTypes()) {
                 if (!parameterType.isPrimitive())
-                    imports.add(parameterType.getPackageName());
+                    imports.add(parameterType.getPackageName()+".*");
             }
 
             for (MethodMockResult mockResult : res.getMethodMockValues()) {
-                imports.add(mockResult.getMethod().getReturnType().getPackageName());
-                imports.add(mockResult.getMethod().getDeclaringClass().getPackageName());
+                imports.add(mockResult.getMethod().getReturnType().getPackageName()+".*");
+                imports.add(mockResult.getMethod().getDeclaringClass().getPackageName()+".*");
                 if (mockResult.getExceptionType() != null)
-                    imports.add(mockResult.getExceptionType().getPackageName());
+                    imports.add(mockResult.getExceptionType().getPackageName()+".*");
                 for (Object param : mockResult.getParsedParameters())
-                    if (param != null) imports.add(param.getClass().getPackageName());
+                    if (param != null) imports.add(param.getClass().getPackageName()+".*");
             }
 
             if (!nameCount.containsKey(method.getName()))
@@ -138,10 +139,18 @@ public class JUnitTestAssembler {
             methodCallModels.add(methodCallModel);
         }
 
+        imports.add("org.junit.jupiter.api.*");
+        imports.add("com.github.a1k28.supermock.*");
+
+        staticImports.add("org.junit.jupiter.api.Assertions.*");
+        staticImports.add("com.github.a1k28.supermock.MockAPI.*");
+        staticImports.add("com.github.a1k28.supermock.Parser.deserialize");
+
         ClassModel classModel = new ClassModel(
                 packageName,
                 className,
                 new ArrayList<>(imports),
+                new ArrayList<>(staticImports),
                 methodCallModels,
                 mocksExist);
 
@@ -195,8 +204,11 @@ public class JUnitTestAssembler {
             Object[] args = mockResult.getParsedParameters().toArray();
             Class retType = mockResult.getReturnType();
             Class exceptionType = mockResult.getExceptionType();
-            String retTypeStr = retType.getSimpleName();
-            if ("void".equals(retTypeStr)) retTypeStr = null;
+            String retTypeStr;
+            if ("void".equals(mockResult.getMethod().getReturnType().getName()))
+                retTypeStr = null;
+            else
+                retTypeStr = retType.getSimpleName();
 
             String exceptionName = exceptionType == null ? null : exceptionType.getSimpleName();
 
