@@ -111,27 +111,6 @@ public class SootInterpreter {
         throw new IllegalStateException("Could not match method: " + invokeExpr.getMethodSignature());
     }
 
-    public static int getJavaVersion(Class<?> clazz) {
-        log.trace("Getting java version for class: " + clazz);
-        try {
-            try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
-                    clazz.getName().replace(".", File.separator) + ".class");
-                 DataInputStream dis = new DataInputStream(is)) {
-
-                dis.readInt(); // Skip magic number
-                int minorVersion = dis.readUnsignedShort();
-                int majorVersion = dis.readUnsignedShort();
-
-                return mapVersionToJava(majorVersion, minorVersion);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            // TODO: remove default
-            return 17;
-//            throw new RuntimeException("Error reading class file", e);
-        }
-    }
-
     public static Class<?> getClass(ClassType classType) {
         return getClass(classType.getFullyQualifiedName());
     }
@@ -150,10 +129,7 @@ public class SootInterpreter {
 
     public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
         StmtGraph<?> cfg = body.getStmtGraph();
-//        Stmt start = cfg.getStartingStmt();
         BasicBlock<?> block = cfg.getStartingStmtBlock();
-//        print(cfg, start, 0);
-//        dfs(cfg, start, sMethodPath, sMethodPath.getRoot());
         interpretSoot(block, sMethodPath);
     }
 
@@ -196,7 +172,6 @@ public class SootInterpreter {
             // TODO: possibly modify behavior
             log.warn("Could not find class for type: " + type);
             return Object.class;
-//            throw new IllegalStateException(e);
         }
     }
 
@@ -216,13 +191,6 @@ public class SootInterpreter {
 //        }
     }
 
-    private static void print(StmtGraph<?> cfg, Stmt current, int level) {
-        for (int i = 1; i < level; i++) System.out.print("\t");
-        System.out.println(current);
-        List<Stmt> succs = cfg.getAllSuccessors(current);
-        succs.forEach(e -> print(cfg, e, level+1));
-    }
-
     public static String translateField(Field field) {
         return new StringBuilder("<")
                 .append(field.getDeclaringClass().getName())
@@ -232,25 +200,5 @@ public class SootInterpreter {
                 .append(field.getName())
                 .append(">")
                 .toString();
-    }
-
-    private static int mapVersionToJava(int major, int minor) {
-        return switch (major) {
-            case 52 -> 8;
-            case 53 -> 9;
-            case 54 -> 10;
-            case 55 -> 11;
-            case 56 -> 12;
-            case 57 -> 13;
-            case 58 -> 14;
-            case 59 -> 15;
-            case 60 -> 16;
-            case 61 -> 17;
-            case 62 -> 18;
-            case 63 -> 19;
-            case 64 -> 20;
-            case 65 -> 21;
-            default -> throw new RuntimeException("Unknown (major version: " + major + ", minor version: " + minor + ")");
-        };
     }
 }

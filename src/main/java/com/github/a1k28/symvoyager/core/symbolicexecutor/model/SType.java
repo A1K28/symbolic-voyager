@@ -23,5 +23,6 @@ public enum SType {
     RETURN_VOID,
     NOP,
     BREAKPOINT,
+    MODELLED,
     OTHER
 }

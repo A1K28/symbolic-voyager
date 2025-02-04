@@ -40,12 +40,12 @@ class SootParser {
     static void interpretSoot(BasicBlock<?> block, SMethodPath sMethodPath) {
         Set<ExceptionBlock> exceptionBlocks = new HashSet<>();
         interpretSootBody(block, sMethodPath, sMethodPath.getRoot(), exceptionBlocks);
-        for (ExceptionBlock exceptionBlock : exceptionBlocks) {
-            BasicBlock<?> basicBlock = exceptionBlock.getBlock();
-            SCatchNode catchNode = sMethodPath.createCatchNode(
-                    basicBlock.getHead(), exceptionBlock.getType());
-            interpretSootBody(basicBlock, sMethodPath, catchNode, null);
-        }
+//        for (ExceptionBlock exceptionBlock : exceptionBlocks) {
+//            BasicBlock<?> basicBlock = exceptionBlock.getBlock();
+//            SCatchNode catchNode = sMethodPath.createCatchNode(
+//                    basicBlock.getHead(), exceptionBlock.getType());
+//            interpretSootBody(basicBlock, sMethodPath, catchNode, null);
+//        }
     }
 
     private static void interpretSootBody(BasicBlock<?> block,

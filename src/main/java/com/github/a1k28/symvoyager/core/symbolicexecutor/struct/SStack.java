@@ -20,7 +20,7 @@ public class SStack extends Z3Stack<String, SVar> implements IStack {
     }
 
     public Optional<SVar> get(Expr expr) {
-        List<SVar> res = getAll().stream().filter(var -> expr.equals(var.getExpr())).collect(Collectors.toList());
+        List<SVar> res = getAll().stream().filter(var -> expr.equals(var.getExpr())).toList();
         if (res.isEmpty()) return Optional.empty();
         return Optional.of(res.get(res.size()-1));
     }

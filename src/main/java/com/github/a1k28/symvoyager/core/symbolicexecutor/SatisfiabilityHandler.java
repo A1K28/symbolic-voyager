@@ -36,8 +36,7 @@ public class SatisfiabilityHandler {
 
     Z3Status checkSatisfiability(SMethodPath sMethodPath,
                                  SNode node,
-                                 SType type,
-                                 LinkedList<SNode> path) {
+                                 SType type) {
         if (solver.check() != Status.SATISFIABLE) {
             log.info("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
@@ -49,13 +48,13 @@ public class SatisfiabilityHandler {
             Class exceptionType = sMethodPath.getSymbolicVarStack()
                     .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
                     .getClassType();
-            handleSatisfiability(sMethodPath, null, exceptionType, path);
+            handleSatisfiability(sMethodPath, null, exceptionType);
             return Z3Status.SATISFIABLE_END;
         }
         if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
             SVarEvaluated returnValue = getReturnValue(sMethodPath, node);
-            handleSatisfiability(sMethodPath, returnValue, null, path);
+            handleSatisfiability(sMethodPath, returnValue, null);
             return Z3Status.SATISFIABLE_END;
         }
         return Z3Status.SATISFIABLE;
@@ -64,8 +63,7 @@ public class SatisfiabilityHandler {
     private void handleSatisfiability(
             SMethodPath sMethodPath,
             SVarEvaluated returnValue,
-            Class<? extends Throwable> exceptionType,
-            LinkedList<SNode> path) {
+            Class<? extends Throwable> exceptionType) {
         log.info("Path is satisfiable - " + sMethodPath.getMethod().getName());
 
         // TODO: filter out already explored paths
@@ -109,8 +107,7 @@ public class SatisfiabilityHandler {
                 parametersEvaluated,
                 mockedMethodsEvaluated,
                 returnValue,
-                exceptionType,
-                List.copyOf(path)
+                exceptionType
         );
 
         sMethodPath.addSatisfiableResult(satisfiableResult);

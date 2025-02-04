@@ -102,7 +102,12 @@ public class SymbolTranslator {
             }
 
             ParsedResult parsedResult = new ParsedResult(
-                    returnVal, returnType, parameters, parsedFields, mockedMethodValues, res.getExceptionType());
+                    returnVal,
+                    returnType,
+                    parameters,
+                    parsedFields,
+                    mockedMethodValues,
+                    res.getExceptionType());
 
             // in case the test reduction logic didn't work as intended
             if (uniqueResultSet.contains(parsedResult)) continue;

@@ -17,22 +17,19 @@ public class SatisfiableResult {
     private final List<SMethodMockEvaluated> mockedMethodValues;
     private final SVarEvaluated returnValue;
     private final Class<? extends Throwable> exceptionType;
-    private final List<SNode> path;
 
     public SatisfiableResult(BoolExpr[] z3Assertions,
                              List<SVarEvaluated> symbolicFieldValues,
                              List<SVarEvaluated> symbolicParameterValues,
                              List<SMethodMockEvaluated> mockedMethodValues,
                              SVarEvaluated returnValue,
-                             Class<? extends Throwable> exceptionType,
-                             List<SNode> path) {
+                             Class<? extends Throwable> exceptionType) {
         this.z3Assertions = Arrays.asList(z3Assertions);
         this.symbolicFieldValues = symbolicFieldValues;
         this.symbolicParameterValues = symbolicParameterValues;
         this.mockedMethodValues = mockedMethodValues;
         this.returnValue = returnValue;
         this.exceptionType = exceptionType;
-        this.path = path;
     }
 
     public Object getParameter(String name) {

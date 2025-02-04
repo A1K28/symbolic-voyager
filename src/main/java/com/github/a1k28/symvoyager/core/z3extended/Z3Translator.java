@@ -220,16 +220,7 @@ public class Z3Translator {
             return ctx.mkString(v.getValue().replaceFirst("\u0001", ""));
         }
         if (value instanceof AbstractInvokeExpr abstractInvoke) {
-//            Value base = null;
-//            if (abstractInvoke instanceof JVirtualInvokeExpr invoke) {
-//                base = invoke.getBase();
-//                Optional<SVar> optional = getSymbolicValue(base, varType, methodPath);
-//                if (optional.isPresent()) return optional.get().getExpr();
-//            }
-            Expr res = handleMethodCall(abstractInvoke, varType, methodPath);
-//            if (base != null)
-//                updateSymbolicVar(base, res, varType, methodPath);
-            return res;
+            return handleMethodCall(abstractInvoke, varType, methodPath);
         }
         if (value instanceof JNewExpr) {
             return ctx.mkFreshConst(value.toString(), translateType(value.getType()));
@@ -444,7 +435,6 @@ public class Z3Translator {
             else
                 sort = translateType(invoke.getType());
             return getSymbolicVar(invoke, sort, varType, methodPath).getExpr();
-//            return ctx.mkFreshConst(invoke.toString(), sort);
         }
     }
 
