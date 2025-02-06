@@ -16,7 +16,7 @@ import java.util.List;
 import static com.github.a1k28.supermock.MockAPI.when;
 
 public class Z3MiscTest {
-    //@SymbolicTest({0,1})
+    ////@SymbolicTest({0,1})
     @DisplayName("test_ternary_operator_1")
     public int test_ternary_operator_1(int param) {
         int k = param > 10 ? 20 : -1;
@@ -40,7 +40,7 @@ public class Z3MiscTest {
         return 1;
     }
 
-    //@SymbolicTest({0,1,2,3})
+    ////@SymbolicTest({0,1,2,3})
     @DisplayName("test_switch_statements_1")
     public int test_switch_statements_1(int param) {
         String a;
@@ -63,7 +63,7 @@ public class Z3MiscTest {
         return k;
     }
 
-    //@SymbolicTest({1,2,3})
+    ////@SymbolicTest({1,2,3})
     @DisplayName("test_switch_statements_2")
     public int test_switch_statements_2(int param) {
         int k;
@@ -82,7 +82,7 @@ public class Z3MiscTest {
         return k;
     }
 
-    //@SymbolicTest({1,2,3})
+//    //@SymbolicTest({1,2,3})
     @DisplayName("test_switch_statements_3")
     public int test_switch_statements_3(String param) {
         int k;
@@ -101,7 +101,7 @@ public class Z3MiscTest {
         return k;
     }
 
-    //@SymbolicTest({1,2})
+//    //@SymbolicTest({1,2})
     @DisplayName("test_for_loop_1")
     public int test_for_loop_1(int param) {
         int i = 0;
@@ -116,7 +116,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    //@SymbolicTest({1,2,3})
+//    //@SymbolicTest({1,2,3})
     @DisplayName("test_for_loop_2")
     public int test_for_loop_2(int param) {
         int k = 0;
@@ -133,7 +133,7 @@ public class Z3MiscTest {
         return 3;
     }
 
-    //@SymbolicTest({1,2,3})
+//    //@SymbolicTest({1,2,3})
     @DisplayName("test_nested_for_loop_1")
     public int test_nested_for_loop_1(int param) {
         int k = 0;
@@ -194,7 +194,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2})
+    ////@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {
         NOPService nopService = new NOPService();
@@ -206,7 +206,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2})
+    ////@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_2")
     public int test_method_mock_2(int a, int b) {
         NOPService nopService = new NOPService();
@@ -218,7 +218,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    //@SymbolicTest({0,1,2,3})
+    ////@SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_try_catch_1")
     public int test_method_mock_with_try_catch_1(int a, int b) throws SQLException {
         NOPService nopService = new NOPService();
@@ -234,7 +234,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2})
+    ////@SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_with_nested_try_catch_1")
     public int test_method_mock_with_nested_try_catch_1(int a) {
         try {
@@ -247,7 +247,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3})
+    ////@SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_nested_try_catch_2")
     public int test_method_mock_with_nested_try_catch_2(int a, int b) {
         try {
@@ -262,7 +262,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3,4})
+    ////@SymbolicTest({0,1,2,3,4})
     @DisplayName("test_method_mock_with_nested_try_catch_3")
     public int test_method_mock_with_nested_try_catch_3(int a, int b) {
         try {
@@ -286,7 +286,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_try_catch_1")
     public int test_try_catch_1(int param) {
         if (param == 10)
@@ -300,7 +300,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_try_catch_2")
     public int test_try_catch_2(int param) {
         try {
@@ -318,7 +318,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({1})
+    @SymbolicTest({1})
     @DisplayName("test_try_catch_finally_1")
     public int test_try_catch_finally_1(int param) {
         try {
@@ -334,7 +334,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3,4})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_nested_try_catch_1")
     public int test_nested_try_catch_1(int param) {
         try {
@@ -392,7 +392,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3,4})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_double_try_catch_1")
     public int test_double_try_catch_1(int param) {
         try {
@@ -417,34 +417,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1,2,3,4})
-    @DisplayName("test_nested_double_try_catch_2")
-    public int test_nested_double_try_catch_2(int param) {
-        try {
-            if (param == 10)
-                return 0;
-            if (param == 100)
-                throw new IllegalArgumentException();
-        } catch (IllegalArgumentException e) {
-            return 1;
-        }
-
-        try {
-            if (param == 20 || param == 25 || param == 27 || param == 28)
-                throw new IllegalArgumentException("Illegal arguments provided");
-            if (param == 30)
-                throw new IllegalStateException("Illegal state exception");
-            return 2;
-        } catch (IllegalArgumentException e) {
-//            if (param == 27)
-//                throw new IllegalArgumentException();
-            return 3;
-        } catch (IllegalStateException e) {
-            return 4;
-        }
-    }
-
-    //@SymbolicTest({0,1,2,3,4,5})
+    @SymbolicTest({0,1,2,3,4,5})
     @DisplayName("test_nested_double_try_catch_1")
     public int test_nested_double_try_catch_1(int param) {
         try {
@@ -475,7 +448,34 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0})
+    @SymbolicTest({0,1,2,3,4})
+    @DisplayName("test_nested_double_try_catch_2")
+    public int test_nested_double_try_catch_2(int param) {
+        try {
+            if (param == 10)
+                return 0;
+            if (param == 100)
+                throw new IllegalArgumentException();
+        } catch (IllegalArgumentException e) {
+            return 1;
+        }
+
+        try {
+            if (param == 20 || param == 25 || param == 27 || param == 28)
+                throw new IllegalArgumentException("Illegal arguments provided");
+            if (param == 30)
+                throw new IllegalStateException("Illegal state exception");
+            return 2;
+        } catch (IllegalArgumentException e) {
+//            if (param == 27)
+//                throw new IllegalArgumentException();
+            return 3;
+        } catch (IllegalStateException e) {
+            return 4;
+        }
+    }
+
+    @SymbolicTest({0})
     @DisplayName("test_nested_try_catch_finally_1")
     public int test_nested_try_catch_finally_1(int param) {
         try {
@@ -511,7 +511,7 @@ public class Z3MiscTest {
         }
     }
 
-    //@SymbolicTest({0,1})
+    ////@SymbolicTest({0,1})
     @DisplayName("test_array_param_passing_1")
     public int test_array_param_passing_1(int param1, int param2) {
         Integer[] ints = new Integer[2];
@@ -523,14 +523,14 @@ public class Z3MiscTest {
         return 1;
     }
 
-    //@SymbolicTest({0})
+    ////@SymbolicTest({0})
     @DisplayName("test_stub_mock_1")
     public int test_stub_mock_1(int param1, int param2) {
         NOPService service = getService();
         return 0;
     }
 
-    //@SymbolicTest({0,1,3,4,6,7})
+    ////@SymbolicTest({0,1,3,4,6,7})
     @DisplayName("test_string_ops_1")
     public int test_string_ops_1(String a, String b) {
         if (a.startsWith(b))
@@ -552,7 +552,7 @@ public class Z3MiscTest {
         return 7;
     }
 
-    //@SymbolicTest({0,1,2})
+    ////@SymbolicTest({0,1,2})
     @DisplayName("test_interface_mock_1")
     public int test_interface_mock_1(long k) {
         BigDecimal val = NOPService.convFromMU(k);
@@ -567,7 +567,7 @@ public class Z3MiscTest {
         return 2;
     }
     
-    @BasicTest
+//    @BasicTest
     @DisplayName("ASDADS")
     public void adwadawdawd() {
 //        when(API.class, "authenticate", 4).thenReturn("ASD");

@@ -13,6 +13,7 @@ import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
 import sootup.core.jimple.common.stmt.JThrowStmt;
+import sootup.core.jimple.common.stmt.Stmt;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,27 +35,33 @@ public class SatisfiabilityHandler {
         this.solver = ctx.getSolver();
     }
 
-    Z3Status checkSatisfiability(SMethodPath sMethodPath,
-                                 SNode node,
-                                 SType type) {
+    boolean isSatisfiable(SMethodPath methodPath) {
         if (solver.check() != Status.SATISFIABLE) {
-            log.info("Path is unsatisfiable - " + sMethodPath.getMethod().getName() + "\n");
+            log.info("Path is unsatisfiable - " + methodPath.getMethod().getName() + "\n");
+            return false;
+        }
+        return true;
+    }
+
+    Z3Status checkSatisfiability(SMethodPath methodPath, Stmt stmt, SType type) {
+        if (solver.check() != Status.SATISFIABLE) {
+            log.info("Path is unsatisfiable - " + methodPath.getMethod().getName() + "\n");
             return Z3Status.UNSATISFIABLE_END;
         }
-        if (SType.INVOKE == type || SType.GOTO == type || SType.THROW == type) {
+        if (SType.INVOKE == type || SType.THROW == type) {
             return Z3Status.SATISFIABLE_END;
         }
         if (SType.THROW_END == type) {
-            Class exceptionType = sMethodPath.getSymbolicVarStack()
-                    .get(z3t.getValueName(((JThrowStmt) node.getUnit()).getOp())).get()
+            Class exceptionType = methodPath.getSymbolicVarStack()
+                    .get(z3t.getValueName(((JThrowStmt) stmt).getOp())).get()
                     .getClassType();
-            handleSatisfiability(sMethodPath, null, exceptionType);
+            handleSatisfiability(methodPath, null, exceptionType);
             return Z3Status.SATISFIABLE_END;
         }
         if (SType.RETURN == type || SType.RETURN_VOID == type) {
             // if tail
-            SVarEvaluated returnValue = getReturnValue(sMethodPath, node);
-            handleSatisfiability(sMethodPath, returnValue, null);
+            SVarEvaluated returnValue = getReturnValue(methodPath, stmt);
+            handleSatisfiability(methodPath, returnValue, null);
             return Z3Status.SATISFIABLE_END;
         }
         return Z3Status.SATISFIABLE;
@@ -114,13 +121,14 @@ public class SatisfiabilityHandler {
         log.empty();
     }
 
-    private SVarEvaluated getReturnValue(SMethodPath methodPath, SNode node) {
-        if (node.getType() == SType.RETURN) {
-            JReturnStmt stmt = (JReturnStmt) node.getUnit();
+    private SVarEvaluated getReturnValue(SMethodPath methodPath, Stmt stmt) {
+        SType type = methodPath.getType(stmt);
+        if (type == SType.RETURN) {
+            JReturnStmt returnStmt = (JReturnStmt) stmt;
             Expr expr = z3t.translateValue(
-                    stmt.getOp(), VarType.RETURN_VALUE, methodPath);
-            Class<?> classType = SootInterpreter.translateType(stmt.getOp().getType());
-            SVar svar = new SVar(z3t.getValueName(stmt.getOp()),
+                    returnStmt.getOp(), VarType.RETURN_VALUE, methodPath);
+            Class<?> classType = SootInterpreter.translateType(returnStmt.getOp().getType());
+            SVar svar = new SVar(z3t.getValueName(returnStmt.getOp()),
                     expr,
                     VarType.RETURN_VALUE,
                     classType,

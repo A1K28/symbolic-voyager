@@ -1,7 +1,6 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor.model;
 
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodMockEvaluated;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVarEvaluated;
 import com.microsoft.z3.BoolExpr;
 import lombok.Getter;

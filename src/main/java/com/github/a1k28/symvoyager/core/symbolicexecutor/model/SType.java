@@ -24,5 +24,6 @@ public enum SType {
     NOP,
     BREAKPOINT,
     MODELLED,
+    END_PROPAGATION,
     OTHER
 }

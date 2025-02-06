@@ -1,15 +1,10 @@
 package com.github.a1k28.symvoyager.core.sootup;
 
-import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import sootup.core.graph.BasicBlock;
-import sootup.core.graph.StmtGraph;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
-import sootup.core.jimple.common.stmt.Stmt;
-import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.signatures.MethodSignature;
@@ -18,30 +13,19 @@ import sootup.java.bytecode.inputlocation.JavaClassPathAnalysisInputLocation;
 import sootup.java.core.JavaIdentifierFactory;
 import sootup.java.core.JavaSootClass;
 import sootup.java.core.JavaSootField;
-import sootup.java.core.language.JavaLanguage;
 import sootup.java.core.types.JavaClassType;
 import sootup.java.core.views.JavaView;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.InputStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.util.*;
-
-import static com.github.a1k28.symvoyager.core.sootup.SootParser.initArrayMap;
-import static com.github.a1k28.symvoyager.core.sootup.SootParser.interpretSoot;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SootInterpreter {
     private static final Logger log = Logger.getInstance(SootInterpreter.class);
     private static final Map<String, Class<?>> cachedMap = new HashMap<>();
 
-    public static JavaSootClass getSootClass(String className) throws ClassNotFoundException {
-//        int javaVersion = getJavaVersion(Class.forName(className));
-//        JavaLanguage language = new JavaLanguage(javaVersion);
-//        JavaLanguage language = null;
-
+    public static JavaSootClass getSootClass(String className) {
         Optional<JavaSootClass> optional = getJavaSootClassSource(className);
         for (int i = 0; i < 3 && optional.isEmpty(); i++) {
             // the class may have not been loaded properly. wait for a bit.
@@ -59,20 +43,10 @@ public class SootInterpreter {
             String className) {
         AnalysisInputLocation inputLocation =
                 new JavaClassPathAnalysisInputLocation(System.getProperty("java.class.path"));
-
         JavaView view = new JavaView(Collections.singletonList(inputLocation));
-
         JavaIdentifierFactory identifierFactory = JavaIdentifierFactory.getInstance();
-
-//        Project project = JavaProject.builder(language)
-//                .addInputLocation(inputLocation).build();
-
-        ClassType classType =
-                identifierFactory.getClassType(className);
-
-//        View view = project.createView();
-        initArrayMap(identifierFactory);
-
+        ClassType classType = identifierFactory.getClassType(className);
+//        initArrayMap(identifierFactory);
         return view.getClass(classType);
     }
 
@@ -125,12 +99,6 @@ public class SootInterpreter {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static void createFlowDiagram(SMethodPath sMethodPath, Body body) {
-        StmtGraph<?> cfg = body.getStmtGraph();
-        BasicBlock<?> block = cfg.getStartingStmtBlock();
-        interpretSoot(block, sMethodPath);
     }
 
     public static List<JavaSootField> getFields(SootClass sootClass) throws ClassNotFoundException {

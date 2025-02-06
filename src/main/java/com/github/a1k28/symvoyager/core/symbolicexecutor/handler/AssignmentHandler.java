@@ -10,6 +10,7 @@ import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.JCastExpr;
 import sootup.core.jimple.common.stmt.JAssignStmt;
+import sootup.core.jimple.common.stmt.Stmt;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -20,8 +21,8 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
     }
 
     @Override
-    public SType handle(SMethodPath methodPath, SNode node) throws ClassNotFoundException {
-        JAssignStmt assignStmt = (JAssignStmt) node.getUnit();
+    public SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException {
+        JAssignStmt assignStmt = (JAssignStmt) stmt;
         Value leftOp = assignStmt.getLeftOp();
         Value rightOp = assignStmt.getRightOp();
         VarType leftOpVarType = getVarType(methodPath, leftOp);
@@ -31,7 +32,7 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
         if (rightOpHolder.getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = rightOpHolder.asMethod();
             if (methodExpr.getPropagationType() == MethodPropagationType.PROPAGATE) {
-                JumpNode jumpNode = new JumpNode(methodPath, node);
+                JumpNode jumpNode = methodPath.createJumpNode(stmt);
                 propagate(methodExpr, methodPath, jumpNode);
                 return SType.INVOKE;
             } else if (methodExpr.getPropagationType() == MethodPropagationType.MODELLED) {

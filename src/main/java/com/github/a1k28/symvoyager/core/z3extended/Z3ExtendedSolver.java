@@ -202,7 +202,6 @@ public class Z3ExtendedSolver {
             if (discoveredValues.isEmpty()) {
                 retrieved = ctx.mkSelect(mapModel.getArray(), keyWrapped);
             } else {
-                System.out.println("HEREEE");
                 retrieved = discoveredValues.poll();
             }
 

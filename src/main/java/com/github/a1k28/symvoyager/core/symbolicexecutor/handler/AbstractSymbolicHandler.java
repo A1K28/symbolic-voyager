@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractSymbolicHandler {
     protected final SymbolicHandlerContext hc;
 
-    abstract SType handle(SMethodPath methodPath, SNode node) throws ClassNotFoundException;
+    abstract SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException;
 
     protected List<Expr> translateExpressions(SMethodExpr methodExpr, SMethodPath methodPath) {
         List<Value> args = methodExpr.getArgs();
@@ -46,13 +46,10 @@ public abstract class AbstractSymbolicHandler {
                              SMethodPath methodPath,
                              JumpNode jumpNode)
             throws ClassNotFoundException {
-        // under-approximate
-        if (hc.getSe().getDepth() <= CLIOptions.depthLimit) {
-            SParamList paramList = createParamList(methodExpr, methodPath);
-            Executable method = SootInterpreter.getMethod(methodExpr.getInvokeExpr());
-            SClassInstance classInstance = getClassInstance(methodExpr.getBase(), methodPath, method);
-            hc.getSe().analyzeSymbolicPaths(classInstance, method, paramList, jumpNode);
-        }
+        SParamList paramList = createParamList(methodExpr, methodPath);
+        Executable method = SootInterpreter.getMethod(methodExpr.getInvokeExpr());
+        SClassInstance classInstance = getClassInstance(methodExpr.getBase(), methodPath, method);
+        hc.getSe().analyzeSymbolicPaths(classInstance, method, paramList, jumpNode);
     }
 
     private SClassInstance getClassInstance(Value base,

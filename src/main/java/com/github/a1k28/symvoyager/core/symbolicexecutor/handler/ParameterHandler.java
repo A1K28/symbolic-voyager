@@ -3,7 +3,6 @@ package com.github.a1k28.symvoyager.core.symbolicexecutor.handler;
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SParamList;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SVar;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedContext;
@@ -20,11 +19,11 @@ public class ParameterHandler extends AbstractSymbolicHandler {
     }
 
     @Override
-    public SType handle(SMethodPath methodPath, SNode node) throws ClassNotFoundException {
+    public SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException {
         if (methodPath.getParamList().hasNext()) { // is inner method
-            updateParameter(hc.getZ3t(), methodPath, node.getUnit());
+            updateParameter(hc.getZ3t(), methodPath, stmt);
         } else { // is target/first method
-            saveParameter(hc.getZ3t(), hc.getCtx(), methodPath, node.getUnit());
+            saveParameter(hc.getZ3t(), hc.getCtx(), methodPath, stmt);
         }
         return SType.PARAMETER;
     }

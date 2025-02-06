@@ -24,7 +24,6 @@ public class SClassInstance {
     private final List<JavaSootField> fields;
     private final SStack symbolicFieldStack;
     private final Map<Executable, SMethodPath> methodPathSkeletons;
-    private final Map<SNode, Integer> gotoCount; // used for tracking GOTO execution count
 
     public SClassInstance(Class<?> clazz) {
         this.clazz = clazz;
@@ -33,7 +32,6 @@ public class SClassInstance {
         this.fieldNames = null;
         this.methodPathSkeletons = null;
         this.symbolicFieldStack = null;
-        this.gotoCount = null;
     }
 
     public SClassInstance(Class<?> clazz,
@@ -45,7 +43,6 @@ public class SClassInstance {
         this.fieldNames = fields.stream().map(SootClassMember::toString).collect(Collectors.toSet());
         this.methodPathSkeletons = new HashMap<>();
         this.symbolicFieldStack = new SStack();
-        this.gotoCount = new HashMap<>();
     }
 
 //    public boolean incrementGotoCount(SNode sNode) {

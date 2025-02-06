@@ -180,8 +180,11 @@ public class JUnitTestAssembler {
             return "\""+object+"\"";
         if (clazz == boolean.class || clazz == Boolean.class)
             return String.valueOf(object);
-        if (!shouldSerialize(clazz))
+        if (!shouldSerialize(clazz)) {
+//            if (Number.class.isAssignableFrom(clazz))
+//                return String.valueOf(object).replace(",","");
             return object;
+        }
 //        if (Map.class.isAssignableFrom(clazz)) {
 //            List<MapModel.Entry> entries = new ArrayList<>();
 //            for (Map.Entry<?,?> entry : ((Map<?,?>)object).entrySet()) {

@@ -2,23 +2,24 @@ package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.SymbolicHandlerContext;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.model.*;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SatisfiableResults;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.model.Z3Status;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SClassInstance;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SParamList;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedContext;
 import com.github.a1k28.symvoyager.core.z3extended.Z3ExtendedSolver;
 import com.github.a1k28.symvoyager.core.z3extended.Z3Translator;
 import com.github.a1k28.symvoyager.helper.Logger;
 import com.microsoft.z3.*;
-import lombok.Getter;
-import sootup.core.jimple.common.stmt.JAssignStmt;
+import sootup.core.graph.BasicBlock;
+import sootup.core.jimple.common.stmt.Stmt;
 
 import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
-import java.util.List;
 
 import static com.github.a1k28.symvoyager.helper.OSDependentZ3Loader.loadZ3Library;
 
@@ -32,7 +33,6 @@ public class SymbolicExecutor {
     private SymbolicHandlerContext symbolicHandlerContext;
     private final SatisfiabilityHandler satHandler;
 
-    @Getter
     private int depth = 0;
 
     static {
@@ -98,60 +98,74 @@ public class SymbolicExecutor {
         return sMethodPath.getSatisfiableResults();
     }
 
-    public void analyzePaths(SMethodPath sMethodPath, SNode node) throws ClassNotFoundException {
-        if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE){
-            push(sMethodPath);
+    public void analyzePaths(SMethodPath methodPath, BasicBlock<?> block) throws ClassNotFoundException {
+        analyzePaths(methodPath, block,-1);
+    }
+
+    public void analyzePaths(SMethodPath methodPath, BasicBlock<?> block, int start) throws ClassNotFoundException {
+        if (!satHandler.isSatisfiable(methodPath)) return;  // check
+        if (depth > CLIOptions.depthLimit) return;  // under-approximate
+
+        Stmt stmt = null;
+        SType type = SType.OTHER;
+        for (int i = start+1; i<block.getStmts().size(); i++) {
+            stmt = block.getStmts().get(i);
+            type = symbolicHandlerContext.handle(methodPath, stmt);
+
+            if (shouldEndPropagation(type)) return;
+            // expand paths by allowing method mocks to throw exceptions
+//            if (type == SType.INVOKE_MOCK) {
+//                mockThrowsAndPropagate(sMethodPath, node);
+//            }
         }
 
-        SType type = symbolicHandlerContext.handle(sMethodPath, node);
 
-        // expand paths by allowing method mocks to throw exceptions
-        if (type == SType.INVOKE_MOCK) {
-            mockThrowsAndPropagate(sMethodPath, node);
+        Z3Status status = satHandler.checkSatisfiability(methodPath, stmt, type);
+        if (Z3Status.SATISFIABLE == status) {
+            for (BasicBlock<?> successor : block.getSuccessors()) {
+                push(methodPath);
+                analyzePaths(methodPath, successor);
+                pop(methodPath);
+            }
         }
+    }
 
-        Z3Status status = satHandler.checkSatisfiability(sMethodPath, node, type);
-        if (Z3Status.SATISFIABLE == status)
-            for (SNode child : node.getChildren())
-                analyzePaths(sMethodPath, child);
-
-        if (node.getType() == SType.BRANCH_TRUE || node.getType() == SType.BRANCH_FALSE) {
-            pop(sMethodPath);
-        }
+    private boolean shouldEndPropagation(SType type) {
+        return SType.INVOKE == type || SType.BRANCH == type;
     }
 
     private void printMethod(SClassInstance classInstance, Executable method) {
         log.debug("Printing method: " + method.getName());
-        ctx.getClassInstance().getMethodPath(classInstance, method).print();
+//        ctx.getClassInstance().getMethodPath(classInstance, method).print();
     }
 
-    private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
-            throws ClassNotFoundException {
-        if (CLIOptions.disableMockExploration)
-            return;
-
-        String refName;
-        if (node.getUnit() instanceof JAssignStmt assignStmt)
-            refName = z3t.getValueName(assignStmt.getLeftOp());
-        else
-            refName = node.getUnit().toString();
-
-        Expr mockReferenceExpr = sMethodPath.getSymbolicVarStack().get(refName)
-                .orElseGet(() -> sMethodPath.getMethodMockStack().get(refName)
-                        .orElseThrow()).getExpr();
-
-        List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
-        for (HandlerNode handlerNode : handlerNodes) {
-            push(sMethodPath);
-            ctx.getMethodMockInstance().setExceptionType(
-                    mockReferenceExpr, handlerNode.getNode().getExceptionType());
-            analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
-            pop(sMethodPath);
-        }
-
-        // clear throws so that further paths assume a return value (if non-void)
-        ctx.getMethodMockInstance().setExceptionType(mockReferenceExpr, null);
-    }
+//    private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
+//            throws ClassNotFoundException {
+//        if (CLIOptions.disableMockExploration)
+//            return;
+//
+//        String refName;
+//        if (node.getUnit() instanceof JAssignStmt assignStmt)
+//            refName = z3t.getValueName(assignStmt.getLeftOp());
+//        else
+//            refName = node.getUnit().toString();
+//
+//        Expr mockReferenceExpr = sMethodPath.getSymbolicVarStack().get(refName)
+//                .orElseGet(() -> sMethodPath.getMethodMockStack().get(refName)
+//                        .orElseThrow()).getExpr();
+//
+//        List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
+//        for (HandlerNode handlerNode : handlerNodes) {
+//            push(sMethodPath);
+//            ctx.getMethodMockInstance().setExceptionType(
+//                    mockReferenceExpr, handlerNode.getNode().getExceptionType());
+//            analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
+//            pop(sMethodPath);
+//        }
+//
+//        // clear throws so that further paths assume a return value (if non-void)
+//        ctx.getMethodMockInstance().setExceptionType(mockReferenceExpr, null);
+//    }
 
     public static void main(String[] args) throws ClassNotFoundException {
         new Z3Translator();

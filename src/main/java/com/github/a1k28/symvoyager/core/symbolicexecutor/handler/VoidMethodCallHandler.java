@@ -8,6 +8,7 @@ import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.common.stmt.JInvokeStmt;
+import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.types.ClassType;
 
 import java.lang.reflect.Method;
@@ -19,8 +20,8 @@ public class VoidMethodCallHandler extends AbstractSymbolicHandler {
     }
 
     @Override
-    public SType handle(SMethodPath methodPath, SNode node) throws ClassNotFoundException {
-        JInvokeStmt invoke = (JInvokeStmt) node.getUnit();
+    public SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException {
+        JInvokeStmt invoke = (JInvokeStmt) stmt;
         SExpr wrapped = hc.getZ3t().wrapMethodCall(invoke.getInvokeExpr(), null);
         VarType varType = getVarType(methodPath, invoke);
 
@@ -37,7 +38,7 @@ public class VoidMethodCallHandler extends AbstractSymbolicHandler {
 
             // handle mocks
             if (wrapped.getSType() == SType.INVOKE_MOCK) {
-                String name = node.getUnit().toString();
+                String name = stmt.toString();
                 List<Expr> params = translateExpressions(method, methodPath);
                 Method javaMethod = (Method) SootInterpreter.getMethod(method.getInvokeExpr());
                 Expr reference = hc.getCtx().getMethodMockInstance().constructor(
@@ -58,7 +59,7 @@ public class VoidMethodCallHandler extends AbstractSymbolicHandler {
                 hc.getCtx().getClassInstance().initialize(expr, type);
             }
 
-            JumpNode jumpNode = new JumpNode(methodPath, node);
+            JumpNode jumpNode = methodPath.createJumpNode(stmt);
             propagate(method, methodPath, jumpNode);
             return SType.INVOKE;
         }

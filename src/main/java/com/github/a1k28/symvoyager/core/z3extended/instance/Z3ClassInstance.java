@@ -13,6 +13,8 @@ import com.github.a1k28.symvoyager.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3Stack;
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.microsoft.z3.Expr;
+import sootup.core.graph.BasicBlock;
+import sootup.core.graph.StmtGraph;
 import sootup.core.model.Body;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
@@ -141,8 +143,7 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
                 expr, base, sClassInstance, false);
     }
 
-    private SClassInstance createClassInstance(Class<?> clazz)
-            throws ClassNotFoundException {
+    private SClassInstance createClassInstance(Class<?> clazz) throws ClassNotFoundException {
         JavaSootClass sootClass = getSootClass(clazz.getName());
         List<JavaSootField> fields = SootInterpreter.getFields(sootClass);
         SClassInstance instance = new SClassInstance(clazz, sootClass, fields);
@@ -156,13 +157,12 @@ public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack 
         // Find all paths
         SootMethod sootMethod = getSootMethod(classInstance.getSootClass(), method, isConstructor);
         Body body = sootMethod.getBody();
-        SMethodPath sMethodPath;
-        if (isConstructor)
-            sMethodPath = new SMethodPath(classInstance, body, null);
-        else
-            sMethodPath = new SMethodPath(classInstance, body, (Method) method);
-        createFlowDiagram(sMethodPath, body);
-        return sMethodPath;
+        method = isConstructor ? null : method;
+
+        StmtGraph<?> cfg = body.getStmtGraph();
+        BasicBlock<?> block = cfg.getStartingStmtBlock();
+
+        return new SMethodPath(classInstance, body, block, (Method) method);
     }
 
     public Expr getDefaultValue(Type type) {
