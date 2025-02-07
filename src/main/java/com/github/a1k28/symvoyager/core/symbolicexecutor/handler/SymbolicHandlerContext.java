@@ -37,6 +37,7 @@ public class SymbolicHandlerContext {
         this.handlerMap.put(SType.PARAMETER, new ParameterHandler(this));
         this.handlerMap.put(SType.RETURN, returnHandler);
         this.handlerMap.put(SType.RETURN_VOID, returnHandler);
+        this.handlerMap.put(SType.SWITCH, new SwitchHandler(this));
         this.handlerMap.put(SType.THROW, new ThrowHandler(this));
         this.handlerMap.put(SType.INVOKE, new VoidMethodCallHandler(this));
     }

@@ -125,7 +125,7 @@ public class SymbolicExecutor {
     }
 
     private boolean shouldEndPropagation(SType type) {
-        return SType.INVOKE == type || SType.BRANCH == type;
+        return SType.INVOKE == type || SType.BRANCH == type || SType.SWITCH == type;
     }
 
     private void printMethod(SClassInstance classInstance, Executable method) {
