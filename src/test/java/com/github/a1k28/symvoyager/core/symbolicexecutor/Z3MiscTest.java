@@ -152,7 +152,7 @@ public class Z3MiscTest {
         return 3;
     }
 
-    //@SymbolicTest(value = {0}, exceptionType = {IllegalArgumentException.class})
+    @SymbolicTest(value = {0}, exceptionType = {IllegalArgumentException.class})
     @DisplayName("test_exception_thrown_1")
     public int test_exception_thrown_1(int k) {
         if (k == 20)
@@ -160,7 +160,7 @@ public class Z3MiscTest {
         return 0;
     }
 
-    //@SymbolicTest(exceptionType = {IllegalArgumentException.class})
+    @SymbolicTest(exceptionType = {IllegalArgumentException.class})
     @DisplayName("test_exception_thrown_2")
     public int test_exception_thrown_2() {
         if (true)
@@ -168,7 +168,7 @@ public class Z3MiscTest {
         return 0;
     }
 
-    //@SymbolicTest(value = {0,1,2,3}, exceptionType = {RuntimeException.class, IllegalCallerException.class})
+    @SymbolicTest(value = {0,1,2,3}, exceptionType = {RuntimeException.class, IllegalCallerException.class})
     @DisplayName("test_exception_thrown_3")
     public int test_exception_thrown_3(int param) {
         try {
@@ -194,7 +194,7 @@ public class Z3MiscTest {
         }
     }
 
-    ////@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_1")
     public int test_method_mock_1() {
         NOPService nopService = new NOPService();
@@ -206,7 +206,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    ////@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_2")
     public int test_method_mock_2(int a, int b) {
         NOPService nopService = new NOPService();
@@ -218,7 +218,7 @@ public class Z3MiscTest {
         return 2;
     }
 
-    ////@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_try_catch_1")
     public int test_method_mock_with_try_catch_1(int a, int b) throws SQLException {
         NOPService nopService = new NOPService();
@@ -234,7 +234,7 @@ public class Z3MiscTest {
         }
     }
 
-    ////@SymbolicTest({0,1,2})
+    @SymbolicTest({0,1,2})
     @DisplayName("test_method_mock_with_nested_try_catch_1")
     public int test_method_mock_with_nested_try_catch_1(int a) {
         try {
@@ -247,7 +247,7 @@ public class Z3MiscTest {
         }
     }
 
-    ////@SymbolicTest({0,1,2,3})
+    @SymbolicTest({0,1,2,3})
     @DisplayName("test_method_mock_with_nested_try_catch_2")
     public int test_method_mock_with_nested_try_catch_2(int a, int b) {
         try {
@@ -262,7 +262,7 @@ public class Z3MiscTest {
         }
     }
 
-    ////@SymbolicTest({0,1,2,3,4})
+    @SymbolicTest({0,1,2,3,4})
     @DisplayName("test_method_mock_with_nested_try_catch_3")
     public int test_method_mock_with_nested_try_catch_3(int a, int b) {
         try {

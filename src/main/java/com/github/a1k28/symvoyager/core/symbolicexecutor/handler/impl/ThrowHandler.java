@@ -1,6 +1,8 @@
-package com.github.a1k28.symvoyager.core.symbolicexecutor.handler;
+package com.github.a1k28.symvoyager.core.symbolicexecutor.handler.impl;
 
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.AbstractSymbolicHandler;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.SymbolicHandlerContext;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.HandlerNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
@@ -10,7 +12,8 @@ import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.types.ClassType;
 
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class ThrowHandler extends AbstractSymbolicHandler {
 
@@ -31,21 +34,19 @@ public class ThrowHandler extends AbstractSymbolicHandler {
         BasicBlock<?> block = handlerNode.getBlock();
         Map<ClassType, BasicBlock<?>> exceptionalSuccessors
                 = (Map<ClassType, BasicBlock<?>>) block.getExceptionalSuccessors();
-        Map<ClassType, BasicBlock<?>> chosen = new TreeMap<>(
-                (e1,e2) -> e1.getClass().isAssignableFrom(e2.getClass()) ? 1 : -1);
+        SortedSet<BasicBlock<?>> chosen = new TreeSet<>(SootInterpreter::compareBlocks);
 
         for (Map.Entry<ClassType, BasicBlock<?>> entry : exceptionalSuccessors.entrySet()) {
             Class<?> classType = SootInterpreter.getClass(entry.getKey());
             if (classType.isAssignableFrom(exceptionType)) {
-                chosen.put(entry.getKey(), entry.getValue());
+                chosen.add(entry.getValue());
             }
         }
 
         if (chosen.isEmpty()) return SType.THROW_END;
 
         hc.getSe().push(handlerNode.getMethodPath());
-        hc.getSe().analyzePaths(handlerNode.getMethodPath(),
-                chosen.entrySet().iterator().next().getValue());
+        hc.getSe().analyzePaths(handlerNode.getMethodPath(), chosen.iterator().next());
         hc.getSe().pop(handlerNode.getMethodPath());
         return SType.THROW;
     }

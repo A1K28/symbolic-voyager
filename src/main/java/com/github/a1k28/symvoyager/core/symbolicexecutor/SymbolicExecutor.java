@@ -113,20 +113,14 @@ public class SymbolicExecutor {
             type = symbolicHandlerContext.handle(methodPath, stmt);
 
             if (shouldEndPropagation(type)) return;
-            // expand paths by allowing method mocks to throw exceptions
-//            if (type == SType.INVOKE_MOCK) {
-//                mockThrowsAndPropagate(sMethodPath, node);
-//            }
         }
 
-
         Z3Status status = satHandler.checkSatisfiability(methodPath, stmt, type);
-        if (Z3Status.SATISFIABLE == status) {
-            for (BasicBlock<?> successor : block.getSuccessors()) {
-                push(methodPath);
-                analyzePaths(methodPath, successor);
-                pop(methodPath);
-            }
+        if (Z3Status.SATISFIABLE != status) return;
+        for (BasicBlock<?> successor : block.getSuccessors()) {
+            push(methodPath);
+            analyzePaths(methodPath, successor);
+            pop(methodPath);
         }
     }
 
@@ -138,34 +132,6 @@ public class SymbolicExecutor {
         log.debug("Printing method: " + method.getName());
 //        ctx.getClassInstance().getMethodPath(classInstance, method).print();
     }
-
-//    private void mockThrowsAndPropagate(SMethodPath sMethodPath, SNode node)
-//            throws ClassNotFoundException {
-//        if (CLIOptions.disableMockExploration)
-//            return;
-//
-//        String refName;
-//        if (node.getUnit() instanceof JAssignStmt assignStmt)
-//            refName = z3t.getValueName(assignStmt.getLeftOp());
-//        else
-//            refName = node.getUnit().toString();
-//
-//        Expr mockReferenceExpr = sMethodPath.getSymbolicVarStack().get(refName)
-//                .orElseGet(() -> sMethodPath.getMethodMockStack().get(refName)
-//                        .orElseThrow()).getExpr();
-//
-//        List<HandlerNode> handlerNodes = sMethodPath.getHandlerNodes(node);
-//        for (HandlerNode handlerNode : handlerNodes) {
-//            push(sMethodPath);
-//            ctx.getMethodMockInstance().setExceptionType(
-//                    mockReferenceExpr, handlerNode.getNode().getExceptionType());
-//            analyzePaths(handlerNode.getMethodPath(), handlerNode.getNode());
-//            pop(sMethodPath);
-//        }
-//
-//        // clear throws so that further paths assume a return value (if non-void)
-//        ctx.getMethodMockInstance().setExceptionType(mockReferenceExpr, null);
-//    }
 
     public static void main(String[] args) throws ClassNotFoundException {
         new Z3Translator();

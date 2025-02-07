@@ -1,6 +1,8 @@
-package com.github.a1k28.symvoyager.core.symbolicexecutor.handler;
+package com.github.a1k28.symvoyager.core.symbolicexecutor.handler.impl;
 
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.AbstractSymbolicHandler;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.SymbolicHandlerContext;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
@@ -46,6 +48,7 @@ public class VoidMethodCallHandler extends AbstractSymbolicHandler {
                 SVar var = new SVar(name, reference,
                         VarType.METHOD_MOCK, null, true);
                 methodPath.addMethodMock(var);
+                hc.handle(methodPath, stmt, SType.INVOKE_MOCK);
                 return SType.INVOKE_MOCK;
             }
 

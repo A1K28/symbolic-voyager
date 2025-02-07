@@ -1,11 +1,9 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor.struct;
 
-import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import lombok.Getter;
 import lombok.Setter;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootClassMember;
-import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 
 import java.lang.reflect.Executable;
@@ -44,23 +42,4 @@ public class SClassInstance {
         this.methodPathSkeletons = new HashMap<>();
         this.symbolicFieldStack = new SStack();
     }
-
-//    public boolean incrementGotoCount(SNode sNode) {
-//        if (!this.gotoCount.containsKey(sNode))
-//            this.gotoCount.put(sNode, 0);
-//        this.gotoCount.put(sNode, this.gotoCount.get(sNode) + 1);
-//        boolean shouldBreak = this.gotoCount.get(sNode) % CLIOptions.gotoLimit == 0;
-////        boolean shouldBreak = this.gotoCount.get(sNode) > CLIOptions.gotoLimit;
-////        if (shouldBreak) this.gotoCount.put(sNode, 0);
-//        return !shouldBreak;
-//    }
-
-//    public void clear() {
-//        this.gotoCount.clear();
-//        this.symbolicFieldStack.clear();
-//    }
-//
-//    public String getClassname() {
-//        return this.clazz.getName();
-//    }
 }

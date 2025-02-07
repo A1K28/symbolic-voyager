@@ -1,6 +1,8 @@
-package com.github.a1k28.symvoyager.core.symbolicexecutor.handler;
+package com.github.a1k28.symvoyager.core.symbolicexecutor.handler.impl;
 
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.AbstractSymbolicHandler;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.SymbolicHandlerContext;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
@@ -61,6 +63,7 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
             SVar mockVar = new SVar(hc.getZ3t().getValueName(leftOp), reference,
                     VarType.METHOD_MOCK, rightClassType, true);
             methodPath.addMethodMock(mockVar);
+            hc.handle(methodPath, stmt, SType.INVOKE_MOCK);
             return SType.INVOKE_MOCK;
         } else if (rightOp instanceof JCastExpr castExpr) {
             Value op = castExpr.getOp();

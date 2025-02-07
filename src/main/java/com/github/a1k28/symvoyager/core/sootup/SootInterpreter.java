@@ -3,8 +3,11 @@ package com.github.a1k28.symvoyager.core.sootup;
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import sootup.core.graph.BasicBlock;
 import sootup.core.inputlocation.AnalysisInputLocation;
+import sootup.core.jimple.basic.NoPositionInformation;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
+import sootup.core.model.Position;
 import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.signatures.MethodSignature;
@@ -168,5 +171,29 @@ public class SootInterpreter {
                 .append(field.getName())
                 .append(">")
                 .toString();
+    }
+
+    public static int compareBlocks(BasicBlock<?> block1, BasicBlock<?> block2) {
+        int pos1 = findPosition(block1, false);
+        int pos2 = findPosition(block2, false);
+        return Integer.compare(pos1, pos2);
+    }
+
+    private static int findPosition(BasicBlock<?> block, boolean reversed) {
+        if (reversed) {
+            for (int i = block.getStmts().size()-1; i >= 0; i--) {
+                Position position = block.getStmts().get(i).getPositionInfo().getStmtPosition();
+                if (position instanceof NoPositionInformation) continue;
+                return position.getFirstLine();
+            }
+        } else {
+            for (int i = 0; i < block.getStmts().size(); i++) {
+                Position position = block.getStmts().get(i).getPositionInfo().getStmtPosition();
+                if (position instanceof NoPositionInformation) continue;
+                return position.getFirstLine();
+            }
+        }
+        if (block.getPredecessors().size() != 1) return 0;
+        return findPosition(block.getPredecessors().get(0), true);
     }
 }

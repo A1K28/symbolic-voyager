@@ -1,11 +1,13 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor.handler;
 
-import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
 import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
-import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SClassInstance;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodExpr;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SMethodPath;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.SParamList;
 import com.microsoft.z3.Expr;
 import lombok.RequiredArgsConstructor;
 import sootup.core.jimple.basic.Value;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractSymbolicHandler {
     protected final SymbolicHandlerContext hc;
 
-    abstract SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException;
+    public abstract SType handle(SMethodPath methodPath, Stmt stmt) throws ClassNotFoundException;
 
     protected List<Expr> translateExpressions(SMethodExpr methodExpr, SMethodPath methodPath) {
         List<Value> args = methodExpr.getArgs();
