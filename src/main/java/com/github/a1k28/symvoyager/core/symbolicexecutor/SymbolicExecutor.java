@@ -32,7 +32,6 @@ public class SymbolicExecutor {
     private Z3ExtendedContext ctx;
     private SymbolicHandlerContext symbolicHandlerContext;
     private final SatisfiabilityHandler satHandler;
-
     private int depth = 0;
 
     static {
