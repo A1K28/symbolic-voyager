@@ -80,6 +80,7 @@ public enum MethodModel {
     // --- lists ---
     LIST_INIT(List.class,"void <init>()", true),
     LIST_INIT_WITH_CAPACITY(List.class,"void <init>(int)", true),
+    LIST_INIT_FILL_CAPACITY(List.class, UUID.randomUUID().toString(), true),
     LIST_INIT_WITH_COLLECTION(List.class,"void <init>(java.util.Collection)", true),
     LIST_SIZE(List.class,"int size()", true),
     LIST_IS_EMPTY(List.class,"boolean isEmpty()", true),
@@ -265,6 +266,7 @@ public enum MethodModel {
 
             case LIST_INIT -> ctx.getLinkedListInstance().constructor(args.get(0));
             case LIST_INIT_WITH_CAPACITY -> ctx.getLinkedListInstance().constructor(args.get(0), (IntExpr) args.get(1));
+            case LIST_INIT_FILL_CAPACITY -> ctx.getLinkedListInstance().constructor(args.get(0), (IntExpr) args.get(1), true);
             case LIST_INIT_WITH_COLLECTION -> ctx.getLinkedListInstance().constructor(args.get(0), args.get(1));
             case LIST_ADD -> ctx.getLinkedListInstance().add(args.get(0), args.get(1));
             case LIST_ADD_BY_INDEX -> ctx.getLinkedListInstance().add(args.get(0), (IntExpr) args.get(1), args.get(2));

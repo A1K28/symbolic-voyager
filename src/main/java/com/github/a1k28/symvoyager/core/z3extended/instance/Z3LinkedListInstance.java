@@ -77,20 +77,24 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
     }
 
     public Expr constructor(Expr var1) {
-        return constructor(var1, null, null, null, false).getReference();
+        return constructor(var1, null, null, null, false, false).getReference();
     }
 
     public Expr constructor(Expr var1, IntExpr capacity) {
-        return constructor(var1, null, null, capacity, false).getReference();
+        return constructor(var1, null, null, capacity, false, false).getReference();
+    }
+
+    public Expr constructor(Expr var1, IntExpr capacity, boolean fillCapacity) {
+        return constructor(var1, null, null, capacity, false, fillCapacity).getReference();
     }
 
     public Expr constructor(Expr var1, Expr var2) {
-        return constructor(var1, var2, null, null, false).getReference();
+        return constructor(var1, var2, null, null, false, false).getReference();
     }
 
     public Expr constructorFrom(Expr var1) {
         Expr reference = ctx.mkFreshConst("reference", SortType.ARRAY.value(ctx));
-        return constructor(reference, var1, null, null, false).getReference();
+        return constructor(reference, var1, null, null, false, false).getReference();
     }
 
     public Expr constructorOf(List<Expr> vars) {
@@ -99,15 +103,20 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
             args = vars.toArray(new Expr[0]);
 
         Expr reference = ctx.mkFreshConst("reference", SortType.ARRAY.value(ctx));
-        return constructor(reference, null, args, null, false).getReference();
+        return constructor(reference, null, args, null, false, false).getReference();
     }
 
     public Expr parameterConstructor(Expr var1) {
-        return constructor(var1, null, null, null, true).getReference();
+        return constructor(var1, null, null, null, true, false).getReference();
     }
 
     private LinkedListModel constructor(
-            Expr reference, Expr collection, Expr[] args, IntExpr capacity, boolean isSizeUnknown) {
+            Expr reference,
+            Expr collection,
+            Expr[] args,
+            IntExpr capacity,
+            boolean isSizeUnknown,
+            boolean fillCapacity) {
         String ref = createMapping(reference);
 
         IntExpr size;
@@ -153,7 +162,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
             for (Expr arg : args) {
                 add(reference, arg);
             }
-        } else if (capacity != null) {
+        } else if (fillCapacity && capacity != null) {
             fillByCapacity(linkedListModel, head, capacity);
         }
 
@@ -517,7 +526,7 @@ public class Z3LinkedListInstance extends Z3AbstractHybridInstance implements IS
     }
 
     private LinkedListModel createModel(Expr expr, boolean isSizeUnknown) {
-        return constructor(expr, null, null, null, isSizeUnknown);
+        return constructor(expr, null, null, null, isSizeUnknown, false);
     }
 
     private LinkedListModel copyModel(LinkedListModel model) {

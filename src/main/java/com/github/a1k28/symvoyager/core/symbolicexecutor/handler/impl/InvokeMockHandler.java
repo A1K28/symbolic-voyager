@@ -55,7 +55,7 @@ public class InvokeMockHandler extends AbstractSymbolicHandler {
 
         List<BasicExceptionBlock> sorted = new ArrayList<>(set);
 
-        // cleanup
+        // cleanup - remove unreachable nodes
         Set<BasicExceptionBlock> toRemove = new HashSet<>();
         outer: for (int i = sorted.size()-1; i>=0; i--) {
             Class<?> exceptionType = SootInterpreter.getClass(sorted.get(i).getExceptionType());

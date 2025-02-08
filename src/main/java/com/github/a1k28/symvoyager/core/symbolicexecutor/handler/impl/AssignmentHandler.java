@@ -8,9 +8,12 @@ import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodPropagation
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.struct.*;
+import com.github.a1k28.symvoyager.core.z3extended.struct.MethodModel;
 import com.microsoft.z3.Expr;
 import sootup.core.jimple.basic.Value;
 import sootup.core.jimple.common.expr.JCastExpr;
+import sootup.core.jimple.common.expr.JNewArrayExpr;
+import sootup.core.jimple.common.ref.JArrayRef;
 import sootup.core.jimple.common.stmt.JAssignStmt;
 import sootup.core.jimple.common.stmt.Stmt;
 
@@ -31,7 +34,28 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
         VarType rightOpVarType = getVarType(methodPath, rightOp);
         SExpr rightOpHolder = hc.getZ3t().translateAndWrapValue(rightOp, rightOpVarType, methodPath);
 
-        if (rightOpHolder.getSType() == SType.INVOKE) {
+        if (rightOp instanceof JArrayRef arrayRef) {
+            Expr expr = hc.getZ3t().callProverMethod(MethodModel.LIST_GET,
+                    arrayRef.getBase(),
+                    List.of(arrayRef.getIndex()),
+                    rightOpVarType,
+                    methodPath);
+            hc.getZ3t().updateSymbolicVar(leftOp, expr, leftOpVarType, methodPath);
+        } else if (leftOp instanceof JArrayRef arrayRef) {
+            hc.getZ3t().callProverMethod(MethodModel.LIST_SET,
+                    arrayRef.getBase(),
+                    List.of(arrayRef.getIndex(), rightOp),
+                    rightOpVarType,
+                    methodPath);
+        } else if (rightOp instanceof JNewArrayExpr arrayExpr) {
+            Class<?> type = SootInterpreter.translateType(rightOp.getType());
+            Expr expr = hc.getZ3t().callProverMethod(MethodModel.LIST_INIT_FILL_CAPACITY,
+                    leftOp,
+                    List.of(arrayExpr.getSize()),
+                    rightOpVarType,
+                    methodPath);
+            hc.getZ3t().updateSymbolicVar(leftOp, expr, leftOpVarType, methodPath, type);
+        } else if (rightOpHolder.getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = rightOpHolder.asMethod();
             if (methodExpr.getPropagationType() == MethodPropagationType.PROPAGATE) {
                 JumpNode jumpNode = methodPath.createJumpNode(stmt);

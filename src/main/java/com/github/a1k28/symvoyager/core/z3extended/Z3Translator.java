@@ -112,12 +112,19 @@ public class Z3Translator {
     public Expr callProverMethod(SMethodExpr methodExpr, VarType varType, SMethodPath methodPath) {
         MethodSignature methodSignature = methodExpr.getInvokeExpr().getMethodSignature();
         MethodModel methodModel = MethodModel.get(methodSignature).orElseThrow();
+        return callProverMethod(methodModel, methodExpr.getBase(), methodExpr.getArgs(), varType, methodPath);
+    }
 
+    public Expr callProverMethod(MethodModel methodModel,
+                                 Value base,
+                                 List<Value> methodArgs,
+                                 VarType varType,
+                                 SMethodPath methodPath) {
         List<Expr> args = new ArrayList<>();
-        if (methodExpr.getBase() != null)
-            args.add(translateValue(methodExpr.getBase(), varType, methodPath));
+        if (base != null)
+            args.add(translateValue(base, varType, methodPath));
 
-        args.addAll(methodExpr.getArgs().stream()
+        args.addAll(methodArgs.stream()
                 .map(e -> this.translateValue(e, varType, methodPath))
                 .toList());
 
@@ -323,8 +330,9 @@ public class Z3Translator {
         if (type instanceof PrimitiveType.DoubleType)
             return ctx.mkFPSort64();
         if (type instanceof ArrayType) {
-            Sort elementSort = translateType(((ArrayType) type).getElementType());
-            return ctx.mkArraySort(ctx.getIntSort(), elementSort);
+            return SortType.ARRAY.value(ctx);
+//            Sort elementSort = translateType(((ArrayType) type).getElementType());
+//            return ctx.mkArraySort(ctx.getIntSort(), elementSort);
         }
         if (type instanceof ReferenceType) {
             return translateReferenceType(type.toString());
