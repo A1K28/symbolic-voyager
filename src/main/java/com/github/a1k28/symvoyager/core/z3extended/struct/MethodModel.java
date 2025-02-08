@@ -283,8 +283,7 @@ public enum MethodModel {
             case LIST_SUBLIST -> null;
             case LIST_INDEX_OF -> ctx.getLinkedListInstance().indexOf(args.get(0), args.get(1));
             case LIST_LAST_INDEX_OF -> ctx.getLinkedListInstance().lastIndexOf(args.get(0), args.get(1));
-//            case LIST_OF_OBJECT_ARR -> ctx.getLinkedListInstance().constructorFrom(args.get(0));
-            case LIST_OF_OBJECT_ARR -> null;
+            case LIST_OF_OBJECT_ARR -> ctx.getLinkedListInstance().constructorFrom(args.get(0));
             case LIST_SIZE -> ctx.getLinkedListInstance().size(args.get(0));
             case LIST_IS_EMPTY -> ctx.getLinkedListInstance().isEmpty(args.get(0));
             case LIST_CONTAINS -> ctx.getLinkedListInstance().contains(args.get(0), args.get(1));

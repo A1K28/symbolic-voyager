@@ -34,6 +34,7 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
         VarType rightOpVarType = getVarType(methodPath, rightOp);
         SExpr rightOpHolder = hc.getZ3t().translateAndWrapValue(rightOp, rightOpVarType, methodPath);
 
+        // handle arrays
         if (rightOp instanceof JArrayRef arrayRef) {
             Expr expr = hc.getZ3t().callProverMethod(MethodModel.LIST_GET,
                     arrayRef.getBase(),
@@ -55,7 +56,10 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
                     rightOpVarType,
                     methodPath);
             hc.getZ3t().updateSymbolicVar(leftOp, expr, leftOpVarType, methodPath, type);
-        } else if (rightOpHolder.getSType() == SType.INVOKE) {
+        }
+
+        // handle invoke
+        else if (rightOpHolder.getSType() == SType.INVOKE) {
             SMethodExpr methodExpr = rightOpHolder.asMethod();
             if (methodExpr.getPropagationType() == MethodPropagationType.PROPAGATE) {
                 JumpNode jumpNode = methodPath.createJumpNode(stmt);
@@ -89,12 +93,18 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
             methodPath.addMethodMock(mockVar);
             hc.handle(methodPath, stmt, SType.INVOKE_MOCK);
             return SType.INVOKE_MOCK;
-        } else if (rightOp instanceof JCastExpr castExpr) {
+        }
+
+        // handle cast
+        else if (rightOp instanceof JCastExpr castExpr) {
             Value op = castExpr.getOp();
             Class classType = methodPath.getSymbolicVarStack().get(hc.getZ3t().getValueName(op)).
                     orElseThrow().getClassType();
             hc.getZ3t().updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, methodPath, classType);
-        } else {
+        }
+
+        // handle other
+        else {
             Class classType = SootInterpreter.translateType(rightOp.getType());
             if (classType == Object.class) classType = SootInterpreter.translateType(leftOp.getType());
             hc.getZ3t().updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, methodPath, classType);

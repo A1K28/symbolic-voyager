@@ -182,7 +182,7 @@ public class Z3ListTest {
         return 3;
     }
 
-//    @SymbolicTest({14})
+    @SymbolicTest({14})
     @DisplayName("test_list_of_1")
     public int test_list_of_1() {
         List<Integer> list = List.of();
@@ -293,7 +293,7 @@ public class Z3ListTest {
         return 15;
     }
 
-//    @SymbolicTest({3})
+    @SymbolicTest({3})
     @DisplayName("test_equals_1")
     public int test_equals_1() {
         List<String> list1 = new ArrayList<>();
@@ -529,7 +529,7 @@ public class Z3ListTest {
         return 3;
     }
 
-//    //@SymbolicTest({3})
+    @SymbolicTest({3})
     @DisplayName("test_sublist_1")
     public int test_sublist_1() {
         List<String> list = new ArrayList<>();
@@ -713,19 +713,22 @@ public class Z3ListTest {
         return 4;
     }
 
-    @SymbolicTest({2})
+    @SymbolicTest({3})
     @DisplayName("test_array_1")
     public int test_array_1() {
         int[] arr = new int[10];
         arr[0] = 20;
+        arr[1] = arr[0];
         arr[3] = 14;
 
         if (arr[0] != 20)
             return 0;
-        if (arr[3] != 14)
+        if (arr[1] != arr[0])
             return 1;
+        if (arr[3] != 14)
+            return 2;
 
-        return 2;
+        return 3;
     }
 
     @SymbolicTest({2})
