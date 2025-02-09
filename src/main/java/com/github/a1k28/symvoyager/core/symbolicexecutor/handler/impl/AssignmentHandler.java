@@ -109,6 +109,7 @@ public class AssignmentHandler extends AbstractSymbolicHandler {
             if (classType == Object.class) classType = SootInterpreter.translateType(leftOp.getType());
             hc.getZ3t().updateSymbolicVar(leftOp, rightOpHolder.getExpr(), leftOpVarType, methodPath, classType);
         }
+
         return SType.ASSIGNMENT;
     }
 }

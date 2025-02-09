@@ -85,30 +85,6 @@ public class Z3Translator {
         }
     }
 
-    public SAssignment translateAndWrapValues(
-            Value value1, Value value2, VarType varType, SMethodPath methodPath) {
-        SExpr right;
-        if (value2 instanceof AbstractInvokeExpr invoke) {
-            right = wrapMethodCall(invoke, translateValue(value1, varType, methodPath));
-        } else {
-            right = new SExpr(translateValue(value2, varType, methodPath));
-        }
-
-        SExpr left;
-        if (value1 instanceof Local || value1 instanceof JFieldRef) {
-            Sort sort;
-            if (value2.getType().getClass() == UnknownType.class)
-                sort = right.getExpr().getSort();
-            else
-                sort = translateType(value2.getType());
-            left = new SExpr(getSymbolicVar(value1, sort, varType, methodPath).getExpr());
-        } else {
-            left = new SExpr(translateValue(value1, varType, methodPath));
-        }
-
-        return new SAssignment(left, right);
-    }
-
     public Expr callProverMethod(SMethodExpr methodExpr, VarType varType, SMethodPath methodPath) {
         MethodSignature methodSignature = methodExpr.getInvokeExpr().getMethodSignature();
         MethodModel methodModel = MethodModel.get(methodSignature).orElseThrow();
@@ -377,6 +353,31 @@ public class Z3Translator {
         // TODO: handle sets & maps correctly
         return SortType.OBJECT.value(ctx);
     }
+
+    private SAssignment translateAndWrapValues(
+            Value value1, Value value2, VarType varType, SMethodPath methodPath) {
+        SExpr right;
+        if (value2 instanceof AbstractInvokeExpr invoke) {
+            right = wrapMethodCall(invoke, translateValue(value1, varType, methodPath));
+        } else {
+            right = new SExpr(translateValue(value2, varType, methodPath));
+        }
+
+        SExpr left;
+        if (value1 instanceof Local || value1 instanceof JFieldRef) {
+            Sort sort;
+            if (value2.getType().getClass() == UnknownType.class)
+                sort = right.getExpr().getSort();
+            else
+                sort = translateType(value2.getType());
+            left = new SExpr(getSymbolicVar(value1, sort, varType, methodPath).getExpr());
+        } else {
+            left = new SExpr(translateValue(value1, varType, methodPath));
+        }
+
+        return new SAssignment(left, right);
+    }
+
 
     private Expr translateConditionValue(AbstractBinopExpr binop, Expr e1, Expr e2) {
         if (binop instanceof JEqExpr)
