@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
+import static com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter.translateField;
 
 @NoArgsConstructor
 public class SymbolTranslator {

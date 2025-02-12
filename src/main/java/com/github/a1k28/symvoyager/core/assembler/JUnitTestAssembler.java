@@ -19,7 +19,7 @@ import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
+import static com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter.translateField;
 
 public class JUnitTestAssembler {
     private static final Logger log = Logger.getInstance(JUnitTestAssembler.class);

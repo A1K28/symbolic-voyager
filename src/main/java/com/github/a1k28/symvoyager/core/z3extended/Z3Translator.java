@@ -1,7 +1,7 @@
 package com.github.a1k28.symvoyager.core.z3extended;
 
 import com.github.a1k28.symvoyager.core.cli.model.CLIOptions;
-import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.MethodPropagationType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.SType;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.VarType;
@@ -25,7 +25,7 @@ import sootup.java.core.types.JavaClassType;
 
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.isConstructorCall;
+import static com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter.isConstructorCall;
 
 public class Z3Translator {
     private static volatile Z3ExtendedContext ctx;

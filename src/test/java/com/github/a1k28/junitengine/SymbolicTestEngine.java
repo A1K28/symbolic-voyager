@@ -23,7 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.translateField;
+import static com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter.translateField;
 import static com.github.a1k28.supermock.MockAPI.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

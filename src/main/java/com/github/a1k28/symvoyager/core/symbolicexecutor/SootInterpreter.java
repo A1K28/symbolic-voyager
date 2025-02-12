@@ -1,4 +1,4 @@
-package com.github.a1k28.symvoyager.core.sootup;
+package com.github.a1k28.symvoyager.core.symbolicexecutor;
 
 import com.github.a1k28.symvoyager.helper.Logger;
 import lombok.AccessLevel;

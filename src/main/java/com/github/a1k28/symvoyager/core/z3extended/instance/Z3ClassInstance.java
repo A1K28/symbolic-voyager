@@ -11,17 +11,15 @@ import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.core.z3extended.model.SortType;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3SortUnion;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3Stack;
-import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter;
 import com.microsoft.z3.Expr;
 import sootup.core.graph.BasicBlock;
 import sootup.core.graph.StmtGraph;
 import sootup.core.model.Body;
-import sootup.core.model.SootClass;
 import sootup.core.model.SootMethod;
 import sootup.core.types.PrimitiveType;
 import sootup.core.types.Type;
 import sootup.java.core.JavaSootClass;
-import sootup.java.core.JavaSootClassSource;
 import sootup.java.core.JavaSootField;
 
 import java.lang.reflect.Constructor;
@@ -30,7 +28,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.a1k28.symvoyager.core.sootup.SootInterpreter.*;
+import static com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter.*;
 
 public class Z3ClassInstance extends Z3AbstractHybridInstance implements IStack {
     private final Z3Stack<String, ClassInstanceModel> stack;

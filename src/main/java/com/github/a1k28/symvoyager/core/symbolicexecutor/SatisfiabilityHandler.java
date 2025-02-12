@@ -9,7 +9,6 @@ import com.github.a1k28.symvoyager.core.z3extended.Z3Translator;
 import com.github.a1k28.symvoyager.core.z3extended.instance.Z3MapInstance;
 import com.github.a1k28.symvoyager.core.z3extended.model.*;
 import com.github.a1k28.symvoyager.helper.Logger;
-import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
 import com.microsoft.z3.*;
 import sootup.core.jimple.common.stmt.JReturnStmt;
 import sootup.core.jimple.common.stmt.JThrowStmt;

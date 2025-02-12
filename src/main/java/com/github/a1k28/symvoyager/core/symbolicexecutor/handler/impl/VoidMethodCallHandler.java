@@ -1,6 +1,6 @@
 package com.github.a1k28.symvoyager.core.symbolicexecutor.handler.impl;
 
-import com.github.a1k28.symvoyager.core.sootup.SootInterpreter;
+import com.github.a1k28.symvoyager.core.symbolicexecutor.SootInterpreter;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.AbstractSymbolicHandler;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.handler.SymbolicHandlerContext;
 import com.github.a1k28.symvoyager.core.symbolicexecutor.model.JumpNode;
