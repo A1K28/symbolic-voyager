@@ -1,9 +1,6 @@
 package com.github.a1k28.symvoyager.core.z3extended;
 
-import com.github.a1k28.symvoyager.core.z3extended.instance.Z3ClassInstance;
-import com.github.a1k28.symvoyager.core.z3extended.instance.Z3LinkedListInstance;
-import com.github.a1k28.symvoyager.core.z3extended.instance.Z3MapInstance;
-import com.github.a1k28.symvoyager.core.z3extended.instance.Z3MethodMockInstance;
+import com.github.a1k28.symvoyager.core.z3extended.instance.*;
 import com.github.a1k28.symvoyager.core.z3extended.model.IStack;
 import com.github.a1k28.symvoyager.core.z3extended.model.SortType;
 import com.github.a1k28.symvoyager.core.z3extended.struct.Z3CachingFactory;
@@ -26,6 +23,7 @@ public class Z3ExtendedContext extends Context implements IStack {
     private final Z3MethodMockInstance methodMockInstance;
     private final Z3MapInstance mapInstance;
     private final Z3LinkedListInstance linkedListInstance;
+    private final Z3IteratorInstance iteratorInstance;
 
     public Z3ExtendedContext() {
         super();
@@ -38,12 +36,14 @@ public class Z3ExtendedContext extends Context implements IStack {
         this.methodMockInstance = new Z3MethodMockInstance(this, solver, sortUnion);
         this.mapInstance = new Z3MapInstance(this, solver, sortState, sortUnion);
         this.linkedListInstance = new Z3LinkedListInstance(this, solver, sortState, sortUnion);
+        this.iteratorInstance = new Z3IteratorInstance(this, solver, sortUnion);
 
         this.stacks = List.of(
                 classInstance,
                 methodMockInstance,
                 mapInstance,
-                linkedListInstance);
+                linkedListInstance,
+                iteratorInstance);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class Z3SortUnion {
     public Z3SortUnion(Z3ExtendedContext ctx) {
         this.ctx = ctx;
         // Create the union datatype as before
-        constructors = new Constructor[13];
+        constructors = new Constructor[14];
         constructors[0] = ctx.mkConstructor("intType", "isIntKey", new String[] { "intValue" }, new Sort[] { ctx.getIntSort() }, null);
         constructors[1] = ctx.mkConstructor("stringKey", "isStringKey", new String[] { "stringValue" }, new Sort[] { ctx.getStringSort() }, null);
         constructors[2] = ctx.mkConstructor("boolType", "isBoolKey", new String[] { "boolValue" }, new Sort[] { ctx.getBoolSort() }, null);
@@ -32,6 +32,7 @@ public class Z3SortUnion {
         constructors[10] = ctx.mkConstructor("fp64Type", "isFP64Key", new String[] { "fp64Value" }, new Sort[] { ctx.mkFPSort64() }, null);
         constructors[11] = ctx.mkConstructor("unknownType", "isUnknownKey", new String[] { "unknownValue" }, new Sort[] { SortType.UNKNOWN.value(ctx) }, null);
         constructors[12] = ctx.mkConstructor("classType", "isClassKey", new String[] { "classValue" }, new Sort[] { SortType.CLASS.value(ctx) }, null);
+        constructors[13] = ctx.mkConstructor("iteratorType", "isIteratorKey", new String[] { "iteratorValue" }, new Sort[] { SortType.ITERATOR.value(ctx) }, null);
         genericSort = ctx.mkDatatypeSort("sortUnion", constructors);
     }
 
@@ -72,7 +73,7 @@ public class Z3SortUnion {
     }
 
     private int getUnwrappedTypeIdx(Sort sort) {
-        Class type = sort.getClass();
+        Class<?> type = sort.getClass();
         if (type == IntSort.class)
             return 0;
         if (type == SeqSort.class && "String".equals(sort.toString()))
@@ -99,6 +100,8 @@ public class Z3SortUnion {
             return 11;
         if (SortType.CLASS.equals(sort))
             return 12;
+        if (SortType.ITERATOR.equals(sort))
+            return 13;
         throw new RuntimeException("Undefined type for: " + sort);
     }
 }

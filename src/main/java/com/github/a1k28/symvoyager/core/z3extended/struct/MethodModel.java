@@ -101,7 +101,7 @@ public enum MethodModel {
     LIST_HASH_CODE(List.class,"int hashCode()", true),
     LIST_SUBLIST(List.class,"java.util.List subList(int,int)", true),
     LIST_INDEX_OF(List.class,"int indexOf(java.lang.Object)", true),
-//    LIST_ITERATOR(List.class, "java.util.Iterator iterator()", true),
+    LIST_ITERATOR(List.class, "java.util.Iterator iterator()", true),
 //    LIST_STREAM(List.class, "java.util.stream.Stream stream()>", true),
     LIST_LAST_INDEX_OF(List.class,"int lastIndexOf(java.lang.Object)", true),
     LIST_OF_OBJECT_ARR(List.class,"java.util.List of(java.lang.Object[])", true),
@@ -128,6 +128,10 @@ public enum MethodModel {
 //    SET_LEN(Set.class,"int size()",true),
 //    SET_CONTAINS(Set.class,"boolean contains(java.lang.Object)",true),
 //    SET_REMOVE(Set.class,"boolean remove(java.lang.Object)", true),
+
+    // iterators
+    ITERATOR_HAS_NEXT(Iterator.class, "boolean hasNext()", true),
+    ITERATOR_NEXT(Iterator.class, "java.lang.Object next()", true),
 
     // maps
     MAP_INIT(Map.class,"void <init>()", true),
@@ -283,6 +287,7 @@ public enum MethodModel {
             case LIST_HASH_CODE -> ctx.getLinkedListInstance().hashCode(args.get(0));
             case LIST_SUBLIST -> null;
             case LIST_INDEX_OF -> ctx.getLinkedListInstance().indexOf(args.get(0), args.get(1));
+            case LIST_ITERATOR -> ctx.getIteratorInstance().listConstructor(args.get(0));
             case LIST_LAST_INDEX_OF -> ctx.getLinkedListInstance().lastIndexOf(args.get(0), args.get(1));
             case LIST_OF_OBJECT_ARR -> ctx.getLinkedListInstance().constructorFrom(args.get(0));
             case LIST_SIZE -> ctx.getLinkedListInstance().size(args.get(0));
@@ -293,6 +298,9 @@ public enum MethodModel {
             case LIST_OF, LIST_OF_1, LIST_OF_2, LIST_OF_3, LIST_OF_4,
                     LIST_OF_5, LIST_OF_6, LIST_OF_7, LIST_OF_8, LIST_OF_9, LIST_OF_10
                     -> ctx.getLinkedListInstance().constructorOf(args);
+
+            case ITERATOR_HAS_NEXT -> ctx.getIteratorInstance().hasNext(args.get(0));
+            case ITERATOR_NEXT -> ctx.getIteratorInstance().next(args.get(0));
 
             case MAP_INIT -> ctx.getMapInstance().constructor(args.get(0));
             case MAP_INIT_FROM_MAP -> ctx.getMapInstance().constructor(args.get(0), args.get(1));

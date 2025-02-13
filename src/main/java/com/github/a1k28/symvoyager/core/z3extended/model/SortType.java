@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum SortType {
     NULL("null"),
     ARRAY("array"),
+    ITERATOR("iterator"),
     MAP("map"),
     CLASS("class"),
     REFERENCE("reference"),
